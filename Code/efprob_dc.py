@@ -1120,10 +1120,12 @@ class RandVar(DetChan):
 # Auxiliary functions to create states, predicates, channnels
 #
 
-# Just shortcuts
+# Aliases
 state = State
-pred = Predicate
-chan = Channel
+predicate = Predicate
+channel = Channel
+detchan = DetChan
+randvar = RandVar
 
 state_fromfun = State.fromfun
 pred_fromfun = Predicate.fromfun
