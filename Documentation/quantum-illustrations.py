@@ -3,7 +3,7 @@
 # subsection, see the main method at the end.
 #
 #
-from quantprob import *
+from efprob_qu import *
 
 def states():
     print("\nSection: States\n")
