@@ -794,7 +794,6 @@ class Channel:
         iscont = dom.iscont or cod.iscont
         dom_shape = tuple(len(s) for s in dom.disc)
         cod_shape = tuple(len(s) for s in cod.disc)
-        cod_ndim = len(cod.disc)
         shape = cod_shape + dom_shape
         if iscont:
             array = np.empty(shape, dtype=object)
@@ -813,6 +812,26 @@ class Channel:
                         Channel._fromklmap_getelm(klmap, dom, cod,
                                                   dom_disc_a, cod_idx))
         return cls(array, dom, cod)
+
+    @classmethod
+    def from_states(cls, states, dom=None):
+        if dom is None:
+            dom = range(len(states))
+        dom = asdom(dom)
+        dom_shape = (len(states),)
+        cod = states[0].dom
+        cod_shape = tuple(len(s) for s in cod.disc)
+        shape = cod_shape + dom_shape
+        if cod.iscont:
+            array = np.empty(shape, dtype=object)
+        else:
+            array = np.empty(shape, dtype=float)
+        for i, s in enumerate(states):
+            a = s.array
+            if cod.iscont:
+                a = Fun.u_asfun2(a)
+            array[(...,)+(i,)] = a
+        return Channel(array, dom, cod)
 
     def __repr__(self):
         return "Channel of type: {} --> {}".format(self.dom, self.cod)
@@ -1130,6 +1149,7 @@ randvar = RandVar
 state_fromfun = State.fromfun
 pred_fromfun = Predicate.fromfun
 chan_fromklmap = Channel.fromklmap
+chan_from_states = Channel.from_states
 
 
 def flip(r, dom=[True, False]):
