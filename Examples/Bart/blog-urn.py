@@ -20,7 +20,7 @@ s1 = State([0.5, 0.5], col)
 
 #
 # Random variable on domain of n balls, counting the number of blue
-# balls; this codomain is range(n+1)
+# balls; its codomain is range(n+1)
 #
 def blues_rv(n):
     return RandVar(lambda *xs: sum([1 if xs[i] == 'B' else 0 
@@ -71,9 +71,10 @@ for i in range(10):
     print(i+1, ": ", iter_noisy_blues(i+1, 5) )
 
 #
-# Add hoc function for plotting state with domain range(n) by turning
-# it into a continuous state. This not very efficient, but it works
-# for this illustration.
+# Add hoc function for plotting discrete state with domain range(n) by
+# turning it into a continuous state. This not very efficient, but it
+# works for this illustration. A bar chart is possibly more
+# appropriate.
 #
 def disc_plot(s):
     ran = s.dom.disc[0]
@@ -104,6 +105,9 @@ uprior = State([1/M for i in range(M)], [i+1 for i in range(M)])
 upred = Predicate([iter_noisy_blues(i+1, 10) for i in range(M)], 
                   [i+1 for i in range(M)])
 
+#
+# See Figure 4 of paper mentioned at beginning
+#
 disc_plot( uprior / upred )
 
 M=20
@@ -120,6 +124,9 @@ pprior = poisson(6, M)
 ppred = Predicate([0] + [iter_noisy_blues(i+1, 10) for 
                          i in range(M-1)], range(M))
 
+#
+# See Figure 4 of paper mentioned at beginning
+#
 disc_plot( pprior )
 disc_plot( pprior / ppred )
 
