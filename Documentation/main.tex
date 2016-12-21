@@ -4230,41 +4230,38 @@ $$\vcenter{\Qcircuit@R-1pc{
 & \qw {\Qdiscard}
 }}$$
 
-\noindent In the \EfProb library there are pre-defined first and
-second projections for the qubit case, written as \pythoninline{proj1
-  : [2,2] -> [2]} and \pythoninline{proj2 : [2,2] -> [2]}. For other
-dimensions one can always use the parallel composition of identity and
-discard, as in:
-$$\mbox{\pythoninline{proj1 * cnot}}
-\quad=\;\quad
-\vcenter{\Qcircuit@R-1pc@C-1pc{
-& \ctrl{1} & \qw & \qw
-\\
-& \targ & \qw {\Qdiscard}
-}}
-\quad\;=\quad
-\mbox{\pythoninline{(idn(2) @ discard(2)) * cnot}}$$
+%% \noindent In the \EfProb library there are pre-defined first and
+%% second projections for the qubit case, written as \pythoninline{proj1
+%%   : [2,2] -> [2]} and \pythoninline{proj2 : [2,2] -> [2]}. For other
+%% dimensions one can always use the parallel composition of identity and
+%% discard, as in:
+%% $$\mbox{\pythoninline{proj1 * cnot}}
+%% \quad=\;\quad
+%% \vcenter{\Qcircuit@R-1pc@C-1pc{
+%% & \ctrl{1} & \qw & \qw
+%% \\
+%% & \targ & \qw {\Qdiscard}
+%% }}
+%% \quad\;=\quad
+%% \mbox{\pythoninline{(idn(2) @ discard(2)) * cnot}}$$
 
-$$\mbox{\pythoninline{proj2 * cnot}}
-\quad=\;\quad
-\vcenter{\Qcircuit@R-1pc@C-1pc{
-& \ctrl{1} & \qw {\Qdiscard}
-\\
-& \targ & \qw & \qw
-}}
-\quad\;=\quad
-\mbox{\pythoninline{(discard(2) @ idn(2)) * cnot}}$$
+%% $$\mbox{\pythoninline{proj2 * cnot}}
+%% \quad=\;\quad
+%% \vcenter{\Qcircuit@R-1pc@C-1pc{
+%% & \ctrl{1} & \qw {\Qdiscard}
+%% \\
+%% & \targ & \qw & \qw
+%% }}
+%% \quad\;=\quad
+%% \mbox{\pythoninline{(discard(2) @ idn(2)) * cnot}}$$
 
-\noindent Here is a simple test:\marginpar{There are \pythoninline{false}'s in \pythoninline{np.isclose(proj1.array, (proj1 * cnot).array)}. Why? See also the example where \pythoninline{(proj1 * cnot) >> (s @ t)} is not \pythoninline{s}}
+\noindent Here is a simple test:
 \begin{python}
 >>> s = random_state(2)
 >>> s
 [[ 0.47726159+0.j        -0.44585810-0.0353013j]
  [-0.44585810+0.0353013j  0.52273841+0.j       ]]
 >>> t = random_state(2)
->>> (proj1 * cnot) >> (s @ t)
-[[ 0.47726159+0.j          0.21691432-0.01717443j]
- [ 0.21691432+0.01717443j  0.52273841+0.j        ]]
 >>> ((idn(2) @ discard(2)) * cnot) >> (s @ t)
 [[ 0.47726159+0.j          0.21691432+0.01717443j]
  [ 0.21691432-0.01717443j  0.52273841+0.j        ]]
@@ -4320,7 +4317,7 @@ call Kronecker\index{Kronecker!channel} channels, written as
 $$\begin{array}{ccc}
 \mbox{\pythoninline{kron : Dom([n,m]) -> Dom([n*m])}}
 & \quad\mbox{and}\quad &
-\mbox{\pythoninline{kroninv : Dom([n*m]) -> Dom([n,m])}}
+\mbox{\pythoninline{kron_inv : Dom([n*m]) -> Dom([n,m])}}
 \end{array}$$
 
 \noindent Internally these channels do nothing --- they are just
@@ -4396,7 +4393,7 @@ this construction:
 \end{python}
 
 
-\subsection{Measurement and classical control channels}\label{subsec:qchannel:measurement}
+\subsection{Measurement, classical control, and instruments}\label{subsec:qchannel:measurement}
 
 This subsection introduces measurement, both for predicates and for
 tests. It also describes how to use the outcomes of such measurements
@@ -4593,6 +4590,34 @@ below.
 state \pythoninline{s} in its first component. Its second output
 component is a convex combination of the channels applied to the
 second input component.
+
+
+\paragraph{Instruments}
+As described above, measurement destroys the state and only returns
+the probabilities of the measurement, as classical state. Instruments,
+as introduced in\cite{Jacobs15}, combine measurement and state update,
+by producing not only probabilities but also a convex sum of
+conditional states. Instruments can be defined for tests, but they are
+currently only supported for predicates.
+
+Let \pythoninline{p} be a predicate with domain \pythoninline{dom}.
+The channel \pythoninline{instr(p)} has type \pythoninline{dom ->
+  [2]+dom}. By projecting away the second part we obtain measurement:
+\begin{python}
+>>> p = random_pred(5)
+>>> (idn(2) @ discard(5)) * instr(p) == meas_pred(p)
+True
+\end{python}
+
+\noindent The second part of the output of an instrument is a
+convex combination of conditional states, as illustrated in:
+\begin{python}
+>>> p = random_pred(5)
+>>> s = random_state(5)
+>>> discard(2) @ idn(5) * instr(p) >> s ==
+...   convex_state_sum( (s >= p, s / p), (s >= ~p, s / ~p) 
+True
+\end{python}
 
 
 
@@ -4965,7 +4990,7 @@ input and output of length 8 into 3 inputs of length 2, via the
 Kronecker channels.
 \begin{python}
 >>> k1 = kron(4,2) * (kron(2,2) @ idn(2))
->>> k2 = (kroninv(2,2) @ idn(2)) * kroninv(4,2)
+>>> k2 = (kron_inv(2,2) @ idn(2)) * kron_inv(4,2)
 >>> r1 = random_probabilistic_state(2)
 >>> r2 = random_probabilistic_state(2)
 >>> r3 = random_probabilistic_state(2)

@@ -349,9 +349,10 @@ def structural_channels():
     s = random_state(2)
     print( s )
     t = random_state(2)
-    print( (proj1 * cnot) >> (s @ t) )
+    #print( (proj1 * cnot) >> (s @ t) )
     print( ((idn(2) @ discard(2)) * cnot) >> (s @ t) )
     print( (cnot >> (s @ t)) % [1,0] )
+    print( ((idn(2) @ discard(2)) * cnot) >> (s @ t) == (cnot >> (s @ t)) % [1,0] )
 
     print("\n===\n")
 
@@ -370,7 +371,7 @@ def structural_channels():
 
 def measurement():
     
-    print("\nSubsection: Measurement and control\n")
+    print("\nSubsection: Measurement, control and instruments\n")
 
     print("* Probabilistic outcome of measurement")
     p = random_pred(5)
@@ -419,9 +420,27 @@ def measurement():
 
     print("\n===\n")
 
+    print("* First projection of instrument is measurement")
+    p = random_pred(5)
+    print( (idn(2) @ discard(5)) * instr(p) == meas_pred(p) )
+
+    print("\n===\n")
+
+    print("* Second projection of instrument is convex sum")
+    s = random_state(5)
+    print( discard(2) @ idn(5) * instr(p) >> s ==
+           convex_state_sum( (s >= p, s / p), (s >= ~p, s / ~p) ) )
+
+
+def teleportation_and_superdensecoding():
+    
+    print("\nSection: Measurement, control and instruments\n")
+
     print("* Teleportation, with the Bell state")
     alice = (meas0 @ meas0) * (hadamard @ idn(2)) * cnot
-    bob = proj2 * ccontrol(z_chan) * (idn(2) @ proj2) \
+    bob = (discard(2) @ idn(2)) \
+          * ccontrol(z_chan) \
+          * (idn(2) @ discard(2) @ idn(2)) \
           * (idn(2) @ ccontrol(x_chan))
     teleportation = bob * (alice @ idn(2)) * (idn(2) @ bell00.as_chan())
     s = random_state(2)
@@ -460,7 +479,7 @@ def measurement():
 
     print("* Superdense coding, with the Bell state, as channel")
     sdc = bob * (alice @ idn(2)) * (idn(2,2) @ bell00.as_chan())
-    sdck = kron(2,2) * sdc * kroninv(2,2)
+    sdck = kron(2,2) * sdc * kron_inv(2,2)
     print("channel types", sdc.dom, sdc.cod )
     print( sdc == classic(2) @ classic(2), sdck == classic(4),  )
 
@@ -528,7 +547,7 @@ def measurement():
 
     print("* GHZ-superdense coding classical bit test")
     k1 = kron(4,2) * (kron(2,2) @ idn(2))
-    k2 = (kroninv(2,2) @ idn(2)) * kroninv(4,2)
+    k2 = (kron_inv(2,2) @ idn(2)) * kron_inv(4,2)
     r1 = random_probabilistic_state(2)
     r2 = random_probabilistic_state(2)
     r3 = random_probabilistic_state(2)
@@ -552,10 +571,11 @@ def main():
     #validity()
     #conditioning()
     #weakening()
-    state_transformation()
-    predicate_transformation()
-    structural_channels()
+    #state_transformation()
+    #predicate_transformation()
+    #structural_channels()
     measurement()
+    #teleportation_and_superdensecoding()
 
 if __name__ == "__main__":
     main()

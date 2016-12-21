@@ -15,7 +15,7 @@ import numpy.linalg
 import numpy.random
 import random
 import scipy.linalg
-import discprob as d
+#import discprob as d
 
 # http://qutip.org/docs/2.2.0/guide/guide-basics.html
 
@@ -899,43 +899,43 @@ swap = channel_from_unitary(np.array([ [1, 0, 0, 0],
                                        [0, 1, 0, 0],
                                        [0, 0, 0, 1] ]), 
                             Dom([2,2]))
-#
-# first projection channel 2 @ 2 -> 2
-#
-proj1 = Channel(np.array([[np.array([[1,0,0,0], 
-                                     [0,1,0,0],
-                                     [0,0,0,0],
-                                     [0,0,0,0]]), np.array([[0,0,0,0], 
-                                                            [0,0,0,0],
-                                                            [1,0,0,0],
-                                                            [0,1,0,0]])], 
-                          [np.array([[0,0,1,0], 
-                                     [0,0,0,1],
-                                     [0,0,0,0],
-                                     [0,0,0,0]]), np.array([[0,0,0,0], 
-                                                            [0,0,0,0],
-                                                            [0,0,1,0],
-                                                            [0,0,0,1]])]]),
-               Dom([2, 2]), Dom([2]))
+# #
+# # first projection channel 2 @ 2 -> 2
+# #
+# proj1 = Channel(np.array([[np.array([[1,0,0,0], 
+#                                      [0,1,0,0],
+#                                      [0,0,0,0],
+#                                      [0,0,0,0]]), np.array([[0,0,0,0], 
+#                                                             [0,0,0,0],
+#                                                             [1,0,0,0],
+#                                                             [0,1,0,0]])], 
+#                           [np.array([[0,0,1,0], 
+#                                      [0,0,0,1],
+#                                      [0,0,0,0],
+#                                      [0,0,0,0]]), np.array([[0,0,0,0], 
+#                                                             [0,0,0,0],
+#                                                             [0,0,1,0],
+#                                                             [0,0,0,1]])]]),
+#                Dom([2, 2]), Dom([2]))
 
-#
-# second projection channel 2 @ 2 -> 2
-#
-proj2 = Channel(np.array([[np.array([[1,0,0,0], 
-                                     [0,0,0,0],
-                                     [0,0,1,0],
-                                     [0,0,0,0]]), np.array([[0,0,0,0], 
-                                                            [1,0,0,0],
-                                                            [0,0,0,0],
-                                                            [0,0,1,0]])], 
-                          [np.array([[0,1,0,0], 
-                                     [0,0,0,0],
-                                     [0,0,0,1],
-                                     [0,0,0,0]]), np.array([[0,0,0,0], 
-                                                            [0,1,0,0],
-                                                            [0,0,0,0],
-                                                            [0,0,0,1]])]]),
-               Dom([2, 2]), Dom([2]))
+# #
+# # second projection channel 2 @ 2 -> 2
+# #
+# proj2 = Channel(np.array([[np.array([[1,0,0,0], 
+#                                      [0,0,0,0],
+#                                      [0,0,1,0],
+#                                      [0,0,0,0]]), np.array([[0,0,0,0], 
+#                                                             [1,0,0,0],
+#                                                             [0,0,0,0],
+#                                                             [0,0,1,0]])], 
+#                           [np.array([[0,1,0,0], 
+#                                      [0,0,0,0],
+#                                      [0,0,0,1],
+#                                      [0,0,0,0]]), np.array([[0,0,0,0], 
+#                                                             [0,1,0,0],
+#                                                             [0,0,0,0],
+#                                                             [0,0,0,1]])]]),
+#                Dom([2, 2]), Dom([2]))
 
 
 #
@@ -947,7 +947,7 @@ def kron(n,m):
 #
 # Kronecker inverse channel n*m -> n @ m
 #
-def kroninv(n,m):
+def kron_inv(n,m):
     return Channel(choi(np.eye(n*m)), Dom([n*m]), Dom([n, m]))
 
 #
@@ -1189,8 +1189,15 @@ def channel_from_states(*ls):
 
 
 #
-# measurement channel dom -> 2, for a predicate p of type dom. This
+# Measurement channel dom -> 2, for a predicate p of type dom. This
 # channel does not keep a record of the updated state.
+#
+# The key property is, for a state s of type dom:
+#
+#   meas_pred(p) >> s  =  s >= p
+#
+# where the right-hand-side must be interpreted as a classic state
+# with domain [2].
 #
 def meas_pred(p):
     n = p.dom.size
@@ -1234,34 +1241,52 @@ meas_hadamard = meas_test(hadamard_test)
 meas_bell = meas_test(bell_test)
 meas_ghz = meas_test(ghz_test)
 
+#
+# Instrument dom -> [2] @ dom , for a predicate p of type dom.
+#
+# The main properties are:
+#
+#   (instr(p) >> s) % [1,0]  =  meas_pred(p) >> s,
+#
+#   (instr(p) >> s) % [0,1]  =  convex_state_sum( (s >= p, s/p), 
+#                                                 (s >= ~p, s/~p) )
+#
+#   instr(p) << truth(2) @ q  =  (p & q) + (~p & q) 
+#
 def instr(p):
-    n = p.dim
-    mat = np.ndarray((2*n,2*n,n,n)) + 0j
+    n = p.dom.size
+    mat = np.zeros((2*n,2*n,n,n)) + 0j
+    sqp = matrix_square_root(p.array)
+    sqnp = matrix_square_root((~p).array)
     for i in range(n):
         for j in range(n):
             arg = np.zeros((n,n))
             arg[i][j] = 1
-            mat1 = np.dot(p.array, arg)
-            # mat2 = np.dot(scipy.linalg.sqrtm(p.array), 
-            #               np.dot(np.outer(lsi, lsj),
-            #                      scipy.linalg.sqrtm((~p).array)))
-            # mat3 = np.dot(scipy.linalg.sqrtm((~p).array), 
-            #               np.dot(np.outer(lsi, lsj),
-            #                      scipy.linalg.sqrtm(p.array)))
-            mat4 = np.dot((~p).array, arg)
-            for k in range(n):
-                for l in range(n):
-                    mat[i][j][k][l] = mat1[k][l]
-                    #mat[n+i][j][k][l] = mat3[k][l]
-                    #mat[i][n+j][k][l] = mat2[k][l]
-                    mat[n+i][n+j][k][l] = mat4[k][l]
+            out1 = np.dot(sqp, np.dot(arg, sqp))
+            out2 = np.dot(sqnp, np.dot(arg, sqnp))
+            mat[i][j] = out1
+            mat[n+i][n+j] = out2
     return Channel(mat, p.dom, Dom([2]) + p.dom)
 
+
+def cond(p):
+    n = p.dom.size
+    mat = np.zeros((n,n,n,n)) + 0j
+    sqp = matrix_square_root(p.array)
+    sqnp = matrix_square_root((~p).array)
+    for i in range(n):
+        for j in range(n):
+            arg = np.zeros((n,n))
+            arg[i][j] = 1
+            mat[i][j] = np.dot(sqp, np.dot(arg, sqp)) \
+                        + np.dot(sqnp, np.dot(arg, sqnp))
+    return Channel(mat, p.dom, p.dom)
 
 
 
 #
-# classical control of a channel
+# classical control of a channel c : dom -> cod, giving a channel
+# ccontrol(c) : [2] + dom -> [2] + cod
 #
 def ccontrol(c):
     cd = c.dom.size
@@ -1288,7 +1313,10 @@ def ccontrol(c):
             # mat[cd+i][j][2*cd - 1 - i][j] = 1
     return Channel(mat, Dom([2]) + c.dom, Dom([2]) + c.cod)
 
-
+#
+# A list of channels c1, ..., ca all with the same domain dom and
+# codomain cod gives a classical case channel [a]+dom -> [a]+cod
+#
 def ccase(*chans):
     a = len(chans)
     if a == 0:
@@ -1325,17 +1353,17 @@ def ccase(*chans):
 #
 # In the second coordinate we keep the original channel:
 #
-#    (tuple_right(c) >> t) % [0, 1]  =  c >> t
+#    (graph(c) >> t) % [0, 1]  =  c >> t
 #
 # But in the first coordinate:
 #
-#    (tuple_right(c) >> t) % [1, 0]  
+#    (graph(c) >> t) % [1, 0]  = classic >> t
 #
-# we have a probabilistic state with entries given by the validities:
+# Hence we have a probabilistic state with entries given by the validities:
 #
 #    t >= unit_pred(n,i)
 #
-def tuple_right(c):
+def graph(c):
     if len(c.dom.dims) != 1:
         raise Exception('Tupling not defined for product input ')
     n = c.dom.dims[0]
@@ -1354,41 +1382,6 @@ def productstate2channel(s):
     ls = [s / (unit_pred(n,i) @ truth(*cod_dims)) % [0,1] 
           for i in range(n)]
     return channel_from_states(*ls)
-
-
-
-########################################################################
-# 
-# Discrete to quantum conversion; experimental
-#
-########################################################################
-
-#
-# Turn discrete state into quantum state
-#
-def dstate2qstate(s):
-    ls = [e.prob for e in s.elts]
-    return State(np.diag(ls), s.supp)
-
-#
-# Turn discrete predicate into quantum predicate
-#
-def dpred2qpred(p):
-    return Predicate(np.diag(p.values), p.supp)
-
-#
-# Turn a discrete channel n -> m into a quantum channel n -> m
-#
-def dchan2qchan(c):
-    if len(c.dsupp) > 1:
-        raise Exception('Discrete-to-quantum channel conversion does not handle product state input')
-    n = c.dsupp[0]
-    m = prod(c.csupp)
-    mat = np.ndarray((m,m,n,n))
-    for j in range(m):
-        for i in range(n):
-            mat[j][j][i][i] = c.states[i].elts[j].prob
-    return Channel(mat, Dom([n]), Dom(c.csupp))
 
 
 
@@ -1504,76 +1497,39 @@ minus_oper = hadamard_oper >> ket(1)
 ########################################################################
 
 
-def states():
-    print("\nState tests")
-    print("* zero matrix is zero:", is_zero(np.zeros((3,3))))
-    print("* zero matrix is positive:", is_positive(np.zeros((3,3))))
-    print("* identity matrix is positive:", is_positive(np.eye(3)))
-    print("* identity matrix is effect:", is_effect(np.eye(5)))
-    print("* zero matrix is effect:", is_effect(np.zeros((5,5))))
-    print("* diagonal 1/n matrix is state:", is_state(1/10*np.eye(10)))
-    print("* the state |01>\n", ket(0,1))
-    print("* diagonal state\n", diagonal_state(3))
-    print("* probabilistic state\n", probabilistic_state(1, 2, 5))
-    #print("* purity of this probabilistic state:", 
-    #      probabilistic_state(1, 2, 5).is_pure())
-    print("* a random (mixed) state of dimension 3:\n", random_state(3))
-    print("* probabilistic conditional state example:\n", 
-          probabilistic_state(1,2) /  probabilistic_pred(.25, .75) )
-    print("* the Bell state |++> \n", bell00 )
-
-def predicates():
-    print("\nPredicate tests")
-    print("* probabilistic predicate\n", probabilistic_pred(.2, .25, 0.9))
-    print("* validity of the previous predicate and its orthocomplement in the previous state:", 
-          probabilistic_state(1, 2, 5) >= probabilistic_pred(.2, .25, 0.9),
-          probabilistic_state(1, 2, 5) >= ~probabilistic_pred(.2, .25, 0.9) )
-    print("* state |0> turned into predicate |0><0|\n", ket(0).as_pred() )
+def validity():
+    print("\nValidity tests")
     s1 = random_state(2)
     s2 = random_state(5)
     s3 = random_state(2)
     p1 = random_pred(2) 
     p2 = random_pred(5) 
     p3 = random_pred(2)
-    print("* validity product test:", s1 @ s2 >= ~p1 @ (0.1 * p2),
-          (s1 >= 0.5 * ~p1) * (s2 >= 0.2 * p2))
-    print("* transformation-validty test:", 
-          s1 @ s3 >= (chadamard << (p1 @ truth(2))),
-          (chadamard >> s1 @ s3) >= (p1 @ truth(2)) )
-    #s1 = probabilistic_state(1, 2)
-    p1 = probabilistic_pred(.2, .25)
-    print( s1 >= (hadamard << p1), (hadamard >> s1) >= p1 )
-    print("* weakening is the same as predicate transformation by a projection")
-    print( p3 @ truth(2) )
-    print( proj1 << p3 )
-
+    print("* validity product difference test:", 
+          (s1 @ s2 >= ~p1 @ (0.1 * p2)) - ((s1 >= 0.5 * ~p1) * (s2 >= 0.2 * p2)) )
+    print("* transformation-validty difference test:", 
+          (s1 @ s3 >= (chadamard << (p1 @ truth(2)))) \
+          - ((chadamard >> s1 @ s3) >= (p1 @ truth(2))) )
+    print("* weakening is the same as predicate transformation by a projection:", 
+          p3 @ truth(2) == (idn(2) @ discard(2)) << p3 )
 
 def marginals():
     print("\nMarginal tests")
     print("* third marginal of |000> is:\n", ket(0,0,0) % [0,0,1])
     a = random_state(2)
     b = random_state(2)
-    print("* a random state, and then several identity operations on that state")
-    print( a )
-    print( (a @ b) % [1,0] )
-    print( idn(2) >> a )
-    print( proj1 >> (a @ b) )
-    print( proj2 >> (swap >> (a @ b)) )
-    # Todo/check: should this yield: a ??
-    print( proj1 >> (cnot >> (a @ b)) )
-    print( proj1 >> (((idn(2) @ idn(2)) * cnot) >> (a @ b)) )
-    print("* projection is same as discard in parallel with identity")
-    print( discard(2) @ idn(2) >> (a @ b) )
-    print( proj2 >> (a @ b) )
-    print( discard(2) << truth(*[]) )
-
+    print("* a random product state, and then several projection operations on that state:", 
+          a == (a @ b) % [1,0],
+          a == idn(2) >> a,
+          a == idn(2) @ discard(2) >> (a @ b),
+          a == discard(2) @ idn(2) >> (swap >> (a @ b)) )
 
 def measurement():
     print("\nMeasurement tests")
     a = random_state(2)
     p = probabilistic_pred(0.25, 0.75)
     print("* measurement channel applied to a state, with validity", 
-           a >= p, "\n", meas(p) >> a )
+           a >= p, "\n", meas_pred(p) >> a )
 #    print("* a 1/4-convex channel-sum of cnot and swap, on |10>\n", 
 #          convexsum(0.25, cnot, swap) >> ket(1,0) )
     r = 0.5
@@ -1584,23 +1540,43 @@ def measurement():
     print( (ccontrol(x_chan) >> cflip(r) @ s) % [1,0] )
     print( (ccontrol(x_chan) >> cflip(r) @ s) % [0,1] )
 
+def instrument():
+    print("\nInstrument tests")
+    p = random_pred(2)
+    q = random_pred(2)
+    s = random_state(2)
+    print( (instr(p) >> s) % [1,0] == meas_pred(p) >> s,
+           (instr(p) >> s) % [0,1] == convex_state_sum( (s >= p, s/p), 
+                                                        (s >= ~p, s/~p) ),
+           instr(p) << truth(2) @ q == (p & q) + (~p & q) )
+    print("channel equalities")
+    print( (idn(2) @ discard(2)) * instr(p) == meas_pred(p) )
+    print( (discard(2) @ idn(2)) * instr(p) == cond(p) )
+
+
 def conditioning():
     print("\nConditioning tests")
     print("Bayes")
     s = random_state(2)
+    t = random_state(2)
     p = random_pred(2)
     q = random_pred(2)
+    r = random_probabilistic_pred(2)
+    t = random_probabilistic_pred(2)
     print( s/p >= q )
     print( (s >= p & q) / (s >= p) )
+    print("cnot experiments")
+    print( p )
+    print( (cnot << unit_pred(2,0) @ q) == unit_pred(2,0) @ q )
+    print( (cnot << unit_pred(2,1) @ r) == (unit_pred(2,1) @ ~r) )
+    print( (cnot << unit_pred(2,1) @ q), "\n", (unit_pred(2,1) @ ~q) )
+    print("cnot and instruments")
+    print( cnot >> s @ t )
+    print( meas_pred(s.as_pred()) >> t )
+
 
 def channel():
     print("\nChannel tests")
-    pc1 = d.CPT(0.2, 0.6)
-    pc2 = d.mat2chan(np.array([[0.1, 0.6, 0.3], [0.5, 0.2, 0.3]]))
-    print( pc2 >> d.Flip(0.3) )
-    print( d.tuple_right(pc2) >> d.Flip(0.3) )
-    print( dchan2qchan(pc2) >> cflip(0.3) )
-    print( (dchan2qchan(d.tuple_right(pc2)) >> cflip(0.3)) % [0,1] )
     s1 = random_state(3)
     s2 = random_state(3)
     s3 = random_state(3)
@@ -1612,15 +1588,19 @@ def channel():
                             (t >= unit_pred(3, 2), s3)) )
     print( c >> t )
     print("* truth preservation by channels")
-    print( c << truth(3) )
-    #print( tuple_right(c) << (truth(3, 3)) )
-    print("* tuple properties")
-    print( (tuple_right(c) >> t) % [0, 1] )
+    print( truth(3) == c << truth(3), truth(3) == graph(c) << truth(3, 3) )
+    print("* graph properties")
+    c = x_chan * hadamard * phase_shift(math.pi/3)
+    t = random_state(2)
+    print( classic(2) >> t == (graph(c) >> t) % [1, 0] )
+    print( c >> t )
+    #print( graph(c) >> t )
+    print( (graph(c) >> t) % [0, 1] )
     print("* first component of tuple is go-classic:",
-          (idn(3) @ discard(3)) * tuple_right(c) == classic(3) )
+          (idn(2) @ discard(2)) * graph(c) == classic(2) )
     print("* second component of tuple is the channel itself",
-          (discard(3) @ idn(3)) * tuple_right(c) == c )
-    print( np.isclose((((discard(3) @ idn(3)) * tuple_right(c)) >> t).array,
+          (discard(2) @ idn(2)) * graph(c) == c )
+    print( np.isclose((((discard(2) @ idn(2)) * graph(c)) >> t).array,
                       (c >> t).array.T) )
     print("* predicate as channel")
     p = random_pred(2)
@@ -1633,26 +1613,26 @@ def channel():
     w1 = random_probabilistic_state(2)
     w2 = random_state(2)
     w = chadamard >> (w1 @ w2)
+    print( w1 ==  w % [1, 0] )
     dc = productstate2channel(w)
-    # the next two states are equal (to w2)
     print( dc >> ket(0) )
     print( w2 )
-    print( (chadamard >> (ket(0) @ w2)) % [0,1] )
+    print( w2 == (chadamard >> (ket(0) @ w2)) % [0,1] )
     # the next two states are also equal
     print( dc >> ket(1) )
     print( (chadamard >> (ket(1) @ w2)) % [0,1] )
     print("* next")
     print( dc >> v )
     print( (w / (v.as_pred() @ truth(2))) % [0,1] )
-    dct = tuple_right(productstate2channel(w))
+    dct = graph(productstate2channel(w))
     print("* product from channel form product: recover the original:", 
           np.allclose(w.array, (dct >> w1).array))
-    u = random_state(3)
+    u = random_state(2)
     print("* channel from product from channel")
-    print( productstate2channel(tuple_right(c) >> u) >> t )
+    print( productstate2channel(graph(c) >> u) >> t )
     print( c >> t )
     print( np.allclose(c.array,
-                       productstate2channel(tuple_right(c) >> u).array) )
+                       productstate2channel(graph(c) >> u).array) )
 
 def transition():
     print("\nTransition tests")
@@ -1717,48 +1697,14 @@ def experiment():
 
 
 def main():
-    states()
-    #predicates()
-    #marginals()
+    validity()
+    marginals()
     #measurement()
+    #instrument()
     #conditioning()
-    channel()
+    #channel()
     #experiment()
     #transition()
-
-    # #c = hadamard
-    # #c = x_chan
-    # #c = y_chan
-    # c = z_chan
-    # U = (1/math.sqrt(2)) * np.array([ [1, 1], [1, -1] ])
-    U = np.array([[0,-complex(0, 1)],[complex(0,1),0]])
-    # #U = np.array([[1,0],
-    # #              [0,-1]])
-    # Q = transition_from_channel(c)
-    # print( tr1(Q, 2) )
-    s = random_state(2)
-    # p = random_pred(2)
-    # print("stat")
-    # print( tr2( np.dot(np.kron(s.array, np.eye(2)), Q), 2 ) )
-    # print( c >> s )    
-    # print("pred")
-    # print( tr2( np.dot(np.kron(p.array, np.eye(2)), Q), 2 ) )
-    # print( c << p )
-    #print("unitary")
-    #P = transition_from_unitary(U)
-    #print( np.dot(U, np.dot(s.array, conjugate_transpose(U))) )
-    #print( tr2( np.dot(np.kron(s.array, np.eye(2)), P), 2 ).T )
-    #print( tr1( np.dot(np.kron(np.eye(2), s.array), P), 2 ).T )
-    # print( tr1(P, 2) )
-
-    #print( kraus( idn(2) ) )
-
-    #print("GHZ\n")
-
-    #print( meas(plus.as_pred()) )
-    #print( meas(minus.as_pred()) )
-
-    #print( ((meas(bell00.as_pred()) @ idn(2)) >> ghz) % [0,1])
 
 if __name__ == "__main__":
     main()
