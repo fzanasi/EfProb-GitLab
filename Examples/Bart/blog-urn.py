@@ -71,23 +71,6 @@ for i in range(10):
     print(i+1, ": ", iter_noisy_blues(i+1, 5) )
 
 #
-# Add hoc function for plotting discrete state with domain range(n) by
-# turning it into a continuous state. This not very efficient, but it
-# works for this illustration. A bar chart is possibly more
-# appropriate.
-#
-def disc_plot(s):
-    ran = s.dom.disc[0]
-    n = len(ran)
-    ivl = Interval(ran[0], ran[n-1])
-    fun = lambda x: sum([s.array[i] if ran[i] <= x and x < ran[i+1] else 0
-                         for i in range(n-1)])
-    cs = State(fun, ivl)
-    cs.plot()
-    return None
-
-
-#
 # Constant M, describing the number of urns, consecutively with 1, 2,
 # ..., M balls
 #
@@ -108,7 +91,7 @@ upred = Predicate([iter_noisy_blues(i+1, 10) for i in range(M)],
 #
 # See Figure 4 of paper mentioned at beginning
 #
-disc_plot( uprior / upred )
+(uprior / upred).plot()
 
 M=20
 
@@ -127,6 +110,6 @@ ppred = Predicate([0] + [iter_noisy_blues(i+1, 10) for
 #
 # See Figure 4 of paper mentioned at beginning
 #
-disc_plot( pprior )
-disc_plot( pprior / ppred )
+pprior.plot()
+(pprior / ppred).plot()
 
