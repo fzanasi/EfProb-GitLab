@@ -106,6 +106,12 @@ def operations_on_states():
     print("* two-out-of-three marginalisation")
     print( (random_disc_state(100) @ flip(0.5) @ uniform_disc_state(2)) % [0,1,1] )
 
+def plotting_states():
+
+    print("\nSubsection: Plotting states\n")
+
+    flip(0.2).plot()
+
 def excursion():
 
     print("\nSubsection: An excursion on domains of states\n")
@@ -318,6 +324,7 @@ def main():
     #states()
     #operations_on_states()
     #excursion()
+    plotting_states()
     #predicates()
     #operations_on_predicates()
     #validity()
@@ -326,7 +333,7 @@ def main():
     #channels()
     #state_pred_transformation()
     #seq_par_composition()
-    bayesian_networks()
+    #bayesian_networks()
 
 if __name__ == "__main__":
     main()

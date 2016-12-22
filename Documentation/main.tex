@@ -521,7 +521,9 @@ $$0.3\ket{R} + 0.2\ket{G} + 0.5\ket{B}.$$
 of red, green, and blue. The `ket' notation $\ket{-}$ is borrowed from
 the quantum world. It has no mathematical meaning, but is convenient
 to separate the weights from the unit interval $[0,1]$ from the
-`things' that are weighed.
+`things' that are weighed. A graphical representation (`plot') of the
+above convex combination can be seen in the
+margin.\marginnote[-5\baselineskip]{\includegraphics{Pictures/RGB.png}}
 
 This chapter describes how to form such distributions, and how to
 manipulate them via various other structures, like predicate, channels
@@ -543,12 +545,15 @@ state for a fair (balanced) coin as:
 0.5|True> + 0.5|False>
 \end{python}
 
-\marginpar{Can we not only print but also plot these distributions?}
-
 \noindent We see that the `things' that we weigh in this distribution
-are the in the second list. The set of these `things' is what we call
-the \emph{domain} of the distribution. We can also define use another
-domain, as in:
+are in the second list. The set of these `things' is what we call the
+\emph{domain} of the distribution. The elements of the domain of a
+distribution are printed using the ket-notation $\ket{-}$, as
+explained in the beginning of this
+chapter. Subsection~\ref{subsec:dplot} below describes how
+distributions can be plotted.
+
+We can also define use another domain, as in:
 \begin{python}
 >>> fflipHT = State([0.5, 0.5], ['H', 'T'])
 >>> fflipHT
@@ -834,6 +839,49 @@ r_{1}\ket{0,0} + r_{2}\ket{0,1} + r_{3}\ket{1,0} + r_{4}\ket{1,1}
 r_{1}\cdot r_{4} = r_{2}\cdot r_{3}
 \end{array}
 \end{equation}
+
+
+\subsection{Plotting states}\label{subsec:dplot}
+
+So far we have described states as finite formal convex sums
+$r_{1}\ket{x_1} + \cdots + r_{n}\ket{x_n}$. But states can also be
+plotted, as bar charts. The command below generates the picture in the
+margin.\marginnote[-3\baselineskip]{\includegraphics{Pictures/flip_02.png}}
+\begin{python}
+>>> flip(0.2).plot()
+\end{python}
+
+\noindent The probability of each element of the domain is indicated
+by the height of the corresponding bar. This works for domains of a
+`reasonable' size. For instance, the plot of the the state
+\pythoninline{poisson(7,20)} gives the picture below.
+\begin{center}
+\includegraphics[width=!,totalheight=!,scale=0.5]{Pictures/poisson_7_20.png}
+\end{center}
+
+\noindent This is still quite readable. But when we move to a domain
+of 50 elements the plot becomes quite dense and the individual domain
+elements are hard to distinguish. The example below describes an
+instance of \pythoninline{random\_disc\_state(50)}.
+\begin{center}
+\includegraphics[width=!,totalheight=!,scale=0.5]{Pictures/random_disc_50.png}
+\end{center}
+
+A 2-dimensional product/joint state can also be plotted. In addition,
+one can plot a `slice' of a product state, as shown below.
+\begin{python}
+>>> s = State([0.1,0.5,0.25,0.15], range(4))
+>>> (s @ flip(0.3)).plot()
+>>> (s @ flip(0.3)).plot(...,True)
+\end{python}
+
+\noindent This gives, respectively:
+\begin{gather*}
+\includegraphics[width=!,totalheight=!,scale=0.35]{Pictures/product_flip.png}
+\hspace*{1em}
+\includegraphics[width=!,totalheight=!,scale=0.35]{Pictures/product_flip_slice.png}
+\end{gather*}
+
 
 
 \subsection{An excursion on domains of states}\label{subsec:ddomain}
@@ -1511,7 +1559,7 @@ print( post % [1, 1, 0, 0, 0] )
 The distribution can also be obtained with Curch at the website
 mentioned in sidenote~\ref{note:churchmedical}. The resulting picture
 is included in the
-margin.\marginnote{\includegraphics[width=\marginparwidth]{Pictures/church-medical.png}}
+margin.\marginnote{\includegraphics{Pictures/church-medical.png}}
 Its True/False options correspond to the above ones, when read from
 below. Generating this distribution via Church with 100 samples takes
 about 20 seconds. It varies widely, as one can see by trying a few
