@@ -66,6 +66,18 @@ def _wrap(obj):
     return array
 
 
+def bar_plot(value_list, label_list, block=True):
+    plt.subplots()
+    x = range(len(value_list))
+    y = value_list
+    plt.xticks(x, label_list, rotation=45)
+    plt.bar(x, y, align="center")
+    plt.draw()
+    plt.pause(0.001)
+    if block:
+        input("Press [enter] to continue.")
+
+
 class Interval(collections.namedtuple('R', 'l u')):
     """Real intervals"""
     __slots__ = ()
@@ -143,6 +155,9 @@ class Dom:
 
     def __getitem__(self, key):
         return self._dom[key]
+
+    def __len__(self):
+        return len(self._dom)
 
     def __add__(self, other):
         return Dom(self._dom + other._dom,
@@ -328,7 +343,8 @@ class Fun:
 
     u_ortho = np.frompyfunc(lambda f, dom: f.ortho(dom), 2, 1)
 
-    def plot(self, preargs=[], interval=None, postargs=[], steps=256):
+    def plot(self, preargs=[], interval=None,
+             postargs=[], steps=256, block=True):
         axis = len(preargs)
         if interval:
             start = interval[0]
@@ -346,7 +362,8 @@ class Fun:
         ax.plot(xs, ys, color="blue", linewidth=2.0, linestyle="-")
         plt.draw()
         plt.pause(0.001)
-        input("Press [enter] to continue.")
+        if block:
+            input("Press [enter] to continue.")
 
     def asfun2(self):
         return Fun2(lambda _, ys: self(*ys), [], self.supp)
@@ -458,17 +475,31 @@ class StateOrPredicate:
             return elm(*cont_args)
         return elm
 
+    def _plot_getiter(self, *args):
+        iters = []
+        for n, a in enumerate(args):
+            if a is Ellipsis:
+                iters.append(range(len(self.dom.disc[n])))
+            else:
+                iters.append([self.dom.disc[n].index(a)])
+        return itertools.product(*iters)
+
     @staticmethod
     def _plot_split(*args):
-        preargs, i = [], 0
-        for i, a in enumerate(args):
-            if a is Ellipsis or isinstance(a, Interval):
+        i = 0
+        interval = None
+        for a in args:
+            if a is Ellipsis or isinstance(a, Interval) or isR(a):
+                interval = a
                 break
-            elif isR(a):
-                a = R_
-                break
-            preargs.append(a)
-        return tuple(preargs), a, args[i+1:]
+            i += 1
+        preargs = args[:i]
+        interval = interval if not isR(interval) else R_
+        postargs = args[i+1:]
+        if any(a is Ellipsis or isinstance(a, Interval) or isR(a)
+               for a in postargs):
+            raise ValueError("Cannot plot dim > 1")
+        return preargs, interval, postargs
 
     def plot(self, *args, **kwargs):
         """Plots a certain axis of the state or predicate.
@@ -485,21 +516,47 @@ class StateOrPredicate:
             self.plot(a, ..., c)
 
         In this case the interval is set from its domain.
+
+        TODO: Now it works also for discrete. Explain it.
         """
         if not args:
-            args = (...,)
+            args = (...,) * len(self.dom)
         disc_args, cont_args = self.dom.split(args)
-        fun = self.array[self.dom.get_disc_indices(disc_args)]
-        (preargs,
-         interval,
-         postargs) = StateOrPredicate._plot_split(*cont_args)
-        axis = len(preargs)
-        if interval is Ellipsis:
-            interval = self.dom.cont[axis]
-        if not interval.issubset(self.dom.cont[axis]):
-            raise ValueError("Interval must be a subset of domain")
-        fun.plot(preargs=preargs, interval=interval,
-                 postargs=postargs, **kwargs)
+        discplot = any(a is Ellipsis for a in disc_args)
+        contplot = any(a is Ellipsis
+                       or isinstance(a, Interval) or isR(a)
+                       for a in cont_args)
+        if discplot and contplot:
+            raise ValueError("Cannot plot discrete and continuous "
+                             "axes at the same time")
+        elif discplot:
+            ellipsis_axes = [n for n, a in enumerate(disc_args)
+                            if a is Ellipsis]
+            values = []
+            labels = []
+            for idx in self._plot_getiter(*disc_args):
+                if self.dom.iscont:
+                    values.append(self.array[idx](*cont_args))
+                else:
+                    values.append(self.array[idx])
+                label_args = [self.dom.disc[n][idx[n]]
+                              for n in ellipsis_axes]
+                labels.append(",".join(str(a) for a in label_args))
+            bar_plot(values, labels, **kwargs)
+        elif contplot:
+            (preargs,
+             interval,
+             postargs) = StateOrPredicate._plot_split(*cont_args)
+            fun = self.array[self.dom.get_disc_indices(disc_args)]
+            axis = len(preargs)
+            if interval is Ellipsis:
+                interval = self.dom.cont[axis]
+                if not interval.issubset(self.dom.cont[axis]):
+                    raise ValueError("Interval must be a subset of domain")
+                fun.plot(preargs=preargs, interval=interval,
+                         postargs=postargs, **kwargs)
+        else:
+            raise ValueError("Nothing to plot")
 
 
 class State(StateOrPredicate):
