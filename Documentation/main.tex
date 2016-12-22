@@ -1595,10 +1595,11 @@ the current setting:
 
 
 The following example illustrates another useful observation:
-conditioning can introduce entwinedness. Later on in
-Example~\ref{??} we show that this can also work in
-the other direction: conditioning can also make states
-non-entwined.
+conditioning can introduce entwinedness. 
+
+% Conditioning can also make states non-entwined, see the standard
+% examples in Bayesian networks about blocking influence, given some
+% evidence.
 
 
 \begin{example}
@@ -1906,9 +1907,10 @@ given a positive test.
 \end{example}
 
 
-Later on, in~\ref{??} we shall see more examples of Bayesian networks,
-also with support for defining the relevant channels from conditional
-probability tables\index{conditional!probability~table} (CPTs). 
+Later on, in Example~\ref{ex:paperacceptance} we shall see more
+examples of Bayesian networks, also with support for defining the
+relevant channels from conditional probability
+tables\index{conditional!probability~table} (CPTs).
 
 We include another example illustrating how to incorporate hidden
 Markov models\index{hidden~Markov~model} as channels.  This example is
@@ -2592,9 +2594,7 @@ their domains. Only 1-dimensional continuous states can be plotted.
 \subsection{Conditioning}\label{subsec:cpred:conditioning}
 
 
-\section{Random variable}\label{sec:crandvar}
-
-\subsection{Conditioning}\label{subsec:cpred:conditioning}
+\section{Random variables}\label{sec:crandvar}
 
 
 
@@ -3427,7 +3427,8 @@ predicates, obtained from states.
 
 \noindent These predicates \pythoninline{A1}, \pythoninline{A2},
 \pythoninline{B1}, \pythoninline{B2} may look a bit \emph{ad hoc} at
-this stage, but later in Example~\ref{??} we show how they can be
+this stage, but later in
+Subsection~\ref{subsec:qchannel:predtransform} we show how they can be
 described in a more systematic manner via predicate transformation.
 
 The valdities of the various combinations of the predicates
@@ -4667,13 +4668,13 @@ convex combination of conditional states, as illustrated in:
 True
 \end{python}
 
-\noindent The quantum circuit language of Quipper\cite{??} involves
-only destructive measurement, via what we call the
+\noindent The quantum circuit language of Quipper\cite{GreenLRSV13}
+involves only destructive measurement, via what we call the
 \pythoninline{meas\_pred} channel. One of the saillant features of
 effectus\index{effectus} theory is that it explicitly deals with
 side-effects\index{side-effect} (state changes) of measurements.  This
-is incorporated in the instrument channel \pythoninline{instr},
-via conditioning of states as described above.
+is incorporated in the instrument channel \pythoninline{instr}, via
+conditioning of states as described above.
 
 Conditioning of states \pythoninline{s/p} is intimately linked to
 sequential conjunction \pythoninline{p \& q} of predicates, via Bayes'
