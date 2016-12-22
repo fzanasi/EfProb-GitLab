@@ -402,8 +402,6 @@ def measurement():
     print("\n===\n")
 
     print("* Equality of channels")
-    print( np.all(np.isclose((cnot * (classic(2) @ idn(2))).array, 
-                             ccontrol(x_chan).array)) )
     print( cnot * (classic(2) @ idn(2)) == ccontrol(x_chan) )
 
     print("\n===\n")
@@ -430,6 +428,26 @@ def measurement():
     s = random_state(5)
     print( discard(2) @ idn(5) * instr(p) >> s ==
            convex_state_sum( (s >= p, s / p), (s >= ~p, s / ~p) ) )
+
+    print("\n===\n")
+
+    print("* Intrument predicate transformation")
+    p = random_pred(10)
+    q = random_pred(10)
+    print( instr(p) << truth(2) @ q == (p & q) + (~p & q) )
+    print( instr(p) << unit_pred(2,0) @ q == p & q )
+    print( instr(p) << unit_pred(2,1) @ q == ~p & q )
+
+    print("\n===\n")
+
+    print("* Predicate case")
+    p = random_pred(2)
+    s = random_state(2)
+    print( pcase(p)(x_chan, y_chan) >> s ==
+           convex_state_sum( (s >= p, x_chan >> s/p), (s >= ~p, y_chan >> s/~p) ) )
+    q = random_pred(2)
+    print( pcase(p)(x_chan, y_chan) << q ==
+           (p & x_chan << q) + (~p & y_chan << q) )
 
 
 def teleportation_and_superdensecoding():

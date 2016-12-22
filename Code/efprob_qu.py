@@ -1269,19 +1269,14 @@ def instr(p):
     return Channel(mat, p.dom, Dom([2]) + p.dom)
 
 
-def cond(p):
-    n = p.dom.size
-    mat = np.zeros((n,n,n,n)) + 0j
-    sqp = matrix_square_root(p.array)
-    sqnp = matrix_square_root((~p).array)
-    for i in range(n):
-        for j in range(n):
-            arg = np.zeros((n,n))
-            arg[i][j] = 1
-            mat[i][j] = np.dot(sqp, np.dot(arg, sqp)) \
-                        + np.dot(sqnp, np.dot(arg, sqnp))
-    return Channel(mat, p.dom, p.dom)
-
+def pcase(p):
+    def fun(*chan_pair):
+        c = chan_pair[0]
+        d = chan_pair[1]
+        if c.dom != d.dom or c.cod != d.cod:
+            raise Exception('channels must have equal domain and codomain in predicate case channel')
+        return (discard(2) @ idn(*c.dom.dims)) * ccase(c,d) * instr(p)
+    return fun
 
 
 #
@@ -1525,22 +1520,25 @@ def marginals():
           a == discard(2) @ idn(2) >> (swap >> (a @ b)) )
 
 def measurement():
-    print("\nMeasurement tests")
-    a = random_state(2)
-    p = probabilistic_pred(0.25, 0.75)
-    print("* measurement channel applied to a state, with validity", 
-           a >= p, "\n", meas_pred(p) >> a )
-#    print("* a 1/4-convex channel-sum of cnot and swap, on |10>\n", 
-#          convexsum(0.25, cnot, swap) >> ket(1,0) )
-    r = 0.5
+    print("\nMeasurement and control tests")
     s = random_state(2)
-    print(s)
-    print( x_chan >> s )
-    print( (ccontrol(x_chan) >> cflip(r) @ s) )
-    print( (ccontrol(x_chan) >> cflip(r) @ s) % [1,0] )
-    print( (ccontrol(x_chan) >> cflip(r) @ s) % [0,1] )
+    p = random_pred(2)
+    print("* measurement channel applied to a state, with validity", 
+           s >= p, "\n", meas_pred(p) >> s )
+    r = random.uniform(0,1)
+    print("* Classical control with classical control bit:")
+    print( (ccontrol(x_chan) >> cflip(r) @ s) % [1,0] == 
+           probabilistic_state(r, 1-r),
+           (ccontrol(x_chan) >> cflip(r) @ s) % [0,1] == 
+           convex_state_sum( (r, s), (1-r, x_chan >> s) ) )
+    print("* Classical case with classical control bit:")
+    print( (ccase(y_chan,x_chan) >> cflip(r) @ s) % [1,0] == 
+           probabilistic_state(r, 1-r),
+           (ccase(y_chan,x_chan) >> cflip(r) @ s) % [0,1] == 
+           convex_state_sum( (r, y_chan >> s), (1-r, x_chan >> s) ) )
 
 def instrument():
+    # sometimes this fails because the matrix_square_root function fails
     print("\nInstrument tests")
     p = random_pred(2)
     q = random_pred(2)
@@ -1551,7 +1549,6 @@ def instrument():
            instr(p) << truth(2) @ q == (p & q) + (~p & q) )
     print("channel equalities")
     print( (idn(2) @ discard(2)) * instr(p) == meas_pred(p) )
-    print( (discard(2) @ idn(2)) * instr(p) == cond(p) )
 
 
 def conditioning():
@@ -1699,8 +1696,8 @@ def experiment():
 def main():
     validity()
     marginals()
-    #measurement()
-    #instrument()
+    measurement()
+    instrument()
     #conditioning()
     #channel()
     #experiment()

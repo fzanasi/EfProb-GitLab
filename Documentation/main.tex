@@ -440,12 +440,12 @@ showstringspaces=false            %
 
 This text gives a hands-on introduction to the \EfProb library.  The
 latter is an embbeded language in \Python, for probability.  The
-`\textit{Ef}' in \EfProb stands for `Effectus'. An effectus is an
-abstract (categorical) model that captures the essentials of discrete,
-continuous and quantum probability and
-logic\cite{Jacobs15,ChoJWW15}. The \EfProb library is based on this
-model, providing a uniform approach to discrete, continuous, and
-quantum probability.
+`\textit{Ef}' in \EfProb stands for `Effectus'. An
+effectus\index{effectus} is an abstract (categorical) model that
+captures the essentials of discrete, continuous and quantum
+probability and logic\cite{Jacobs15,ChoJWW15}. The \EfProb library is
+based on this model, providing a uniform approach to discrete,
+continuous, and quantum probability.
 
 The \EfProb library makes it easy to model various problems in
 probability theory and to compute outcomes: probabilities of events
@@ -4401,8 +4401,6 @@ in classical control, where only the probabilistic outcomes of the
 measurement are used. Multiple examples are included, of teleportation
 and superdense coding, both using shared Bell and GHZ states.
 
-More advanced forms of measurement via instruments, and forms of
-quantum control (alternation) are still being investigated.
 
 
 \paragraph{Measurement}
@@ -4592,13 +4590,15 @@ component is a convex combination of the channels applied to the
 second input component.
 
 
+
 \paragraph{Instruments}
 As described above, measurement destroys the state and only returns
-the probabilities of the measurement, as classical state. Instruments,
-as introduced in\cite{Jacobs15}, combine measurement and state update,
-by producing not only probabilities but also a convex sum of
-conditional states. Instruments can be defined for tests, but they are
-currently only supported for predicates.
+the probabilities of the measurement, as classical
+state. Instruments,\index{instrument} as introduced in\cite{Jacobs15},
+combine measurement and state update, by producing not only
+probabilities but also a convex sum of conditional states. Instruments
+can be defined for tests, but they are currently only supported for
+predicates.
 
 Let \pythoninline{p} be a predicate with domain \pythoninline{dom}.
 The channel \pythoninline{instr(p)} has type \pythoninline{dom ->
@@ -4619,6 +4619,56 @@ convex combination of conditional states, as illustrated in:
 True
 \end{python}
 
+\noindent The quantum circuit language of Quipper\cite{??} involves
+only destructive measurement, via what we call the
+\pythoninline{meas\_pred} channel. One of the saillant features of
+effectus\index{effectus} theory is that it explicitly deals with
+side-effects\index{side-effect} (state changes) of measurements.  This
+is incorporated in the instrument channel \pythoninline{instr},
+via conditioning of states as described above.
+
+Conditioning of states \pythoninline{s/p} is intimately linked to
+sequential conjunction \pythoninline{p \& q} of predicates, via Bayes'
+rule, see Subsection~\ref{subsec:qpred:conditioning}. This connection
+re-appears when we describe predicate transformation for instruments,
+as described below. We have to weaken the predicate \pythoninline{q}
+so that domains fit. 
+\begin{python}
+>>> p = random_pred(10)
+>>> q = random_pred(10)
+>>> instr(p) << truth(2) @ q == (p & q) + (~p & q)
+True
+>>> instr(p) << unit_pred(2,0) @ q == p & q
+True
+>>> instr(p) << unit_pred(2,1) @ q == ~p & q
+True
+\end{python}
+
+\noindent We see that by using \pythoninline{unit\_pred(2,i)}, which
+is the same as \pythoninline{ket(i).as\_pred()}, we get the sequential
+conjunctions separately.
+
+We take this instrument channel one step further and incorporate it
+into an if-then-else style construction, written as
+\pythoninline{pcase(p)(c,d)}, for `predicate-case'. This function
+\pythoninline{pcase} is applied to a predicate \pythoninline{p} and to
+a pair of channels \pythoninline{c,d}. Intuitively it performs
+if-\pythoninline{p}-then-\pythoninline{c}-else-\pythoninline{d}, but
+it does so by taking probabilities and side-effect into account.
+\begin{python}
+>>> p = random_pred(2)
+>>> s = random_state(2)
+>>> pcase(p)(x_chan, y_chan) >> s ==
+...   convex_state_sum( (s >= p, x_chan >> s/p), (s >= ~p, y_chan >> s/~p) ) 
+True
+>>> q = random_pred(2)
+>>> pcase(p)(x_chan, y_chan) << q ==
+...   (p & x_chan << q) + (~p & y_chan << q) )
+True
+\end{python}
+
+\noindent The latter equality corresponds to the familar weakest
+precondition rule for if-then-else.
 
 
 \section{Teleportation and superdense coding examples}\label{sec:teleportation}
