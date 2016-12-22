@@ -1208,6 +1208,19 @@ pred_fromfun = Predicate.fromfun
 chan_fromklmap = Channel.fromklmap
 chan_from_states = Channel.from_states
 
+#
+# Functions analogous to sum, prod
+#
+
+def joint(iterable):
+    return reduce(operator.matmul, iterable)
+
+def convex_sum(iterable):
+    return reduce(operator.add, (r * s for r, s in iterable))
+
+def andthen(iterable):
+    return reduce(operator.and_, iterable)
+
 
 def flip(r, dom=[True, False]):
     return State([r, 1.0-r], [dom])
