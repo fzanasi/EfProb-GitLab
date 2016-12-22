@@ -99,6 +99,7 @@ M=20
 # Poisson prior
 #
 pprior = poisson(6, M)
+pprior.plot()
 
 #
 # Predicate on poisson prior, giving probability of observing 10
@@ -110,6 +111,5 @@ ppred = Predicate([0] + [iter_noisy_blues(i+1, 10) for
 #
 # See Figure 4 of paper mentioned at beginning
 #
-pprior.plot()
 (pprior / ppred).plot()
 
