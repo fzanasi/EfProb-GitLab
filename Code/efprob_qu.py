@@ -530,7 +530,6 @@ class Channel:
         #print("positive operator", is_positive(mat))
         return Operator(mat, self.dom, self.cod)
 
-
     def as_kraus(self):
         return self.as_operator().as_kraus()
 
@@ -573,8 +572,8 @@ class Operator:
         return State(out, self.cod)
 
     def as_channel(self):
-        n = c.dom.size
-        m = c.cod.size
+        n = self.dom.size
+        m = self.cod.size
         mat = np.zeros((m,m,n,n)) + 0j
         for i in range(n):
             for j in range(n):
@@ -696,7 +695,7 @@ def probabilistic_state(*ls):
         mat[i,i] = ls[i]/s
     return State(mat, Dom([n]))
 
-def diagonal_state(n):
+def uniform_probabilistic_state(n):
     mat = np.zeros((n,n))
     for i in range(n):
         mat[i,i] = 1/n
@@ -890,6 +889,37 @@ def classic(*dims):
     if len(dims) == 1:
         return ch
     return ch @ classic(*dims[1:])
+
+#
+# Injection channel kappa(m,k,n) : n -> m @ n for k below m with main
+# property:
+#
+#   kappa(m,k,n) >> s  =  unit_state(m,k) @ s
+#
+def kappa(m,k,n):
+    mat = np.zeros((n*m,n*m,n,n)) + 0j
+    ar = idn(n).array
+    for i in range(n):
+        for j in range(n):
+            mat[k*n+i][k*n+j] = ar[i][j]
+    return Channel(mat, Dom([n]), Dom([m,n]))
+
+#
+# copy : n -> m @ n channel with as main property:
+#
+#   copy(m,n) >> s  =  uniform_probabilistic_state(m) @ s
+#
+#   copy(m,n) << truth(m) @ p  =  p )
+#
+def copy(m,n):
+    mat = np.zeros((n*m,n*m,n,n)) + 0j
+    ar = 1.0/m * idn(n).array
+    for k in range(m):
+        for i in range(n):
+            for j in range(n):
+                mat[k*n+i][k*n+j] = ar[i][j]
+    return Channel(mat, Dom([n]), Dom([m,n]))
+
 
 #
 # swap channel 2 @ 2 -> 2 @ 2
@@ -1181,6 +1211,8 @@ def channel_from_states(*ls):
     return Channel(mat, Dom([n]), cod)
 
 
+
+
 ########################################################################
 # 
 # Measurement and control
@@ -1362,8 +1394,16 @@ def graph(c):
     if len(c.dom.dims) != 1:
         raise Exception('Tupling not defined for product input ')
     n = c.dom.dims[0]
-    return channel_from_states(*[unit_state(n,i) @ (c >> unit_state(n,i)) 
-                                 for i in range(n)])
+    m = c.cod.size
+    mat = np.zeros((n*m,n*m,n,n)) + 0j
+    for i in range(n):
+        for k in range(m):
+            for l in range(m):
+                mat[i*m+k][i*m+l] = 1.0/n * c.array[k][l]
+    return Channel(mat, c.dom, c.cod * n)
+#    return channel_from_states(*[unit_state(n,i) @ (c >> unit_state(n,i)) 
+#                                 for i in range(n)])
+
 
 #
 # Turn a product state into a channel. We may assume that the first
@@ -1378,6 +1418,28 @@ def productstate2channel(s):
           for i in range(n)]
     return channel_from_states(*ls)
 
+#
+# Turn channel and state into joint state, whose first marginal is the
+# original state
+#
+def le_sp(s, c):
+    n = c.dom.size
+    m = c.cod.size
+    sq = matrix_square_root(s.array)
+    a = np.kron(sq, np.eye(m))
+    b = np.dot(a, np.dot(c.as_operator().array, a))
+    return State(b, c.dom+c.cod)
+
+#
+# Turn joint state of type n @ m into state of type n and channel n -> m
+#
+def sp_le(w):
+    n = w.dom.dims[0]
+    m = w.dom.dims[1]
+    w1 = w % [1,0]
+    w2 = np.kron(matrix_square_root(np.linalg.inv(w1.array)), np.eye(m))
+    oper = Operator(np.dot(w2, np.dot(w.array, w2)), Dom([n]), Dom([m]))
+    return (w1, oper.as_channel())
 
 
 ########################################################################
@@ -1584,21 +1646,6 @@ def channel():
                             (t >= unit_pred(3, 1), s2),
                             (t >= unit_pred(3, 2), s3)) )
     print( c >> t )
-    print("* truth preservation by channels")
-    print( truth(3) == c << truth(3), truth(3) == graph(c) << truth(3, 3) )
-    print("* graph properties")
-    c = x_chan * hadamard * phase_shift(math.pi/3)
-    t = random_state(2)
-    print( classic(2) >> t == (graph(c) >> t) % [1, 0] )
-    print( c >> t )
-    #print( graph(c) >> t )
-    print( (graph(c) >> t) % [0, 1] )
-    print("* first component of tuple is go-classic:",
-          (idn(2) @ discard(2)) * graph(c) == classic(2) )
-    print("* second component of tuple is the channel itself",
-          (discard(2) @ idn(2)) * graph(c) == c )
-    print( np.isclose((((discard(2) @ idn(2)) * graph(c)) >> t).array,
-                      (c >> t).array.T) )
     print("* predicate as channel")
     p = random_pred(2)
     v = random_state(2)
@@ -1621,15 +1668,56 @@ def channel():
     print("* next")
     print( dc >> v )
     print( (w / (v.as_pred() @ truth(2))) % [0,1] )
-    dct = graph(productstate2channel(w))
-    print("* product from channel form product: recover the original:", 
-          np.allclose(w.array, (dct >> w1).array))
-    u = random_state(2)
-    print("* channel from product from channel")
-    print( productstate2channel(graph(c) >> u) >> t )
-    print( c >> t )
-    print( np.allclose(c.array,
-                       productstate2channel(graph(c) >> u).array) )
+
+def kappa_copy():
+    print("\nCoprojection and copy tests")
+    s = random_state(4)
+    p = random_pred(4)
+    q = random_pred(2)
+    print( kappa(3,2,4) >> s == unit_state(3, 2) @ s,
+           kappa(3,1,4) << probabilistic_pred(0.3, 0.2, 0.5) @ p == 0.2 * p )
+    print( copy(10,4) >> s == uniform_probabilistic_state(10) @ s,
+           copy(6,5) << truth(6,5) == truth(5),
+           copy(3, 2) << truth(3) @ q == q )
+    print( copy(4,7) << truth(4, 7) == truth(7), 
+           kappa(5,2,4) << truth(5,4) == truth(4) )
+    print( ((discard(3) @ idn(2)) * copy(3, 2)) == idn(2),
+           ((idn(3) @ discard(2)) * copy(3, 2)) == 
+           channel_from_states(uniform_probabilistic_state(3), 
+                               uniform_probabilistic_state(3)) ) 
+    t = random_state(2)
+    print( (copy(3, 2) >> t) % [1,0] == uniform_probabilistic_state(3),
+           (copy(3, 2) >> t) % [0,1] == t )
+
+def graphs():
+    print("\nGraph tests")
+    c = x_chan * hadamard * phase_shift(math.pi/3)
+    gr = (idn(2) @ c) * instr(unit_pred(2,0))
+    print("* truth preservation by channels")
+    print( truth(2) == c << truth(2), truth(2) == gr << truth(2, 2) )
+    # print("* graph properties")
+    # print( (gr >> s) % [1, 0] )
+    # print( classic(2) >> s )
+    # print( classic(2) >> s == (gr >> s) % [1, 0] )
+    # print( c >> s )
+    # print( gr >> s )
+    # print( (gr >> s) % [0, 1] )
+    # print("* first component of tuple is go-classic:",
+    #       (idn(2) @ discard(2)) * graph(c) == classic(2) )
+    # print("* second component of tuple is the channel itself",
+    #       (discard(2) @ idn(2)) * graph(c) == c )
+    # print( np.isclose((((discard(2) @ idn(2)) * graph(c)) >> t).array,
+    #                   (c >> t).array.T) )
+    # dct = graph(productstate2channel(w))
+    # print("* product from channel form product: recover the original:", 
+    #       np.allclose(w.array, (dct >> w1).array))
+    # u = random_state(2)
+    # print("* channel from product from channel")
+    # print( productstate2channel(graph(c) >> u) >> t )
+    # print( c >> t )
+    # print( np.allclose(c.array,
+    #                    productstate2channel(graph(c) >> u).array) )
+
 
 def transition():
     print("\nTransition tests")
@@ -1653,15 +1741,20 @@ def transition():
     p = random_pred(2)
     c = x_chan * hadamard * y_chan * z_chan
     #print( c << p )
-    #print( c.as_operator() << p )
-    print( np.all(np.isclose(((c @ discard(2)) << p).array,
-                             ((c @ discard(2)).as_operator() << p).array)) )
+    print( (c @ discard(2)) << p == (c @ discard(2)).as_operator() << p )
+    print("Leiffer Spekkens")
+    ls = le_sp(s, c)
+    print( sp_le(ls)[0] == s, sp_le(ls)[1] == c )
+    w = chadamard >> (random_state(2) @ random_state(2))
+    sp = sp_le(w)
+    print( le_sp(sp[0], sp[1]) == w )
     c = chadamard * swap * cnot * swap
     p = cnot << (random_pred(2) @ random_pred(2))
     s = cnot >> (random_state(2) @ random_state(2))
     print("* Kraus test:",
-          np.all(np.isclose( (c << p).array, (c.as_kraus() << p).array)),
-          np.all(np.isclose( (c >> s).array, (c.as_kraus() >> s).array)) )
+          c << p == c.as_kraus() << p, c >> s == c.as_kraus() >> s )
+    #print( tr1(c.as_operator().array, 4) )
+    #print( tr2(c.as_operator().array, 4) )
     d = hadamard * x_chan
     print( np.all(np.isclose(d.array,
                              d.as_kraus().as_channel().array)) )
@@ -1694,14 +1787,16 @@ def experiment():
 
 
 def main():
-    validity()
-    marginals()
-    measurement()
-    instrument()
+    #validity()
+    #marginals()
+    #measurement()
+    #instrument()
     #conditioning()
     #channel()
     #experiment()
-    #transition()
+    #kappa_copy()
+    #graphs()
+    transition()
 
 if __name__ == "__main__":
     main()
