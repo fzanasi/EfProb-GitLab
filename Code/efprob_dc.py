@@ -438,11 +438,14 @@ class StateOrPredicate:
         check_dom_match(self.dom, other.dom)
         return type(self)(self.array + other.array, self.dom)
 
-    def __mul__(self, scalar):
-        """Multiplies by a scalar"""
+    def smul(self, scalar):
+        """Scalar multiplication."""
         if self.dom.iscont:
             return type(self)(Fun.u_smul(self.array, scalar), self.dom)
         return type(self)(self.array * scalar, self.dom)
+
+    def __mul__(self, scalar):
+        return self.smul(scalar)
 
     def __rmul__(self, scalar):
         return self * scalar
@@ -893,6 +896,18 @@ class Channel:
     def __repr__(self):
         return "Channel of type: {} --> {}".format(self.dom, self.cod)
 
+    def __add__(self, other):
+        check_dom_match(self.dom, other.dom)
+        check_dom_match(self.cod, other.cod)
+        return Channel(self.array + other.array, self.dom, self.cod)
+
+    def smul(self, scalar):
+        """Scalar multiplication."""
+        if self.iscont:
+            return Channel(Fun2.u_smul(self.array, scalar),
+                           self.dom, self.cod)
+        return Channel(self.array * scalar, self.dom, self.cod)
+
     def stat_trans(self, stat):
         check_dom_match(self.dom, stat.dom)
         dom_size = stat.array.size
@@ -1216,7 +1231,7 @@ def joint(iterable):
     return reduce(operator.matmul, iterable)
 
 def convex_sum(iterable):
-    return reduce(operator.add, (r * s for r, s in iterable))
+    return reduce(operator.add, (s.smul(r) for r, s in iterable))
 
 def andthen(iterable):
     return reduce(operator.and_, iterable)

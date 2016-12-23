@@ -1,4 +1,6 @@
 from functools import reduce
+import operator
+import numpy as np
 from efprob_dc import *
 
 # Example from
@@ -11,13 +13,25 @@ green = predicate([0, 1], col)
 
 s1 = uniform_state(col)
 
-def draw(n):
+def draw1(n):
     """Returns a channel to draw a ball from an urn at random"""
     r = 1.0 / n
     def f(*xs):
         return convex_sum((r, uniform_state([xs[i]], col))
                           for i in range(n))
     return chan_fromklmap(f, col * n, col)
+
+def proj(i, n):
+    return joint(idn(col) if j == i else discard(col)
+                 for j in range(n))
+
+def draw2(n):
+    r = 1.0 / n
+    return convex_sum((r, proj(i, n)) for i in range(n))
+
+# np.allclose(draw1(5).array, draw2(5).array)
+
+draw = draw2
 
 def blues(n):
     """Returns a predicate that a drawn ball is blue"""
@@ -34,13 +48,23 @@ print(s5 / (b5 & b5))
 # If we draw a blue ball twice, then the urn is likely to contain
 # even more blue balls.
 
-def noisy_draw(n):
+def noisy_draw1(n):
     r = 1.0 / n
     def f(*xs):
         return convex_sum(
             (r, state([0.8, 0.2] if xs[i] == 'B' else [0.2, 0.8], col))
             for i in range(n))
     return chan_fromklmap(f, col * n, col)
+
+noise = channel([0.8, 0.2,
+                 0.2, 0.8], col, col)
+
+def noisy_draw2(n):
+    return noise * draw(n)
+
+# np.allclose(noisy_draw1(5).array, noisy_draw2(5).array)
+
+noisy_draw = noisy_draw2
 
 def noisy_blues(n):
     return noisy_draw(n) << blue
@@ -77,7 +101,7 @@ uposterior.plot()
 # Poisson prior
 # Note that Poisson state starts with 0
 #
-N = 16
+N = 20
 pprior = poisson(6, N)
 
 tenbluesN = predicate([0] + [s1 ** i >= iter_noisy_blues(i, 10)
