@@ -156,11 +156,26 @@ def conditioning():
     print( t )
     print( (t % [1,0]) @ (t % [0,1]) )
 
+    print("\n===\n")
+
+    print("\n* Law of total probability")
+    s = random_disc_state(4)
+    p = random_disc_pred(4)
+    # scaling is used to make sure these predicates are summable
+    q1 = 0.5 * random_disc_pred(4)
+    q2 = 0.5 * random_disc_pred(4)
+    q3 = ~(q1 + q2)
+    print("total probalility formula:", 
+          (s / q1 >= p) * (s >= q1) + 
+          (s / q2 >= p) * (s >= q2) + 
+          (s / q3 >= p) * (s >= q3) )
+    print("equivalently, by Bayes:",
+          (s >= q1 & p) + (s >= q2 & p) + (s >= q3 & p) )
+    print("the predicat's validity, directly:", s >= p )
 
 def random_variables():
 
     print("\nSection: Random Variables\n")
-
 
 
 def channels():
@@ -321,7 +336,7 @@ def main():
     #predicates()
     #operations_on_predicates()
     #validity()
-    #conditioning()
+    conditioning()
     #random_variables()
     #channels()
     #state_pred_transformation()

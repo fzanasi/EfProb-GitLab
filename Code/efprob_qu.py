@@ -66,14 +66,19 @@ def prod(iterable):
     """Returns the product of elements from iterable."""
     return reduce(operator.mul, iterable, 1)
 
-# print("problem! The square root need for & below fails.")
+# print("problem! The square root needed for & below fails.")
 # v = vector_state(0.5 * math.sqrt(3), complex(0, 0.5))
 # p = v.as_pred()
 # print(p, is_positive(p.array))
 # print(p & p)
 def matrix_square_root(mat):
     E = np.linalg.eigh(mat)
-    sq = np.dot(np.dot(E[1], np.sqrt(np.diag(E[0]))),  np.linalg.inv(E[1]))
+    # rounding needed since eigenvalues are sometimes negative, by a
+    # very small amount
+    rounded_eigenvalues = [round(x) for x in E[0]]
+    sq = np.dot(np.dot(E[1], 
+                       np.sqrt(np.diag(rounded_eigenvalues))), 
+                np.linalg.inv(E[1]))
     return sq
 
 #
@@ -410,6 +415,18 @@ class Predicate:
         # print(is_positive(sq), is_positive(conj))
         return Predicate(np.dot(sq, np.dot(p.array, sq)), self.dom)
 
+    def __or__(self, p):
+        """De Morgan dual of sequential conjunction."""
+        return ~(~self & ~p)
+
+    #
+    # Variance
+    #
+    def var(self, state):
+        v = state >= self
+        w = state >= Predicate(np.dot(self.matrix, self.matrix), self.dom)
+        return w - (v ** 2)
+
     #
     # Turn a predicate on n into a channel n -> 0. The validity s >= p
     # is the same as p.as_chan() >> s, except that the latter is a 1x1
@@ -517,6 +534,14 @@ class Channel:
                                  for k in range(p) for l in range(p)])
         return Channel(mat, c.dom, self.cod)
 
+    def inversion(self, state):
+        if len(self.dom.dims) > 1 or len(self.cod.dims) > 1:
+            raise Exception('Inversion is defined only for channels with domain and codomain of dimension one')
+        n = self.dom.dims[0]
+        m = self.cod.dims[0]
+        pair = graph_pair(state, self)
+        return pair_extract(swaps(n,m) >> pair)[1]
+
     def as_operator(self):
         """ Operator from Channel """
         n = self.dom.size
@@ -550,6 +575,12 @@ class Operator:
 
     def __str__(self):
         return str(self.array)
+
+    def __eq__(self, other):
+        return np.all(np.isclose(self.array, other.array))
+
+    def __ne__(self, other):
+        return not (self == other)
 
     # backward predicate transformation
     def __lshift__(self, p):
@@ -801,10 +832,10 @@ def choi(u):
 #
 #   chan(u) << p  =  u * p.array * conj_trans(u)
 #
-def channel_from_unitary(u, dom):
+def channel_from_unitary(u, dom, cod):
      if not is_unitary(u):
          raise Exception('Unitary matrix required for channel construction')
-     return Channel(choi(u), dom, dom)
+     return Channel(choi(u), dom, cod)
 
 
 
@@ -853,7 +884,7 @@ def convex_state_sum(*ls):
 def idn(*dims):
     if len(dims) == 0:
         raise Exception('Identity channel requires non-empty list of dimensions')
-    ch = channel_from_unitary( np.eye(dims[0]), Dom([dims[0]]) )
+    ch = channel_from_unitary( np.eye(dims[0]), Dom([dims[0]]), Dom([dims[0]]) )
     if len(dims) == 1:
         return ch
     return ch @ idn(*dims[1:])
@@ -928,7 +959,40 @@ swap = channel_from_unitary(np.array([ [1, 0, 0, 0],
                                        [0, 0, 1, 0],
                                        [0, 1, 0, 0],
                                        [0, 0, 0, 1] ]), 
-                            Dom([2,2]))
+                            Dom([2,2]), Dom([2,2]))
+
+#
+# swap channel 2 @ 3 -> 3 @ 2
+#
+swap23 = channel_from_unitary(np.array([ [1, 0, 0, 0, 0, 0],
+                                         [0, 0, 1, 0, 0, 0],
+                                         [0, 0, 0, 0, 1, 0],
+                                         [0, 1, 0, 0, 0, 0],
+                                         [0, 0, 0, 1, 0, 0],
+                                         [0, 0, 0, 0, 0, 1] ]), 
+                            Dom([2,3]), Dom([3,2]))
+#
+# swap channel 3 @ 2 -> 2 @ 3
+#
+swap32 = channel_from_unitary(np.array([ [1, 0, 0, 0, 0, 0],
+                                         [0, 0, 0, 1, 0, 0],
+                                         [0, 1, 0, 0, 0, 0],
+                                         [0, 0, 0, 0, 1, 0],
+                                         [0, 0, 1, 0, 0, 0],
+                                         [0, 0, 0, 0, 0, 1] ]), 
+                            Dom([3,2]), Dom([2,3]))
+
+def swaps(n,m):
+    mat = np.zeros((n*m, n*m))
+    for i in range(n):
+        for j in range(m):
+            ar1 = np.zeros(n)
+            ar2 = np.zeros(m)
+            ar1[i] = 1
+            ar2[j] = 1
+            mat[i*m+j] = np.kron(ar2, ar1)
+    return channel_from_unitary(mat, Dom([n,m]), Dom([m,n]))
+
 # #
 # # first projection channel 2 @ 2 -> 2
 # #
@@ -1013,14 +1077,14 @@ x_matrix = np.array([[0,1],
 #
 # Pauli-X channel 2 -> 2
 #
-x_chan = channel_from_unitary(x_matrix, Dom([2]))
+x_chan = channel_from_unitary(x_matrix, Dom([2]), Dom([2]))
 
 #
 # cnot channel 2 @ 2 -> 2 @ 2
 #
 # This should be the same as quantum-control(x_chan)
 #
-cnot = channel_from_unitary(lower_right_one(x_matrix), Dom([2, 2]))
+cnot = channel_from_unitary(lower_right_one(x_matrix), Dom([2, 2]), Dom([2, 2]))
 
 
 y_matrix = np.array([[0,-complex(0, 1)],
@@ -1029,7 +1093,7 @@ y_matrix = np.array([[0,-complex(0, 1)],
 #
 # Pauli-Y channel 2 -> 2
 #
-y_chan = channel_from_unitary(y_matrix, Dom([2]))
+y_chan = channel_from_unitary(y_matrix, Dom([2]), Dom([2]))
 
 
 z_matrix = np.array([[1,0],
@@ -1038,7 +1102,7 @@ z_matrix = np.array([[1,0],
 #
 # Pauli-Z channel 2 -> 2
 #
-z_chan = channel_from_unitary(z_matrix, Dom([2]))
+z_chan = channel_from_unitary(z_matrix, Dom([2]), Dom([2]))
 
 
 hadamard_matrix = (1/math.sqrt(2)) * np.array([ [1, 1],
@@ -1047,7 +1111,7 @@ hadamard_matrix = (1/math.sqrt(2)) * np.array([ [1, 1],
 #
 # Hadamard channel 2 -> 2
 #
-hadamard = channel_from_unitary(hadamard_matrix, Dom([2]))
+hadamard = channel_from_unitary(hadamard_matrix, Dom([2]), Dom([2]))
 
 #
 # Basic states, commonly written as |+> and |->
@@ -1062,7 +1126,7 @@ hadamard_test = [plus.as_pred(),
 # Controlled Hadamard 2 @ 2 -> 2 @ 2
 #
 chadamard = channel_from_unitary(lower_right_one(hadamard_matrix), 
-                                 Dom([2, 2]))
+                                 Dom([2, 2]), Dom([2, 2]))
 
 #
 # channel 2 @ 2 -> 2 @ 2 for producing Bell states
@@ -1140,14 +1204,14 @@ def phase_shift_matrix(angle):
 #
 def phase_shift(angle):
     return channel_from_unitary(phase_shift_matrix(angle), 
-                                Dom([2]))
+                                Dom([2]), Dom([2]))
 
 #
 # Controlled phase shift channel 2 @ 2 -> 2 @ 2, for angle between 0 and 2 pi
 #
 def cphase_shift(angle):
     return channel_from_unitary(lower_right_one(phase_shift_matrix(angle)),
-                                Dom([2, 2]))
+                                Dom([2, 2]), Dom([2, 2]))
 
 
 
@@ -1162,7 +1226,7 @@ toffoli = channel_from_unitary(np.array([ [1, 0, 0, 0, 0, 0, 0, 0],
                                           [0, 0, 0, 0, 0, 1, 0, 0],
                                           [0, 0, 0, 0, 0, 0, 0, 1],
                                           [0, 0, 0, 0, 0, 0, 1, 0] ]),
-                               Dom([2, 2, 2]))
+                               Dom([2, 2, 2]), Dom([2, 2, 2]))
 
 
 
@@ -1209,6 +1273,26 @@ def channel_from_states(*ls):
             for i in range(n):
                 mat[j1][j2][i][i] = ls[i].array[j1][j2]
     return Channel(mat, Dom([n]), cod)
+
+
+#
+# Classical conditional probability table converted into a
+# channel. The input is a list of probabilities, of length 2^n, where
+# n is the number of predecessor nodes.
+#
+def ccpt(*ls):
+    n = len(ls)
+    if n == 0:
+        raise Exception('Conditional probability table must have non-empty list of probabilities')
+    log = math.log(n, 2)
+    if log != math.floor(log):
+        raise Exception('Conditional probability table must have 2^n elements')
+    log = int(log)
+    mat = np.zeros((2,2,n,n))
+    for i in range(n):
+        mat[0][0][i][i] = ls[i]
+        mat[1][1][i][i] = 1-ls[i]
+    return Channel(mat, Dom([2] * log), Dom([2]))
 
 
 
@@ -1342,7 +1426,7 @@ def ccontrol(c):
 
 #
 # A list of channels c1, ..., ca all with the same domain dom and
-# codomain cod gives a classical case channel [a]+dom -> [a]+cod
+# codomain cod gives a classical case channel a @ dom -> a @ cod
 #
 def ccase(*chans):
     a = len(chans)
@@ -1422,18 +1506,15 @@ def productstate2channel(s):
 # Turn channel and state into joint state, whose first marginal is the
 # original state
 #
-def le_sp(s, c):
-    n = c.dom.size
-    m = c.cod.size
-    sq = matrix_square_root(s.array)
-    a = np.kron(sq, np.eye(m))
+def graph_pair(s, c):
+    a = np.kron(matrix_square_root(s.array), np.eye(c.cod.size))
     b = np.dot(a, np.dot(c.as_operator().array, a))
     return State(b, c.dom+c.cod)
 
 #
 # Turn joint state of type n @ m into state of type n and channel n -> m
 #
-def sp_le(w):
+def pair_extract(w):
     n = w.dom.dims[0]
     m = w.dom.dims[1]
     w1 = w % [1,0]
@@ -1585,8 +1666,14 @@ def measurement():
     print("\nMeasurement and control tests")
     s = random_state(2)
     p = random_pred(2)
+    q = random_pred(2)
+    r = random_probabilistic_pred(2)
     print("* measurement channel applied to a state, with validity", 
            s >= p, "\n", meas_pred(p) >> s )
+    print("cnot predicate transformation")
+    print( (cnot << unit_pred(2,0) @ q) == unit_pred(2,0) @ q,
+           (cnot << unit_pred(2,1) @ r) == (unit_pred(2,1) @ ~r),
+           (cnot << unit_pred(2,1) @ q) == (unit_pred(2,1) @ ~q) )
     r = random.uniform(0,1)
     print("* Classical control with classical control bit:")
     print( (ccontrol(x_chan) >> cflip(r) @ s) % [1,0] == 
@@ -1615,23 +1702,17 @@ def instrument():
 
 def conditioning():
     print("\nConditioning tests")
-    print("Bayes")
     s = random_state(2)
     t = random_state(2)
     p = random_pred(2)
     q = random_pred(2)
     r = random_probabilistic_pred(2)
     t = random_probabilistic_pred(2)
-    print( s/p >= q )
-    print( (s >= p & q) / (s >= p) )
-    print("cnot experiments")
-    print( p )
-    print( (cnot << unit_pred(2,0) @ q) == unit_pred(2,0) @ q )
-    print( (cnot << unit_pred(2,1) @ r) == (unit_pred(2,1) @ ~r) )
-    print( (cnot << unit_pred(2,1) @ q), "\n", (unit_pred(2,1) @ ~q) )
-    print("cnot and instruments")
-    print( cnot >> s @ t )
-    print( meas_pred(s.as_pred()) >> t )
+    print("* Bayes difference of probabilities:",
+          (s/p >= q) - ((s >= p & q) / (s >= p)) )
+    print("* Conditioning is not an action:",
+          s / truth(2) == s, 
+          ((s / p) / q) == s / (p & q) )
 
 
 def channel():
@@ -1641,6 +1722,14 @@ def channel():
     s3 = random_state(3)
     t = random_state(3)
     c = channel_from_states(s1, s2, s3)
+    print("* Swap tests")
+    i = 4
+    j = 2
+    si = random_state(i)
+    sj = random_state(j)
+    print( swaps(i,j) * swaps(j,i) == idn(j,i),
+           swaps(i,j) >> si @ sj == sj @ si )
+    print( swap * swap == idn(2,2) )
     print("* channel from state state transformation as convex sum")
     print( convex_state_sum((t >= unit_pred(3, 0), s1),
                             (t >= unit_pred(3, 1), s2),
@@ -1669,6 +1758,17 @@ def channel():
     print( dc >> v )
     print( (w / (v.as_pred() @ truth(2))) % [0,1] )
 
+def bayesian_probability():
+    print("\nBayesian probability")
+    sens = ccpt(0.9, 0.05)
+    prior = probabilistic_state(0.01, 0.99)
+    print( sens >> prior )
+    sense_inv = sens.inversion(prior)
+    print( prior / (sens << unit_pred(2,0)) == sense_inv >> ket(0),
+           prior / (sens << unit_pred(2,1)) == sense_inv >> ket(1) )
+    print( sense_inv << truth(2) == truth(2),
+           is_positive(sense_inv.as_operator().array) )
+
 def kappa_copy():
     print("\nCoprojection and copy tests")
     s = random_state(4)
@@ -1676,6 +1776,17 @@ def kappa_copy():
     q = random_pred(2)
     print( kappa(3,2,4) >> s == unit_state(3, 2) @ s,
            kappa(3,1,4) << probabilistic_pred(0.3, 0.2, 0.5) @ p == 0.2 * p )
+    c = hadamard * x_chan * z_chan
+    d = y_chan * phase_shift(math.pi/3) * x_chan
+    e = c * d
+    print( ((discard(3) @ idn(2)) * ccase(c, d, e) * kappa(3,0,2)) == c,
+           ((discard(3) @ idn(2)) * ccase(c, d, e) * kappa(3,1,2)) == d,
+           ((discard(3) @ idn(2)) * ccase(c, d, e) * kappa(3,2,2)) == e )
+    # print ( np.isclose(((discard(2) @ idn(2,2)) \
+    #                     * ccase(ket(0).as_chan() @ idn(2), 
+    #                             ket(1).as_chan() @ x_chan)).array,
+    #                    cnot.array) )
+    print("* copy")
     print( copy(10,4) >> s == uniform_probabilistic_state(10) @ s,
            copy(6,5) << truth(6,5) == truth(5),
            copy(3, 2) << truth(3) @ q == q )
@@ -1724,33 +1835,28 @@ def transition():
     s = random_state(2)
     w = chadamard >> (s @ random_state(2))
     print("* transition state transformation is channel state transformation:")
-    print( np.all(np.isclose((hadamard >> s).array, (hadamard_oper >> s).array)),
-           np.all(np.isclose((x_chan >> s).array, (x_oper >> s).array)),
-           np.all(np.isclose((y_chan >> s).array, (y_oper >> s).array)),
-           np.all(np.isclose((z_chan >> s).array, (z_oper >> s).array)) )
-    print( np.all(np.isclose((hadamard >> s).array, 
-                             (hadamard.as_operator() >> s).array)),
-           np.all(np.isclose((x_chan >> s).array, 
-                             (x_chan.as_operator() >> s).array)),
-           np.all(np.isclose((y_chan >> s).array, 
-                             (y_chan.as_operator() >> s).array)),
-           np.all(np.isclose((z_chan >> s).array, 
-                             (z_chan.as_operator() >> s).array)),
-           np.all(np.isclose(((hadamard @ x_chan) >> w ).array,
-                             ((hadamard @ x_chan).as_operator() >> w).array)) )
-    p = random_pred(2)
+    print( hadamard >> s == hadamard_oper >> s,
+           x_chan >> s == x_oper >> s,
+           y_chan >> s == y_oper >> s,
+           z_chan >> s == z_oper >> s,
+           (hadamard @ x_chan) >> w == (hadamard @ x_chan).as_operator() >> w )
+    print("* Channel-to-operator conversions test")
+    opr = hadamard_oper
     c = x_chan * hadamard * y_chan * z_chan
-    #print( c << p )
-    print( (c @ discard(2)) << p == (c @ discard(2)).as_operator() << p )
-    print("Leiffer Spekkens")
-    ls = le_sp(s, c)
-    print( sp_le(ls)[0] == s, sp_le(ls)[1] == c )
+    print( c.as_operator().as_channel() == c,
+           opr.as_channel().as_operator() == opr )
+    print("* Leiffer Spekkens")
+    ls = graph_pair(s, c)
+    print( np.all(np.isclose((ls % [0,1]).array, (c >> s).array.T)) )
+    print( pair_extract(ls)[0] == s, pair_extract(ls)[1] == c )
     w = chadamard >> (random_state(2) @ random_state(2))
-    sp = sp_le(w)
-    print( le_sp(sp[0], sp[1]) == w )
+    sp = pair_extract(w)
+    print( graph_pair(sp[0], sp[1]) == w )
     c = chadamard * swap * cnot * swap
     p = cnot << (random_pred(2) @ random_pred(2))
     s = cnot >> (random_state(2) @ random_state(2))
+    print("* Multidimensional Leiffer Spekkes")
+    print( graph_pair(s, c).dom )
     print("* Kraus test:",
           c << p == c.as_kraus() << p, c >> s == c.as_kraus() >> s )
     #print( tr1(c.as_operator().array, 4) )
@@ -1794,9 +1900,10 @@ def main():
     #conditioning()
     #channel()
     #experiment()
+    bayesian_probability()
     #kappa_copy()
     #graphs()
-    transition()
+    #transition()
 
 if __name__ == "__main__":
     main()

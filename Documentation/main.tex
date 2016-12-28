@@ -48,7 +48,10 @@
 %%
 %%   Generalisations of these are getting atten
 %
+% Literature
+% ==========
 %
+%  https://en.wikipedia.org/wiki/Quantum_cognition
 %
 \documentclass[leqno]{tufte-book} % Use the tufte-book class which in
                                   % turn uses the tufte-common class
@@ -481,11 +484,17 @@ Further things to discuss include:
 
 \item Precision, and equality of floats (and arrays of floats)
 
+\item The language is extremely unsafe: non-distributions can be used
+  and type safety is checked only superficially. See the QWire paper
+  that addresses ``the tension between expressive embedded languages
+  and denotationally-sound type-safe languages''.
+
 \item \Python error messages and exceptions
 
 \item Effectus theory background
 
-\item Comparison to Quipper and Qwire, and also to QuTiP
+\item Comparison to Quipper,\cite{GreenLRSV13} Qwire,\cite{PaykinRZ??}
+  LIQ$Ui\ket{}$,\cite{WeckerS14} and also to QuTiP.
 
 \item There is some overlap in the explanations in the three
   chapters. This is intentional, so that these chapters can be read
@@ -1622,6 +1631,48 @@ it is not the product of its marginals:
 
 \noindent The fact that the state \pythoninline{t} is entwined can
 also be deduced from~\eqref{eqn:entwined}.
+\end{example}
+
+
+\begin{example}
+\label{ex:dtotalprobability}
+This example illustrates the law of total
+probability\index{law~of~total~probability}\index{probability!law~of~total~--}
+in the current setting. We start from an arbitrary state and predicate
+and the associated validity:
+\begin{python}
+>>> s = random_disc_state(4)
+>>> p = random_disc_pred(4)
+>>> s >= p
+0.326073622519
+\end{python}
+
+\noindent Next we wish to obtain this probability via the law of total
+probability. This requires a test,\index{test} that is, a set of
+predicates that add up to one. We choose a test of length 3. We create
+it in the following way, where the scalar \pythoninline{0.5} is used
+to ensure that the scaled predicates \pythoninline{0.5 * q1} and
+\pythoninline{0.5 * q2} are orthogonal (summable).  The predicate
+\pythoninline{q3} is then determined so that \pythoninline{q1 + q2 +
+  q3} equals the truth predicate.
+\begin{python}
+>>> q1 = 0.5 * random_disc_pred(4)
+>>> q2 = 0.5 * random_disc_pred(4)
+>>> q3 = ~(q1 + q2)
+>>> (s / q1 >= p) * (s >= q1) + (s / q2 >= p) * (s >= q2) +  (s / q3 >= p) * (s >= q3)
+0.326073622519
+\end{python}
+
+\noindent This last formula is equivalent, by Bayes'
+rule~\eqref{eqn:dbayes}, to:
+\begin{python}
+>>> (s >= q1 & p) + (s >= q2 & p) + (s >= q3 & p)
+0.326073622519
+\end{python}
+
+\noindent In discrete and continuous probability such tests can
+be be factored out. But this is not the case in quantum probability,
+see~\ref{??}.
 \end{example}
 
 
@@ -3427,21 +3478,22 @@ predicates, obtained from states.
 
 \noindent These predicates \pythoninline{A1}, \pythoninline{A2},
 \pythoninline{B1}, \pythoninline{B2} may look a bit \emph{ad hoc} at
-this stage, but later in
+this
+stage,\sidenote[][-3\baselineskip]{\label{sidenote:abramskycalculations}Detailed
+  calculations and explanations of the coice of these predicates can
+  be found at \url{https://arxiv.org/abs/1406.7386}.} but later in
 Subsection~\ref{subsec:qchannel:predtransform} we show how they can be
 described in a more systematic manner via predicate transformation.
 
 The valdities of the various combinations of the predicates
 \pythoninline{A1}, \pythoninline{A2}, \pythoninline{B1},
-\pythoninline{B2} and their orthocomplements yields the famous
+\pythoninline{B2} and their orthocomplements yield the famous
 Bell-tables\index{Bell!table} that play an important role in
-non-locality,\index{non-locality} see \eg\cite{AbramskyB11} for more
-information.\sidenote[][-3\baselineskip]{\label{sidenote:abramskycalculations}Detailed
-  calculations and explanations of the coice of these predicates can
-  be found at \url{https://arxiv.org/abs/1406.7386}.} In our setting
-these validities look as follows.
+non-locality\index{non-locality} in quantum foundations, see
+\eg\cite{AbramskyB11} for more information. The table below summarises
+the validities of these combinations.
 
-\smallskip
+\bigskip
 
 \begin{fullwidth}
 \begin{center}
@@ -3585,7 +3637,7 @@ We start with a random qubit state, and the relevant predicates.
 >>> hor = unit_pred(2,1)
 >>> diag = plus.as_pred()
 >>> s >= vert
-0.41549468018365315
+0.574918520238
 \end{python}
 
 \noindent The latter probability tells how much of the light from the
@@ -3623,6 +3675,30 @@ that is, via conditioning once more --- and then ask how much of the
 light is horizontally polarised we get a probability of one half:
 \begin{python}
 >>> s / vert / diag >= hor
+0.5
+\end{python}
+
+This polarisation example can also be used to illustrate the failure
+of the law of total
+probability\index{law~of~total~probability}\index{probability!law~of~total~--}
+in the quantum setting, see also
+Example~\ref{ex:dtotalprobability}. For instance:
+\begin{python}
+>>> s >= hor  
+0.425081479762
+\end{python}
+
+\noindent The `law of total probability' formulation gives a different
+outcome:
+\begin{python}
+>>> (s / diag >= hor) * (s >= diag) + (s / ~diag >= hor) * (s >= ~diag)
+0.5
+\end{python}
+
+\noindent Since Baye's rule~\eqref{eqn:qbayes} does hold in the
+quantum world, the latter probability can also be obtained as:
+\begin{python}
+>>> (s >= diag & hor) + (s >= ~diag & hor)
 0.5
 \end{python}
 \end{example}

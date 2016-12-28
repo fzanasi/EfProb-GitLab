@@ -249,6 +249,14 @@ def conditioning():
 
     print( s / vert / diag >= hor )
 
+    print("\n===\n")
+
+    print("* Failure of the law of total probability")
+
+    print( s >= hor )
+    print( (s / diag >= hor) * (s >= diag) + 
+           (s / ~diag >= hor) * (s >= ~diag) )
+    print( (s >= diag & hor) + (s >= ~diag & hor) )
 
 
 def weakening():
@@ -587,12 +595,12 @@ def main():
     #predicates()
     #operations_on_predicates()
     #validity()
-    #conditioning()
+    conditioning()
     #weakening()
     #state_transformation()
     #predicate_transformation()
     #structural_channels()
-    measurement()
+    #measurement()
     #teleportation_and_superdensecoding()
 
 if __name__ == "__main__":
