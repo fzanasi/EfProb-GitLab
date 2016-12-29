@@ -9,12 +9,16 @@
 #  p & q     sequential conjunction ("andthen") of predicate p,q
 #  p | q     sequential disjuntion, De Morgan dual of &
 #  s >= p    validity of predicate p in state s  
-#            (read >= as |= or \models in LaTeX)
-#  s / p     conditioning (revision) of state s with predicate p
+#            (read >= as entailment |= or \models in LaTeX)
+#  s / p     conditioning (revision) of state s with predicate p,
+#            to be read as: s, given p
 #  c >> s    forward transformation of state s along channel c
 #  c << p    backward transformation of predicate p along channel c
 #
 from efprob_qu import *
+
+import efprob_dc as dc
+
 
 print("\nExamples from book: Quantum Models of Cognition and Decisision")
 print("==============================================================")
@@ -325,3 +329,95 @@ print("\nJudged probability of guilt for the second judgement, after both pieces
 print("\nOwn addition, as comparison: the probability of guilt given only the negative evidence is: ", 
       d_state / (pGnE + nGnE) >= pGnE )
 
+
+print("\n5.2 Non-compositional models of concept combinations based in quantum interference\n")
+
+#
+# states
+#
+food_vector = np.array([0.9354, 0, 0.3536])
+food_state = vector_state(*food_vector)
+scalar = math.e ** complex(0,1.5214)
+plant_vector = scalar * np.array([0.2358, 0.752, -0.6159])
+plant_state = vector_state(*plant_vector)
+conjunction_vector = 1/math.sqrt(2) * (food_vector + plant_vector)
+conjunction_state = vector_state(*conjunction_vector)
+
+#
+# predicates
+#
+M1 = unit_pred(3, 2)
+M2 = unit_pred(3, 0) + unit_pred(3, 1)
+
+print("mu_i(A) is: ", food_state >= M2 )
+print("mu_i(B) is: ", plant_state >= M2 )
+print("Conjunction of states gives: ", conjunction_state >= M2 )
+
+
+print("\n7.3 An analysis of spooky-activation-at-a-distance in terms of a composite quantum system\n")
+
+pt = 0.7
+pa1 = 0.2
+pa2 = 0.35
+
+t_vector = np.array([math.sqrt(1 - pt), math.sqrt(pt)])
+a1_vector = np.array([math.sqrt(1 - pa1), math.sqrt(pa1)])
+a2_vector = np.array([math.sqrt(1 - pa2), math.sqrt(pa2)])
+
+t = vector_state(*t_vector)
+a1 = vector_state(*a1_vector)
+a2 = vector_state(*a2_vector)
+
+psit_vector = np.kron(t_vector, np.kron(a1_vector, a2_vector))
+
+psit = t @ a1 @ a2
+
+#print( np.all(np.isclose(psit.array, vector_state(*psit_vector).array)) )
+
+
+print("\n8.1.1.4 Numerical example\n")
+
+domain = ['+', '-']
+
+Mprior = dc.state([1, 0], domain)
+
+min_pred = dc.Predicate([0,1], domain)
+
+K = np.array([[-1, 1],
+              [1, -1]])
+
+def T(t):
+    return scipy.linalg.expm(t * K)
+
+def chT(t):
+    return dc.Channel(T(t), domain, domain)
+
+print("Markov transition probabilities from plus to minus at time t, see the dashed line in Fig. 8.4")
+for i in range(25):
+    print("t =", i/8, " ", (chT(i/8) >> Mprior) >= min_pred )
+
+print("\nRevised (conditioned) state after observing min at time t=1:")
+print( (chT(1) >> Mprior) / min_pred )
+
+print("\n8.1.2.4 Numerical example\n")
+
+H = np.array([[0, 2],
+              [2, 0]])
+
+def U(t):
+    return scipy.linalg.expm(t * complex(0, 1) * H)
+
+def chU(t):
+    return channel_from_unitary(U(t), Dom([2]), Dom([2]))
+
+Qprior = ket(0)
+
+Mmin = unit_pred(2,1)
+Mplus = unit_pred(2,0)
+
+print("Quantum transition probabilities from plus to minus at time t, see the dashed line in Fig. 8.4")
+for i in range(25):
+    print("t =", i/8, " ", (chU(i/8) >> Qprior) >= Mmin )
+
+print("\nRevised (conditioned) state after observing min at time t=1:")
+print( (chU(1) >> Qprior) / Mmin )
