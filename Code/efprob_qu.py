@@ -10,12 +10,14 @@ import itertools
 import operator
 import math
 import cmath
+import numbers
 import numpy as np
 import numpy.linalg
 import numpy.random
 import random
 import scipy.linalg
-#import discprob as d
+import matplotlib.pyplot as plt
+
 
 # http://qutip.org/docs/2.2.0/guide/guide-basics.html
 
@@ -32,7 +34,7 @@ import scipy.linalg
 
 float_format_spec = ".3g"
 
-tolerance = 1e-10
+tolerance = 1e-8
 
 
 ########################################################################
@@ -48,7 +50,7 @@ def approx_eq_num(r, s):
 
 def round(x):
     sign = 1 if x >= 0 else -1
-    y = math.floor(sign * x / tolerance) 
+    y = math.floor((sign * x + 0.5 * tolerance) / tolerance) 
     return sign * y * tolerance
 
 def round_matrix(m):
@@ -66,11 +68,6 @@ def prod(iterable):
     """Returns the product of elements from iterable."""
     return reduce(operator.mul, iterable, 1)
 
-# print("problem! The square root needed for & below fails.")
-# v = vector_state(0.5 * math.sqrt(3), complex(0, 0.5))
-# p = v.as_pred()
-# print(p, is_positive(p.array))
-# print(p & p)
 def matrix_square_root(mat):
     E = np.linalg.eigh(mat)
     # rounding needed since eigenvalues are sometimes negative, by a
@@ -159,9 +156,8 @@ def is_effect(mat):
 
 def is_state(mat):
     tr = np.trace(mat)
-    return is_positive(mat) \
-        and approx_eq_num(tr.real, 1.0) \
-        and approx_eq_num(tr.imag, 0.0)
+    print(round(tr.real), round(tr.imag))
+    return is_positive(mat) and round(tr.real) == 1.0 and round(tr.imag) == 0.0
 
 
 def entanglement_test(s):
@@ -203,19 +199,203 @@ class Dom:
         return self + (self * (n-1))
 
 
-class State:
+class RandVar:
     def __init__(self, ar, dom):
         self.array = ar
         self.dom = dom if isinstance(dom, Dom) else Dom(dom)
-        # print(is_positive(ar), np.trace(ar))
-        # print(ar)
-        # if not is_state(self.array):
-        #     raise Exception('State creation requires a state matrix')
+        if not is_hermitian(self.array):
+            raise Exception('Random variable creation requires a hermitian matrix')
         if ar.shape[0] != self.dom.size:
-            raise Exception('Non-matching matrix in state creation')
+            raise Exception('Non-matching matrix in random variable creation')
 
-    #def __str__(self):
-    #    return str(self.array)
+    def __repr__(self):
+        return str(self.array)
+
+    def __eq__(self, other):
+        """ Equality test == """
+        if not isinstance(other, RandVar):
+            raise Exception('Equality of random variables requires a random variable argument')
+        return self.dom == other.dom \
+            and np.all(np.isclose(self.array, other.array))
+
+    def __ne__(self, other):
+        """ Non-equality test != """
+        return not self == other
+
+    def __neg__(self):
+        """ Negation - """
+        return RandVar(-self.array, self.dom)
+
+    def __add__(self, other):
+        """ Addition + """
+        if not isinstance(other, RandVar):
+            raise Exception('Addition of random variables requires a random variable argument')
+        if not self.dom == other.dom:
+            raise Exception('Addition of random variables requires equality of domains')
+        return RandVar(self.array + other.array, self.dom)
+
+    def __sub__(self, other):
+        """ Subtraction - """
+        if not isinstance(other, RandVar):
+            raise Exception('Subtraction of random variables requires a random variable argument')
+        if not self.dom == other.dom:
+            raise Exception('Subtraction of random variables requires equality of domains')
+        return RandVar(self.array - other.array, self.dom)
+
+    def __mul__(self, scalar):
+        """Multiplication * with a scalar. (Recall that Hermitian matrices are
+        not closed under Matrix multiplication, so this is not defined.) """
+        if not isinstance(scalar, numbers.Real):
+            raise Exception('Scalar multiplication for random variables is only defined for real numbers')
+        return RandVar(scalar * self.array, self.dom)
+
+    def __rmul__(self, scalar):
+        """ Scalar multiplication * with scalar written first """
+        return self * scalar
+
+    def __matmul__(self, other):
+        """ Parallel product @ """
+        if not isinstance(other, RandVar):
+            raise Exception('Addition of random variables requires a random variable argument')
+        return type(self)(np.kron(self.array, other.array), self.dom + other.dom)
+
+    def __pow__(self, n):
+        """ Iterated parallel product """
+        if n == 0:
+            raise Exception('Power of a random variable must be at least 1')
+        return reduce(lambda r1, r2: r1 @ r2, [self] * n)
+
+    def __mod__(self, selection):
+        """Marginalisation. The selection is a dim-length list of 0's and
+        1's, where 0 corresponds to marginalisation of the
+        corresponding component.
+
+        How this works in a state with 3 components
+        third marginal
+        mat.trace(axis1 = 0, axis2 = 3).trace(axis1 = 0, axis2 = 2))
+        second marginal
+        mat.trace(axis1 = 0, axis2 = 3).trace(axis1 = 1, axis2 = 3))
+        first marginal
+        mat.trace(axis1 = 1, axis2 = 4).trace(axis1 = 1, axis2 = 3))
+        """
+        n = len(selection)
+        if n != len(self.dom.dims):
+            raise Exception('Wrong length of marginal selection')
+        dims = [n for (n,i) in zip(self.dom.dims, selection) if i == 1]
+        mat = self.array.reshape(tuple(self.dom.dims + self.dom.dims))
+        #print(mat.shape)
+        marg_pos = 0
+        marg_dist = n
+        for i in range(n):
+            if selection[i] == 1:
+                marg_pos = marg_pos+1
+                continue
+            #print(i, marg_pos, marg_dist)
+            mat = mat.trace(axis1 = marg_pos, axis2 = marg_pos + marg_dist)
+            marg_dist = marg_dist - 1
+        p = prod(dims)
+        mat.resize(p,p)
+        return type(self)(mat, Dom(dims))
+
+    def var(self, state):
+        """ Variance """
+        if not isinstance(state, State):
+            raise Exception('Variance of a random variables requires a state argument')
+
+        v = state >= self
+        w = state >= RandVar(np.dot(self.matrix, self.matrix), self.dom)
+        return w - (v ** 2)
+
+
+
+class Predicate(RandVar):
+    def __init__(self, ar, dom):
+        if not is_effect(ar):
+            raise Exception('Predicate creation requires a effect matrix')
+        super().__init__(ar, dom)
+
+    # The selection is a dim-length list of 0's and 1's, where 0
+    # corresponds to marginalisation of the corresponding component.
+    # This copied from the same operations for states.  operation is
+    # not guaranteed to produce a predicate. Hence it is a "partial"
+    # partial trace!
+    #
+    # def __mod__(self, selection):
+    #     n = len(selection)
+    #     if n != len(self.dims):
+    #         raise Exception('Wrong length of marginal selection')
+    #     dims = [n for (n,i) in zip(self.dims, selection) if i == 1]
+    #     mat = self.array.reshape(tuple(self.dims + self.dims)) + 0.j
+    #     #print(mat.shape)
+    #     marg_pos = 0
+    #     marg_dist = n
+    #     for i in range(n):
+    #         if selection[i] == 1:
+    #             marg_pos = marg_pos+1
+    #             continue
+    #         #print(i, marg_pos, marg_dist)
+    #         mat = mat.trace(axis1 = marg_pos, axis2 = marg_pos + marg_dist)
+    #         marg_dist = marg_dist - 1
+    #     p = prod(dims)
+    #     mat.resize(p,p)
+    #     return Predicate(mat, dims)
+
+    def __invert__(self):
+        """" Orthocomplement ~ """
+        return Predicate(np.eye(self.dom.size) - self.array, self.dom)
+
+    def __mul__(self, scalar):
+        if not isinstance(scalar, numbers.Real):
+            raise Exception('Scalar multiplication for predicates is only defined for real numbers')
+        if scalar < 0.0 or scalar > 1.0:
+            return super().__mul__(scalar)
+        return Predicate(scalar * self.array, self.dom)
+
+    def __rmul__(self, r):
+        return self * r
+
+    def __add__(self, pred):
+        """ Partial addition + """
+        if isinstance(pred, RandVar):
+            return super().__add__(pred)
+        if not isinstance(pred, Predicate):
+            raise Exception('Sum of predicates requires a predicate argument')
+        if self.dom != p.dom:
+            raise Exception('Mismatch of dimensions in sum of predicates')
+        mat = self.array + pred.array
+        if not lowner_le(mat, np.eye(self.dom.size)):
+            raise Exception('Sum of predicates undefined since above 1')
+        return Predicate(mat, self.dom)
+
+    def __and__(self, pred):
+        """ Sequential conjunction & """
+        if not isinstance(pred, Predicate):
+            raise Exception('Sequential conjunction of predicates requires a predicate argument')
+        sq = matrix_square_root(self.array)
+        conj = np.dot(sq, np.dot(pred.array, sq))
+        return Predicate(np.dot(sq, np.dot(pred.array, sq)), self.dom)
+
+    def __or__(self, p):
+        """De Morgan dual of sequential conjunction."""
+        return ~(~self & ~p)
+
+    def as_chan(self):
+        """Turn a predicate on n into a channel n -> 0. The validity s >= p is
+        the same as p.as_chan() >> s, except that the latter is a 1x1
+        matrix, from which the validity can be extracted via indices
+        [0][0]. """
+        return Channel(self.array.reshape(1,1, self.dom.size, self.dom.size), 
+                       self.dom, Dom([]))
+
+
+class State(RandVar):
+    def __init__(self, ar, dom):
+        if not is_positive(ar):
+            raise Exception('State creation requires a positive matrix')
+        if round(np.trace(ar).real) != 1.0 or round(np.trace(ar).imag) != 0.0:
+            print("\n**Warning**: trace is not (precisely) 1.0 in state creation, but is:") 
+            print(np.trace(ar), "\n")
+        super().__init__(ar, dom)
 
     # unfinished
     def __repr__(self):
@@ -225,25 +405,27 @@ class State:
     #                            formatter={'complexfloat':lambda x: '%3g + %3gi' 
 #                                          % (x.real, x.imag)})
 
-    def __eq__(self, other):
-        return self.dom == other.dom \
-            and np.all(np.isclose(self.array, other.array))
+    # def __eq__(self, other):
+    #     return self.dom == other.dom \
+    #         and np.all(np.isclose(self.array, other.array))
 
-    def __ne__(self, other):
-        return not self == other
+    # def __ne__(self, other):
+    #     return not self == other
 
-    # experimental
-    def is_pure(self):
-        # purity criterion: trace of square is 1, see Nielen-Chang Exc 2.71
-        return approx_eq_num(np.trace(np.dot(self.array, self.array)), 1)
+    # # experimental
+    # def is_pure(self):
+    #     # purity criterion: trace of square is 1, see Nielen-Chang Exc 2.71
+    #     return approx_eq_num(np.trace(np.dot(self.array, self.array)), 1)
 
     # validity
-    def __ge__(self, p):
-        if not is_effect(p.array):
-            raise Exception('Non-predicate used in validity')
-        if self.dom != p.dom:
-            raise Exception('State and predicate with different domains in validity')
-        return np.trace(np.dot(self.array, p.array)).real
+    def __ge__(self, rv):
+
+        """ Validity """
+        if not isinstance(rv, RandVar):
+            raise Exception('Validity requires a random variable')
+        if self.dom != rv.dom:
+            raise Exception('State and random variable must have equal domains in validity')
+        return np.trace(np.dot(self.array, rv.array)).real
 
     # conditioning
     def __truediv__(self, p):
@@ -271,46 +453,10 @@ class State:
         #print("square root", p.array, sq, np.dot(sq, np.dot(self.array, sq)))
         return State( np.dot(sq, np.dot(self.array, sq)) / v, self.dom)
         
-    # parallel product
-    def __matmul__(self, s):
-        return State(np.kron(self.array, s.array), self.dom + s.dom)
+    # # parallel product
+    # def __matmul__(self, s):
+    #     return State(np.kron(self.array, s.array), self.dom + s.dom)
 
-    # iterated product
-    def __pow__(self, n):
-        if n == 0:
-            raise Exception('Power of a state must be at least 1')
-        return reduce(lambda s1, s2: s1 @ s2, [self] * n)
-    # 
-    # The selection is a dim-length list of 0's and 1's, where 0
-    # corresponds to marginalisation of the corresponding component.
-    #
-    def __mod__(self, selection):
-        """ How this works in a state with 3 components
-        third marginal
-        mat.trace(axis1 = 0, axis2 = 3).trace(axis1 = 0, axis2 = 2))
-        second marginal
-        mat.trace(axis1 = 0, axis2 = 3).trace(axis1 = 1, axis2 = 3))
-        first marginal
-        mat.trace(axis1 = 1, axis2 = 4).trace(axis1 = 1, axis2 = 3))
-        """
-        n = len(selection)
-        if n != len(self.dom.dims):
-            raise Exception('Wrong length of marginal selection')
-        dims = [n for (n,i) in zip(self.dom.dims, selection) if i == 1]
-        mat = self.array.reshape(tuple(self.dom.dims + self.dom.dims))
-        #print(mat.shape)
-        marg_pos = 0
-        marg_dist = n
-        for i in range(n):
-            if selection[i] == 1:
-                marg_pos = marg_pos+1
-                continue
-            #print(i, marg_pos, marg_dist)
-            mat = mat.trace(axis1 = marg_pos, axis2 = marg_pos + marg_dist)
-            marg_dist = marg_dist - 1
-        p = prod(dims)
-        mat.resize(p,p)
-        return State(mat, Dom(dims))
 
     # convex sum of two states
     def __add__(self, stat):
@@ -337,105 +483,6 @@ class State:
     def conjugate(self):
         return State(conjugate_transpose(self.array), self.dom)
 
-
-class Predicate:
-    def __init__(self, ar, dom):
-        self.array = ar
-        self.dom = dom if isinstance(dom, Dom) else Dom(dom)
-        if not is_effect(self.array):
-            raise Exception('Predicate creation requires an effect matrix')
-        if ar.shape[0] != self.dom.size:
-            raise Exception('Non-matching matrix in predicate creation')
-
-    #def __str__(self):
-    #    return str(self.array)
-
-    def __repr__(self):
-        return str(self.array)
-
-    def __eq__(self, other):
-        return self.dom == other.dom \
-            and np.all(np.isclose(self.array, other.array))
-
-    def __ne__(self, other):
-        return not self == other
-
-    # 
-    # The selection is a dim-length list of 0's and 1's, where 0
-    # corresponds to marginalisation of the corresponding component.
-    # This copied from the same operations for states.  operation is
-    # not guaranteed to produce a predicate. Hence it is a "partial"
-    # partial trace!
-    #
-    def __mod__(self, selection):
-        n = len(selection)
-        if n != len(self.dims):
-            raise Exception('Wrong length of marginal selection')
-        dims = [n for (n,i) in zip(self.dims, selection) if i == 1]
-        mat = self.array.reshape(tuple(self.dims + self.dims)) + 0.j
-        #print(mat.shape)
-        marg_pos = 0
-        marg_dist = n
-        for i in range(n):
-            if selection[i] == 1:
-                marg_pos = marg_pos+1
-                continue
-            #print(i, marg_pos, marg_dist)
-            mat = mat.trace(axis1 = marg_pos, axis2 = marg_pos + marg_dist)
-            marg_dist = marg_dist - 1
-        p = prod(dims)
-        mat.resize(p,p)
-        return Predicate(mat, dims)
-
-    def __matmul__(self, p):
-        return Predicate(np.kron(self.array, p.array), self.dom + p.dom)
-
-    def __invert__(self):
-        return Predicate(np.eye(self.dom.size) - self.array, self.dom)
-
-    def __mul__(self, r):
-        if r < 0.0 or r > 1.0:
-            raise Exception('Scalar multiplication only allow with scalar from the unit interval')
-        return Predicate(r * self.array, self.dom)
-
-    def __rmul__(self, r):
-        return self * r
-
-    def __add__(self, p):
-        if self.dom != p.dom:
-            raise Exception('Mismatch of dimensions in sum of predicates')
-        mat = self.array + p.array
-        if not lowner_le(mat, np.eye(self.dom.size)):
-            raise Exception('Sum of predicates undefined since above 1')
-        return Predicate(mat, self.dom)
-
-    def __and__(self, p):
-        sq = matrix_square_root(self.array)
-        conj = np.dot(sq, np.dot(p.array, sq))
-        # print(is_positive(sq), is_positive(conj))
-        return Predicate(np.dot(sq, np.dot(p.array, sq)), self.dom)
-
-    def __or__(self, p):
-        """De Morgan dual of sequential conjunction."""
-        return ~(~self & ~p)
-
-    #
-    # Variance
-    #
-    def var(self, state):
-        v = state >= self
-        w = state >= Predicate(np.dot(self.matrix, self.matrix), self.dom)
-        return w - (v ** 2)
-
-    #
-    # Turn a predicate on n into a channel n -> 0. The validity s >= p
-    # is the same as p.as_chan() >> s, except that the latter is a 1x1
-    # matrix, from which the validity can be extracted via indices
-    # [0][0].
-    #
-    def as_chan(self):
-        return Channel(self.array.reshape(1,1, self.dom.size, self.dom.size), 
-                       self.dom, Dom([]))
         
 
 # A channel A -> B
@@ -526,7 +573,7 @@ class Channel:
         # output mat must be mxm of nxn
         # 
         # these numbers must be double checked; everything is square so far
-        mat = np.ndarray((m,m,n,n)) + 0j
+        mat = np.zeros((m,m,n,n)) + 0j
         #print("shapes", c.array.shape, self.array.shape, mat.shape)
         for i in range(m):
             for j in range(m):
@@ -717,7 +764,11 @@ def ket(*ls):
         return unit_state(2, ls[0])
     return unit_state(2, ls[0]) @ ket(*ls[1:n])
 
-
+#
+# A probabilistic state constructed from an n-tuple of positive
+# numbers. These numbers are normalised and put on the diagonal in the
+# resulting density matrix.
+#
 def probabilistic_state(*ls):
     n = len(ls)
     s = sum(ls)
@@ -726,12 +777,29 @@ def probabilistic_state(*ls):
         mat[i,i] = ls[i]/s
     return State(mat, Dom([n]))
 
+#
+# The uniform probabilistic state of size n, with probability 1/n on
+# the diagonal in the resulting density matrix.
+#
 def uniform_probabilistic_state(n):
     mat = np.zeros((n,n))
     for i in range(n):
         mat[i,i] = 1/n
     return State(mat, Dom([n]))
 
+#
+# A random vector state of size n, using Python's random number
+# generator. These states are useful for testing.
+#
+def random_vector_state(n):
+    return vector_state(*[complex(random.uniform(-10.0, 10.0),
+                                  random.uniform(-10.0, 10.0))
+                          for i in range(n)])
+
+#
+# A random state of size n, using Python's random number
+# generator. These states are useful for testing.
+#
 def random_state(n):
     # alternative use numpy.random and A*.A/trace(A*.A)
     # for predicates use A*.A / max (eigenvalue (A*.A))
@@ -753,6 +821,10 @@ def random_state(n):
     mat = sum([amps[i]/s * ls[i].array for i in range(n)])
     return State(mat, Dom([n]))
 
+#
+# A random probabilistic state of size n, with n probabilities that
+# add up to one on the diagonal of the resulting density matrix.
+#
 def random_probabilistic_state(n):
     ls = [random.uniform(0.0, 1.0) for i in range(n)]
     return probabilistic_state(*ls)
@@ -805,6 +877,12 @@ def random_pred(n):
     m = max([x.real for x in E])
     return Predicate(mat/m, Dom([n]))
 
+def random_randvar(n):
+    ar = complex(20, 0) * (np.random.rand(n,n) - 0.5)
+    ai = complex(0, 20) * (np.random.rand(n,n) - 0.5)
+    a = ar + ai
+    return RandVar(a + conjugate_transpose(a), Dom([n]))
+
 #
 # Choi matrix n x n of n x n matrices, obtained from n x n matrix u,
 # by forming putting u * E_ij * u^*, where E_ij is |i><j|, at position
@@ -815,7 +893,7 @@ def random_pred(n):
 #
 def choi(u):
     n = u.shape[0]
-    mat = np.ndarray((n,n,n,n)) + 0j
+    mat = np.zeros((n,n,n,n)) + 0j
     for i in range(n):
         for j in range(n):
             arg = np.zeros((n,n))
@@ -1626,6 +1704,30 @@ plus_oper = hadamard_oper >> ket(0)
 minus_oper = hadamard_oper >> ket(1)
 
 
+########################################################################
+# 
+# Plot function
+#
+########################################################################
+
+#
+# The following general plot operation can be used to generate
+# pictures of evolution of a state s(x) for a time parameter x in an
+# interval [lb, ub], where often lb=0. What is typically shown is the
+# probability s(x) >= p for a fixed predicate p.
+
+def plot(f, lb, ub, steps = 100):
+    fig, (ax) = plt.subplots(1, 1, figsize=(10,5))
+    xs = np.linspace(lb, ub, steps, endpoint=True)
+    ys = [f(x) for x in xs]
+    plt.interactive(True)
+    ax.plot(xs, ys, color="blue", linewidth=2.0, linestyle="-")
+    plt.draw()
+    plt.pause(0.001)
+    input("Press [enter] to continue.")
+    return None
+
+
 
 
 ########################################################################
@@ -1650,6 +1752,8 @@ def validity():
           - ((chadamard >> s1 @ s3) >= (p1 @ truth(2))) )
     print("* weakening is the same as predicate transformation by a projection:", 
           p3 @ truth(2) == (idn(2) @ discard(2)) << p3 )
+    r1 = random_randvar(4)
+    r2 = random_randvar(4)
 
 def marginals():
     print("\nMarginal tests")

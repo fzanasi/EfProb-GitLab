@@ -544,7 +544,7 @@ def teleportation_and_superdensecoding():
     print("* GHZ-superdense coding")
     iy_matrix = np.array([[0,1],
                           [-1,0]])
-    iy_chan = channel_from_unitary(iy_matrix, Dom([2]))
+    iy_chan = channel_from_unitary(iy_matrix, Dom([2]), Dom([2]))
     alice = (discard(8) @ idn(2,2)) * ccase(idn(2) @ idn(2), 
                                             idn(2) @ x_chan, 
                                             x_chan @ idn(2), 
@@ -589,19 +589,19 @@ def teleportation_and_superdensecoding():
 
 
 def main():
-    #states()
-    #operations_on_states()
-    #basic_states()
-    #predicates()
-    #operations_on_predicates()
-    #validity()
+    states()
+    operations_on_states()
+    basic_states()
+    predicates()
+    operations_on_predicates()
+    validity()
     conditioning()
-    #weakening()
-    #state_transformation()
-    #predicate_transformation()
-    #structural_channels()
-    #measurement()
-    #teleportation_and_superdensecoding()
+    weakening()
+    state_transformation()
+    predicate_transformation()
+    structural_channels()
+    measurement()
+    teleportation_and_superdensecoding()
 
 if __name__ == "__main__":
     main()

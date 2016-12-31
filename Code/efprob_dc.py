@@ -1353,7 +1353,7 @@ def random_disc_pred(n):
     return Predicate([random.uniform(0,1) for i in range(n)], range(n))
 
 #
-# Discrete that is 1 at i in {0,1,...,n-1}
+# Discrete predicate that is 1 at i in {0,1,...,n-1}
 #
 def unit_pred(n, i):
     ls = [0] * n
