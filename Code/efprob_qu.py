@@ -200,6 +200,8 @@ class Dom:
 
 
 class RandVar:
+    """ Hermitian (self-adjoint) operators, forming the superclass for 
+    both predicates (effects) and states (density matrices) """
     def __init__(self, ar, dom):
         self.array = ar
         self.dom = dom if isinstance(dom, Dom) else Dom(dom)
@@ -243,8 +245,9 @@ class RandVar:
         return RandVar(self.array - other.array, self.dom)
 
     def __mul__(self, scalar):
-        """Multiplication * with a scalar. (Recall that Hermitian matrices are
-        not closed under Matrix multiplication, so this is not defined.) """
+        """Multiplication * with a scalar. (Recall that Hermitian /
+        self-adjoint matrices are not closed under Matrix
+        multiplication, so this is not defined.) """
         if not isinstance(scalar, numbers.Real):
             raise Exception('Scalar multiplication for random variables is only defined for real numbers')
         return RandVar(scalar * self.array, self.dom)
@@ -297,14 +300,34 @@ class RandVar:
         mat.resize(p,p)
         return type(self)(mat, Dom(dims))
 
-    def var(self, state):
+    def variance(self, state):
         """ Variance """
         if not isinstance(state, State):
-            raise Exception('Variance of a random variables requires a state argument')
-
+            raise Exception('Variance of a random variable requires a state argument')
         v = state >= self
-        w = state >= RandVar(np.dot(self.matrix, self.matrix), self.dom)
+        w = state >= RandVar(np.dot(self.array, self.array), self.dom)
         return w - (v ** 2)
+
+    def evolution(self, state):
+        if not isinstance(state, State):
+            raise Exception('Evolution of a random variable requires a state as first argument')
+        if self.dom != state.dom:
+            raise Exception('Domain mismatch in the evolution of a random variable')
+        def U(t):
+            return scipy.linalg.expm(complex(0,-1) * t * self.array)
+        def ch(t):
+            return channel_from_unitary(U(t), self.dom, self.dom)
+        return lambda t: ch(t) >> state
+
+    def plot_evolution(self, state, randvar, lower_bound, upper_bound, steps=100):
+        if not isinstance(state, State) or not isinstance(randvar, RandVar):
+            raise Exception('Type mismatch in the plotting of a random variable')
+        if self.dom != state.dom or self.dom != randvar.dom:
+            raise Exception('Domain mismatch in the plotting of a random variable')
+        plot( lambda t: self.evolution(state)(t) >= randvar, 
+              lower_bound,
+              upper_bound,
+              steps )
 
 
 
@@ -388,7 +411,7 @@ class Predicate(RandVar):
                        self.dom, Dom([]))
 
 
-class State(RandVar):
+class State(Predicate):
     def __init__(self, ar, dom):
         if not is_positive(ar):
             raise Exception('State creation requires a positive matrix')
@@ -405,21 +428,7 @@ class State(RandVar):
     #                            formatter={'complexfloat':lambda x: '%3g + %3gi' 
 #                                          % (x.real, x.imag)})
 
-    # def __eq__(self, other):
-    #     return self.dom == other.dom \
-    #         and np.all(np.isclose(self.array, other.array))
-
-    # def __ne__(self, other):
-    #     return not self == other
-
-    # # experimental
-    # def is_pure(self):
-    #     # purity criterion: trace of square is 1, see Nielen-Chang Exc 2.71
-    #     return approx_eq_num(np.trace(np.dot(self.array, self.array)), 1)
-
-    # validity
     def __ge__(self, rv):
-
         """ Validity """
         if not isinstance(rv, RandVar):
             raise Exception('Validity requires a random variable')
@@ -427,61 +436,36 @@ class State(RandVar):
             raise Exception('State and random variable must have equal domains in validity')
         return np.trace(np.dot(self.array, rv.array)).real
 
-    # conditioning
-    def __truediv__(self, p):
-        if not is_effect(p.array):
+    def __truediv__(self, pred):
+        """ Conditioning """
+        if not isinstance(pred, Predicate):
             raise Exception('Non-predicate used in conditioning')
-        #print("conditioning:",  self.dims, p.dims)
-        if self.dom != p.dom:
+        if self.dom != pred.dom:
             raise Exception('State and predicate with different domains in conditioning')
-        v = self >= p
+        v = self >= pred
         if v == 0:
             raise Exception('Zero-validity excludes conditioning')
-        sq = matrix_square_root(p.array)
-        """scipy does not work well, for instance not on matrices:
-        sq = scipy.linalg.sqrtm(p.array)
-        np.array([[1, 0, 0, 0], 
-                  [0, 1, 0, 0],
-                  [0, 0, 0, 0],
-                  [0, 0, 0, 0]])
-        np.array([[1, 0, 0, 0], 
-                  [0, 0, 0, 0],
-                  [0, 0, 1, 0],
-                  [0, 0, 0, 0]])
-        It returns a matrix with only 'nan'
-        """
+        sq = matrix_square_root(pred.array)
         #print("square root", p.array, sq, np.dot(sq, np.dot(self.array, sq)))
         return State( np.dot(sq, np.dot(self.array, sq)) / v, self.dom)
         
-    # # parallel product
-    # def __matmul__(self, s):
-    #     return State(np.kron(self.array, s.array), self.dom + s.dom)
+    # # convex sum of two states
+    # def __add__(self, stat):
+    #     return lambda r: convex_state_sum(*[(r, self), (1-r, stat)])
 
-
-    # convex sum of two states
-    def __add__(self, stat):
-        return lambda r: convex_state_sum(*[(r, self), (1-r, stat)])
-
-    # Turn a state into a predicate
     def as_pred(self):
+        """ Turn a state into a predicate """
         return Predicate(self.array, self.dom)
 
-    #
-    # Turn a state on n into a channel 0 -> n. This is useful for
-    # bringing in extra "ancillary" bits into the system.
-    #
-    # Not that the empty list [] is the appropriate domain type, where
-    # the product over this list is 1, as used in the dimension of the
-    # matrix.
-    #
     def as_chan(self):
+        """Turn a state on dom into a channel 0 -> dom. This is useful for
+        bringing in extra "ancillary" bits into the system.  Not that
+        the empty list [] is the appropriate domain type, where the
+        product over this list is 1, as used in the dimension of the
+        matrix. """        
         return Channel(self.array.reshape(self.dom.size, self.dom.size, 1, 1), 
                        Dom([]),
                        self.dom)
-
-    # experimental conjugate transpose
-    def conjugate(self):
-        return State(conjugate_transpose(self.array), self.dom)
 
         
 
@@ -511,7 +495,8 @@ class Channel:
 
     def __repr__(self):
         return str(self.array)
-    # "channel from" + str(self.dom_dims) + "to" + str(self.cod_dims)
+
+        # "channel from" + str(self.dom_dims) + "to" + str(self.cod_dims)
 
     def __eq__(self, other):
         return self.dom == other.dom and self.cod == other.cod \
@@ -740,7 +725,7 @@ def vector_state(*ls):
     v = np.array(ls)
     s = np.linalg.norm(v)
     v = v / s
-    mat = np.outer(v, v.conj())
+    mat = np.outer(v, np.conjugate(v))
     return State(mat, Dom([len(v)]))
 
 #
@@ -1197,8 +1182,8 @@ hadamard = channel_from_unitary(hadamard_matrix, Dom([2]), Dom([2]))
 plus = hadamard >> ket(0)
 minus = hadamard >> ket(1)
 
-hadamard_test = [plus.as_pred(),
-                 minus.as_pred()]
+hadamard_test = [plus,
+                 minus]
 
 #
 # Controlled Hadamard 2 @ 2 -> 2 @ 2
@@ -1225,10 +1210,10 @@ bell01 = State(0.5 * np.outer(bell01_vect, bell01_vect), Dom([2,2]))
 bell10 = State(0.5 * np.outer(bell10_vect, bell10_vect), Dom([2,2]))
 bell11 = State(0.5 * np.outer(bell11_vect, bell11_vect), Dom([2,2]))
 
-bell_test = [bell00.as_pred(),
-             bell01.as_pred(),
-             bell10.as_pred(),
-             bell11.as_pred()]
+bell_test = [bell00,
+             bell01,
+             bell10,
+             bell11]
 
 #
 # Greenberger-Horne-Zeilinger states
@@ -1258,14 +1243,14 @@ ghz8 = State(0.5 * np.outer(ghz_vect8, ghz_vect8), Dom([2,2,2]))
 #
 # The associated test
 #
-ghz_test = [ghz1.as_pred(),
-            ghz2.as_pred(),
-            ghz3.as_pred(),
-            ghz4.as_pred(),
-            ghz5.as_pred(),
-            ghz6.as_pred(),
-            ghz7.as_pred(),
-            ghz8.as_pred()]
+ghz_test = [ghz1,
+            ghz2,
+            ghz3,
+            ghz4,
+            ghz5,
+            ghz6,
+            ghz7,
+            ghz8]
 
 #
 # W3 state
@@ -1400,8 +1385,8 @@ def meas_pred(p):
     mat[1][1] = (~p).array
     return Channel(mat, p.dom, Dom([2]))
 
-meas0 = meas_pred(ket(0).as_pred())
-meas1 = meas_pred(ket(1).as_pred())
+meas0 = meas_pred(ket(0))
+meas1 = meas_pred(ket(1))
 
 #
 # Measurement generalised from a predicate to a test, that is to a
@@ -1706,15 +1691,10 @@ minus_oper = hadamard_oper >> ket(1)
 
 ########################################################################
 # 
-# Plot function
+# Generic plot function
 #
 ########################################################################
 
-#
-# The following general plot operation can be used to generate
-# pictures of evolution of a state s(x) for a time parameter x in an
-# interval [lb, ub], where often lb=0. What is typically shown is the
-# probability s(x) >= p for a fixed predicate p.
 
 def plot(f, lb, ub, steps = 100):
     fig, (ax) = plt.subplots(1, 1, figsize=(10,5))
@@ -1726,8 +1706,6 @@ def plot(f, lb, ub, steps = 100):
     plt.pause(0.001)
     input("Press [enter] to continue.")
     return None
-
-
 
 
 ########################################################################
@@ -1860,7 +1838,7 @@ def channel():
     print( (chadamard >> (ket(1) @ w2)) % [0,1] )
     print("* next")
     print( dc >> v )
-    print( (w / (v.as_pred() @ truth(2))) % [0,1] )
+    print( (w / (v @ truth(2))) % [0,1] )
 
 def bayesian_probability():
     print("\nBayesian probability")
@@ -1988,8 +1966,8 @@ def experiment():
     p1 = random_pred(2)    
     t = random_state(2)
     # "conditional state" from Leiffer note: outcomes appear at strange points
-    print( ((t.as_pred() @ truth(2)) & chan2productpredicate(c)) % [0, 1] )
-    print("predicate transformer\n", c << t.as_pred(), "\n", c >> t )
+    print( ((t @ truth(2)) & chan2productpredicate(c)) % [0, 1] )
+    print("predicate transformer\n", c << t, "\n", c >> t )
 
     # The next two things look mysteriously similar...
     #print( ((s2p(t) @ truth(2)) & chan2productpredicate(c)) % [0, 1] )

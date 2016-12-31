@@ -4,6 +4,7 @@
 #
 #
 from efprob_qu import *
+from math import *
 
 def states():
     print("\nSection: States\n")
@@ -45,8 +46,8 @@ def operations_on_states():
 
     print("\n===\n")
 
-    print("* Alternatively written convex sum")
-    print( (ket(0) + ket(1))(0.2) )
+    # print("* Alternatively written convex sum")
+    # print( (ket(0) + ket(1))(0.2) )
 
     print("\n===\n")
 
@@ -79,7 +80,7 @@ def basic_states():
 
     print("\n===\n")
 
-    print( vector_state(0.5 * math.sqrt(3), complex(0, 0.5)) )
+    print( vector_state(0.5 * sqrt(3), complex(0, 0.5)) )
 
     print("\n===\n")
 
@@ -123,7 +124,7 @@ def predicates():
     print("* Random state, as predicate")
     s = random_state(2)
     print( s )
-    print( s.as_pred() )
+    print( s )
 
 
 
@@ -149,7 +150,7 @@ def operations_on_predicates():
     print("\n===\n")
 
     print("* bell states form a test")
-    print( bell00.as_pred() + bell01.as_pred() + bell10.as_pred() + bell11.as_pred() )
+    print( bell00 + bell01 + bell10 + bell11 )
 
     print("\n===\n")
 
@@ -168,8 +169,8 @@ def validity():
     print("\nSubsection: Validity\n")
 
     print("* Validity example")
-    v = vector_state(0.5 * math.sqrt(3), complex(0, 0.5)) 
-    p = v.as_pred() 
+    v = vector_state(0.5 * sqrt(3), complex(0, 0.5)) 
+    p = v 
     print( p )
     print( ket(0) >= p )
     print( ket(1) >= p )
@@ -186,19 +187,19 @@ def validity():
 
     print("* Commutativity of sequential conjunction")
     p = unit_pred(2,0)
-    q = plus.as_pred()
+    q = plus
     print( ket(0) >= p & q )
     print( ket(0) >= q & p )
 
     print("\n===\n")
 
     print("* Bell table")
-    v1 = vector_state(1/math.sqrt(2), 1/math.sqrt(2))
-    A1 = v1.as_pred()
-    B1 = v1.as_pred()
-    v2 = vector_state(1/math.sqrt(2), 0.5/math.sqrt(2) * complex(1, math.sqrt(3)))
-    A2 = v2.as_pred()
-    B2 = v2.as_pred()
+    v1 = vector_state(1/sqrt(2), 1/sqrt(2))
+    A1 = v1
+    B1 = v1
+    v2 = vector_state(1/sqrt(2), 0.5/sqrt(2) * complex(1, sqrt(3)))
+    A2 = v2
+    B2 = v2
     print( A1 )
     print( A2 )
     print("")
@@ -229,7 +230,7 @@ def conditioning():
     s = random_state(2)
     vert = unit_pred(2,0)
     hor = unit_pred(2,1)
-    diag = plus.as_pred()
+    diag = plus
     print( s >= vert )
 
     print("\n===\n")
@@ -319,7 +320,7 @@ def predicate_transformation():
     print("* Predicates used in Bell table, via predicate transformation")
     A1 = hadamard << unit_pred(2,0)
     print( A1 )
-    angle = math.pi / 3
+    angle = pi / 3
     A2 = phase_shift(angle) << A1
     print( A2 )
 
@@ -335,6 +336,64 @@ def predicate_transformation():
 
     print("\n===\n")
 
+    print("* Man's car preferences")
+    B = unit_pred(3, 0)
+    A = unit_pred(3, 1)
+    C = unit_pred(3, 2)
+    M = vector_state(-0.6963, 0.6963, 0.1741)
+    print("Probability of man choosing Audi: ", M >= A )
+    print("Probability of man choosing BMW: ", M >= B )
+    print("Probability of man choosing Cadillac: ", M >= C )
+    print("Probability of man choosing Audi or BMW: ", M >= A | B)
+
+    print("\n===\n")
+
+    print("* Woman's car preferences")
+    U = np.array([[1/sqrt(2), 1/2, -1/2], 
+                  [1/sqrt(2), -1/2, 1/2], 
+                  [0, 1/sqrt(2), 1/sqrt(2)]])
+    ch = channel_from_unitary(U, Dom([3]), Dom([3]))
+    W = ch >> M
+    print( W >= B )
+    print( W >= A )
+    print( W >= C )
+
+    print("\n===\n")
+
+    print("* Man first thinks his wife prefers the Cadillac then he prefers the BMW")
+    print( M >= (ch << C) & B )
+
+    print("\n===\n")
+
+    print("* Woman first thinks her man prefers the BMW then she prefers the Cadillac")
+    print( M >= B & (ch << C) )
+
+
+
+
+def random_variables():
+
+    print("\nSubsection: Operations on random variables\n")
+
+    print("* Types of scalar multiplications")
+    print( type( ket(0) ) )
+    print( type( 0.5 * ket(0) ) )
+    print( type( 5 * ket(0) ) )
+
+    print("\n===\n")
+
+    print("* Types of scalar additions")
+    print( type( unit_pred(2,0) ) )
+    print( type( unit_pred(2,0) + unit_pred(2,0) ) )
+
+    print("\n===\n")
+
+    print("* Dice variance, quantum style")
+    dice = uniform_probabilistic_state(6)
+    points = 1 * unit_pred(6,0) + 2 * unit_pred(6,1) + 3 * unit_pred(6,2) \
+             + 4 * unit_pred(6,3) + 5 * unit_pred(6,4) + 6 * unit_pred(6,5)
+    print( dice >= points )
+    print( points.variance(dice) )
 
 
 def structural_channels():
@@ -397,15 +456,15 @@ def measurement():
     print("\n===\n")
 
     print("* Measurement in the Bell basis")
-    bell_test = [bell00.as_pred(), bell01.as_pred(), bell10.as_pred(), bell11.as_pred()]
+    bell_test = [bell00, bell01, bell10, bell11]
     meas_bell = meas_test(bell_test)
     w = cnot >> (random_state(2) @ random_state(2))
     print( w )
     print( meas_bell >> w )
-    print( w >= bell00.as_pred() )
-    print( w >= bell01.as_pred() )
-    print( w >= bell10.as_pred() )
-    print( w >= bell11.as_pred() )
+    print( w >= bell00 )
+    print( w >= bell01 )
+    print( w >= bell10 )
+    print( w >= bell11 )
 
     print("\n===\n")
 
@@ -512,7 +571,7 @@ def teleportation_and_superdensecoding():
     print("\n===\n")
 
     print("* Teleportation, with the GHZ state")
-    bell_test = [bell00.as_pred(), bell01.as_pred(), bell10.as_pred(), bell11.as_pred()]
+    bell_test = [bell00, bell01, bell10, bell11]
     meas_bell = meas_test(bell_test)
     print( meas_bell.dom, meas_bell.cod )
     alice = (meas_bell @ idn(2,2)) * (idn(2) @ ghz.as_chan())
@@ -521,7 +580,7 @@ def teleportation_and_superdensecoding():
     print("\n===\n")
 
     print("* GHZ-teleportation, Bob's side")
-    hadamard_test = [plus.as_pred(), minus.as_pred()]
+    hadamard_test = [plus, minus]
     meas_hadamard = meas_test(hadamard_test)
     bob = ( discard(8) @ idn(2) ) \
           * ccase(idn(2), z_chan, x_chan, x_chan * z_chan, \
@@ -589,19 +648,20 @@ def teleportation_and_superdensecoding():
 
 
 def main():
-    states()
-    operations_on_states()
-    basic_states()
-    predicates()
-    operations_on_predicates()
-    validity()
-    conditioning()
-    weakening()
-    state_transformation()
+    # states()
+    # operations_on_states()
+    # basic_states()
+    # predicates()
+    # operations_on_predicates()
+    # validity()
+    # conditioning()
+    # weakening()
+    # state_transformation()
     predicate_transformation()
-    structural_channels()
-    measurement()
-    teleportation_and_superdensecoding()
+    # random_variables()
+    # structural_channels()
+    # measurement()
+    # teleportation_and_superdensecoding()
 
 if __name__ == "__main__":
     main()

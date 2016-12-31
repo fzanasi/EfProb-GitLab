@@ -116,7 +116,7 @@ print("But this is not equal to:", s >= U )
 
 print("\n2.1.2.9 Coarse and complete measurements, pure and mixed states\n")
 
-sporty = A+B
+sporty = A|B
 luxurious = C
 print("Given that wife wants luxurious, man wants sporty: ",  
       s / (ch << luxurious) >= sporty )
@@ -139,7 +139,7 @@ AA = A @ (ch << A)
 BB = B @ (ch << B)
 CC = C @ (ch << C)
 
-agree_state = (s @ s) / (AA + BB + CC)
+agree_state = (s @ s) / (AA | BB | CC)
 
 print( s @ u >= BB )
 
@@ -274,7 +274,7 @@ print("\nThis is the same as the validities of the 4 basic predicates: ",
 #
 # State update after presentation of positive evidence
 #
-p_plus = p_state / (pGpE + nGpE)
+p_plus = p_state / (pGpE | nGpE)
 
 print("\nJudged probability of guilt for the second judgement, after the first piece of (positive) evidence: ", p_plus >= pGpE )
 
@@ -322,12 +322,12 @@ print("\nValidities of the 4 basic predicates in state d+: ",
 # State update after presentation of negative evidence, after positive
 # evidence
 #
-d_plus_minus = d_plus / (pGnE + nGnE)
+d_plus_minus = d_plus / (pGnE | nGnE)
 
 print("\nJudged probability of guilt for the second judgement, after both pieces of evidence: ",  d_plus_minus >= pGnE )
 
 print("\nOwn addition, as comparison: the probability of guilt given only the negative evidence is: ", 
-      d_state / (pGnE + nGnE) >= pGnE )
+      d_state / (pGnE | nGnE) >= pGnE )
 
 
 print("\n5.2 Non-compositional models of concept combinations based in quantum interference\n")
@@ -393,9 +393,6 @@ def chT(t):
     return dc.Channel(T(t), domain, domain)
 
 print("Markov transition probabilities from plus to minus at time t, see the dashed line in Fig. 8.4")
-#for i in range(25):
-#    print("t =", i/8, " ", (chT(i/8) >> Mprior) >= min_pred )
-
 #plot(lambda i: (chT(i) >> Mprior) >= min_pred, 0, 3)
 
 print("\nRevised (conditioned) state after observing min at time t=1:")
@@ -403,14 +400,8 @@ print( (chT(1) >> Mprior) / min_pred )
 
 print("\n8.1.2.4 Numerical example\n")
 
-H = np.array([[0, 2],
-              [2, 0]])
-
-def U(t):
-    return scipy.linalg.expm(t * complex(0, -1) * H)
-
-def chU(t):
-    return channel_from_unitary(U(t), Dom([2]), Dom([2]))
+rvH = RandVar(np.array([[0, 2],
+                        [2, 0]]), Dom([2]))
 
 Qprior = ket(0)
 
@@ -418,13 +409,10 @@ Mmin = unit_pred(2,1)
 Mplus = unit_pred(2,0)
 
 print("Quantum transition probabilities from plus to minus at time t, see the dashed line in Fig. 8.4")
-#for i in range(25):
-#    print("t =", i/8, " ", (chU(i/8) >> Qprior) >= Mmin )
-#plot(lambda i: (chU(i) >> Qprior) >= Mmin, 0, 3)
-
+#rvH.plot_evolution(Qprior, Mmin, 0, 3)
 
 print("\nRevised (conditioned) state after observing min at time t=1:")
-print( (chU(1) >> Qprior) / Mmin )
+print( rvH.evolution(Qprior)(1) / Mmin )
 
 
 print("\n8.2.1.1 Empirical test of total probability\n")
@@ -580,10 +568,15 @@ def quantum_channel(t):
                                 Dom([7]), 
                                 Dom([7]))
 
-quantum_prior = uniform_probabilistic_state(7)
+prior_vect = 1/sqrt(7) * np.array([1,1,1,1,1,1,1])
+
+quantum_prior = vector_state(*prior_vect) # uniform_probabilistic_state(7)
+
+print( quantum_prior )
+
 rand_var = -3 * unit_pred(7,0) - 2 * unit_pred(7,1) - unit_pred(7,2) + unit_pred(7,4) + 2 * unit_pred(7,5) + 3 * unit_pred(7,6)
 
-print("\nQuantum expected values from t=0 to t=20; completely different from Fig. 8.10")
+print("\nQuantum expected values from t=0 to t=40; somewhat different from Fig. 8.10")
 for i in range(21):
     print("at t = ", i, " ", (quantum_channel(i) >> quantum_prior) >= rand_var )
 

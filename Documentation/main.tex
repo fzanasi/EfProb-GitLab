@@ -75,7 +75,7 @@
 \usepackage{fancyvrb} % Allows customization of verbatim environments
 \usepackage{qcircuit}
 \usepackage{listings} 
-\usepackage{fancybox}
+\usepackage{fancybox,shadow}
 %\usepackage{etex} % to get more space
 \usepackage{amsmath}
 %\usepackage{amssymb}
@@ -2692,13 +2692,16 @@ states as special case, as we shall see. Quantum states --- or simply
 `states' in this chapter --- are represented as \emph{density
   matrices}.\index{density~matrix}\index{matrix!density~--} A state of
 dimension $n$ is a represented as a matrix $\rho$ of dimension
-$n\times n$, which is positive and has trace 1. We sometimes use the
-standard notation $\Mat_n$ for the set of arbitrary $n\times n$
-(square) matrices over the complex numbers $\CN$. Thus, a state of
-dimension $n$ is a special element $\rho\in\Mat_n$, given by $n\times
-n$ complex numbers. Since it is positive with trace $1$, all its
-elements on the diagonal are real numbers, that add up to one.  Here
-we only consider finite-dimensional states.
+$n\times n$, which is
+positive\index{positive~matrix}\index{matrix!positive~--} and has
+trace\index{trace} one: the elements on the diagonal add up to 
+one. We sometimes use the standard notation $\Mat_n$ for the set of
+arbitrary $n\times n$ (square) matrices over the complex numbers
+$\CN$. Thus, a state of dimension $n$ is a special element
+$\rho\in\Mat_n$, given by $n\times n$ complex numbers. Since it is
+positive with trace $1$, all its elements on the diagonal are real
+numbers, that add up to one.  Here we only consider finite-dimensional
+states.
 
 Let's see some examples, starting with dimension 2. States of this
 dimension are called \emph{qubits}\index{qubit}. The two most familar
@@ -2899,15 +2902,15 @@ in:
  [-0.1+0.j  0.4+0.j]]
 \end{python}
 
-\noindent For binary convex sums one can also use the following syntax:
-\begin{python}
->>> (ket(0) + ket(1))(0.2)
-[[ 0.2  0. ]
- [ 0.   0.8]]
-\end{python}
+%% \noindent For binary convex sums one can also use the following syntax:
+%% \begin{python}
+%% >>> (ket(0) + ket(1))(0.2)
+%% [[ 0.2  0. ]
+%%  [ 0.   0.8]]
+%% \end{python}
 
-\noindent This is the same as \pythoninline{convex_state_sum((0.2,
-  ket(0)), (0.8, ket(1)))}
+%% \noindent This is the same as \pythoninline{convex_state_sum((0.2,
+%%   ket(0)), (0.8, ket(1)))}
 
 \paragraph{Marginalisation} Via products one joins states together.
 Marginalisation is the reverse operation that deletes certain parts
@@ -3812,6 +3815,120 @@ conditioning with predicate \pythoninline{p} in the first coordinate.
 This is a common construction.
 
 
+\section{Random variables}\label{sec:qrandvar}
+
+So far we have seen states and predicates. States are density
+matrices: positive square matrices (operators) whose trace is
+one. Predicates are effects: positive square matrices below the
+identity. States form a subclass of predicates.  In the \EfProb
+library predicates are themselves a subclass, namely of random
+variables. Mathematically the latter are
+\emph{self-adjoint}\index{self-adjoint~matrix}\index{matrix!self-adjoint~--}
+square matrices: they are equal to their conjugate transpose. Such
+operators are also called
+\emph{Hermitian}.\index{Hermitian~matrix}\index{matrix!Hermitian~--}
+Thus we have the following hierarchy of classes in \Python,
+corresponding to inclusions between sets of associated matrices.
+$$\xymatrix{
+\shabox{\begin{tabular}{c}
+\textbf{Random Variables} \\[-.5em]
+(self-adjoint matrices)
+\end{tabular}}
+\\
+\shabox{\begin{tabular}{c}
+\textbf{Predicates} \\[-.5em]
+(effects)
+\end{tabular}}\ar@{^{(}->}[u]
+\\
+\shabox{\begin{tabular}{c}
+\textbf{States} \\[-.5em]
+(density matrices)
+\end{tabular}}\ar@{^{(}->}[u]
+}$$
+
+\noindent These conversions are performed implicitly. As we already
+saw, a state is a predicate. Predicates are closed under scalar
+multiplication with a number from the unit interval. Random variables
+are closed under scalar multiplication with arbitrary real --- but not
+complex --- numbers. Hence we get the following type information:
+\begin{python}
+>>> type( ket(0) )
+<class 'efprob_qu.State'>
+>>> type( 0.5 * ket(0) )
+<class 'efprob_qu.Predicate'>
+>>> type( 5 * ket(0) )
+<class 'efprob_qu.RandVar'>
+\end{python}
+
+In discrete and continuous probability a predicate on a sample space
+$\Omega$ is a function $\Omega \rightarrow [0,1]$. A random variable
+is a more general function $\Omega \rightarrow \RN$ to the real
+numbers. This difference is reflected in the quantum case, in the
+following way. The eigenvalues of an effect lye in the unit interval
+$[0,1]$.  And eigenvalues of a self-adjoint matrix are real-valued.
+
+
+\subsection{Operations on random variables}\label{subsec:qrandvar:operations}
+
+Random variables are closed under addition \pythoninline{+},
+subtraction \pythoninline{-}, negation \pythoninline{-} and scalar
+multiplication \pythoninline{*} with a real number. These operations
+are applied pointwise to all the elements of the matrices involved.
+Hence these basic arithmetical operations can be applied more
+generally than to predicates, where, for instance, addition
+\pythoninline{+} is only partially defined. If the sum of two
+predicates does not exist, as predicate, the result is automatically
+cast to a random variable:
+\begin{python}
+>>> type( unit_pred(2,0) )
+<class 'efprob_qu.Predicate'>
+>>> type( unit_pred(2,0) + unit_pred(2,0) )
+<class 'efprob_qu.RandVar'>
+\end{python}
+
+\noindent The sequential conjunction \pythoninline{\&} and disjunction
+\pythoninline{|} operations on predicates do not exist for random
+variables.
+
+Random variables have a domain like predicates and states. Random
+variable can be put in parallel via \pythoninline{@}. Also
+marginalisation exists for random variables, via selectors like
+\pythoninline{[1,0,1]}, as described in
+Subsection~\ref{subsec:qstate:operations}. In fact, in the \EfProb
+library, parallel product and marginalisation are defined for the
+superclass of random variable, and then inherited by the subclasses of
+predicates and states.
+
+Validity \pythoninline{s >= rv} in state \pythoninline{s} is defined
+for a random variable \pythoninline{rv} and not just for a predicate.
+This validity is what is usually called the
+expectation.\index{expectation!--~of~a~quantum~random~variable} But,
+in contrast, conditioning \pythoninline{s / p} of a state
+\pythoninline{s} is defined only for a predicate \pythoninline{p}, and
+not for a random variable. These types are checked in the \EfProb
+implementation.
+
+A new operation that exists on random variables is
+\emph{variance}.\index{variance!quantum~--} We shall illustrate
+it for an ordinary dice, incorporated into the quantum world.
+\begin{python}
+>>> dice = uniform_probabilistic_state(6)
+>>> points = 1 * unit_pred(6,0) + 2 * unit_pred(6,1) + 3 * unit_pred(6,2) \
+...          + 4 * unit_pred(6,3) + 5 * unit_pred(6,4) + 6 * unit_pred(6,5)
+>>> dice >= points
+3.5
+>>> points.variance(dice)
+2.91666666667
+\end{python}
+
+\noindent Implicitly in the defintion of \pythoninline{point} the
+predicates \pythoninline{unit\_pred} are cast to random variables, via
+scalar multiplication and addition.
+
+(The expectation and variance values computed above in the quantum
+framework coincide with the probabilistic ones.)
+
+
 \section{Channels}\label{sec:qchannel}
 
 States and predicates are nice, but the real action comes from
@@ -4142,6 +4259,98 @@ manner, using compositon \pythoninline{*} of channels:
 
 \noindent Notice the reversal of channels when using $\ll$ twice, because
 $\ll$ works in backward direction.
+
+
+
+\begin{example}
+\label{ex:carpreference}
+We illustrate how the quantum setting can be used to capture different
+personal settings, via different states. The example is copied
+from\cite{BusemeyerB12}; we use the same numbers and show that the our
+logical language of predicates (effects) and conditioning makes the
+formulation of the relevant properties quite natural.
+
+A couple consisting of aman \pythoninline{M} and a woman
+\pythoninline{W} wish to buy a new car together. They consider three
+brands, namely BMW (\pythoninline{B}), Audi (\pythoninline{A}) and
+Cadillac (\pythoninline{C}), which will be modeled as the three basic
+predicates with domain of size 3:
+\begin{python}
+>>> B = unit_pred(3,0)
+>>> A = unit_pred(3,1)
+>>> C = unit_pred(3,2)
+\end{python}
+
+\noindent The man's perspective is captured via a particular state, in
+which the probabilities of his preferences for each of the three
+brands is expressed via validity:
+\begin{python}
+>>> M = vector_state(-0.6963, 0.6963, 0.1741)
+>>> M >= B
+0.484844264453
+>>> M >= A
+0.484844264453
+>>> M >= C
+0.0303114710932
+\end{python}
+
+\noindent The woman's perspective in\cite{BusemeyerB12} is described
+via a different state \pythoninline{W}. It can be defined via state
+transformation \pythoninline{W = ch >> M} from the man's state
+\pythoninline{M}, where the channel \pythoninline{ch} is determined
+by a unitary matrix \pythoninline{U}:
+\begin{python}
+>>> U = np.array([[1/sqrt(2), 1/2, -1/2], 
+...               [1/sqrt(2), -1/2, 1/2], 
+...               [0, 1/sqrt(2), 1/sqrt(2)]])
+>>> ch = channel_from_unitary(U, Dom([3]), Dom([3]))
+>>> W = ch >> M
+>>> W >= B
+0.0
+>>> W >= A
+0.328557047933
+>>> W >= C
+0.671442952067
+\end{python}
+
+\noindent Via the the transformation validity
+equation~\eqref{eqn:qvaliditytransformation} we can also obtain
+the latter preferences in the man's state as \pythoninline{M >= (ch << B)},
+\pythoninline{M >= (ch << A)} and \pythoninline{M >= (ch << C)}.
+
+We can now describe what are called \emph{order
+  effects}\index{order!--~effect}\index{effect!order~--} cognition
+research. The probability that the man first thinks his wife prefers
+the Cadillac then he prefers the BMW is given by:
+\begin{python}
+>>> M >= (ch << C) & B
+0.167860738017
+\end{python}
+
+\noindent Interestingly, taking the woman's preference for a Cadillac
+into account, the man's preference for a BMW goes down, wrt.\ the
+value \pythoninline{0.484844264453} of \pythoninline{M >= B} given
+above.
+
+Exchanging the two predicates we get:
+\begin{python}
+>>> M >= B & (ch << C)
+0.121211066113
+\end{python}
+
+\noindent We once again see that sequential conjunction \pythoninline{\&}
+is not commutative. 
+
+
+
+%% 2.1.2.9 Coarse and complete measurements, pure and mixed states
+
+%% Given that wife wants luxurious, man wants sporty:  0.5
+%% Given that man wants sporty, wife wants luxurious:  0.5
+%% Given that man wants Audi, wife wants luxurious:  0.25
+
+\end{example}
+
 
 
 \subsection{Sequential and parallel composition}\label{subsec:qchannel:composition}
