@@ -387,7 +387,7 @@ class Predicate(RandVar):
             raise Exception('Mismatch of dimensions in sum of predicates')
         mat = self.array + pred.array
         if not lowner_le(mat, np.eye(self.dom.size)):
-            raise Exception('Sum of predicates undefined since above 1')
+            return super().__add__(pred)
         return Predicate(mat, self.dom)
 
     def __and__(self, pred):

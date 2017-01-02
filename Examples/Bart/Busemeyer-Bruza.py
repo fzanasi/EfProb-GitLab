@@ -184,7 +184,7 @@ print("\n4.1.1.1 Probability for a single question\n")
 #
 s = vector_state(0.987, -0.1564)
 fem = unit_pred(2,0)
-bate = vector_state(cos(0.4 * pi), sin(0.4 * pi)).as_pred()
+bate = vector_state(cos(0.4 * pi), sin(0.4 * pi))
 
 print("Probability of being feminist: ", s >= fem )
 print("Probability of being bank teller: ", s >= bate )

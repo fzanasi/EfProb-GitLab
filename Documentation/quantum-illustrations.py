@@ -121,11 +121,6 @@ def predicates():
 
     print("\n===\n")
 
-    print("* Random state, as predicate")
-    s = random_state(2)
-    print( s )
-    print( s )
-
 
 
 def operations_on_predicates():
@@ -170,10 +165,9 @@ def validity():
 
     print("* Validity example")
     v = vector_state(0.5 * sqrt(3), complex(0, 0.5)) 
-    p = v 
-    print( p )
-    print( ket(0) >= p )
-    print( ket(1) >= p )
+    print( v )
+    print( ket(0) >= v )
+    print( ket(1) >= v )
 
     print("\n===\n")
 
@@ -190,6 +184,37 @@ def validity():
     q = plus
     print( ket(0) >= p & q )
     print( ket(0) >= q & p )
+
+    print("\n===\n")
+
+    print("* Validity of states")
+    s = random_state(8)
+    t = random_state(8)
+    print( s >= t )
+    print( t >= s )
+
+    print("\n===\n")
+
+    print("* Validity of vector states")
+    v1 = np.random.rand(5)
+    v2 = v1/np.linalg.norm(v1)
+    w1 = np.random.rand(5)
+    w2 = w1/np.linalg.norm(w1)
+    s = vector_state(*v2)
+    t = vector_state(*w2)
+    print( s >= t )
+    print( np.inner(v2, w2) ** 2 )
+
+    print("\n===\n")
+
+    print("* Linda example")
+    s = vector_state(0.987, -0.1564)
+    feminist = unit_pred(2,0)
+    bankteller = vector_state(cos(0.4 * pi), sin(0.4 * pi))
+    print( s >= feminist )
+    print( s >= bankteller )
+    print( s >= feminist & bankteller )
+    print( s >= bankteller | feminist )
 
     print("\n===\n")
 
@@ -360,15 +385,27 @@ def predicate_transformation():
 
     print("\n===\n")
 
-    print("* Man first thinks his wife prefers the Cadillac then he prefers the BMW")
+    print("* Man first thinks his wife prefers the Cadillac")
     print( M >= (ch << C) & B )
+    print( M >= (ch << C) & C, M >= C )
 
     print("\n===\n")
 
     print("* Woman first thinks her man prefers the BMW then she prefers the Cadillac")
     print( M >= B & (ch << C) )
 
+    print("\n===\n")
 
+    print("* Man and woman force themselves to make the same choice")
+    js = (M @ W) / (A @ A | B @ B | C @ C)
+    print( js >= A @ A)
+    print( js >= B @ B)
+    print( js >= C @ C)
+    print("Same numbers, obtained via normalisation")
+    a = (M >= A) * (W >= A) + (M >= B) * (W >= B) + (M >= C) * (W >= C)
+    print( (M >= A) * (W >= A) / a)
+    print( (M >= B) * (W >= B) / a)
+    print( (M >= C) * (W >= C) / a)
 
 
 def random_variables():

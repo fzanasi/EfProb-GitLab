@@ -480,7 +480,9 @@ Further things to discuss include:
 \item Conditions of use, guarantees (none!), request to include an
   acknowledgement in research papers
 
-\item Installation, pre-requisites (like \Python $\geq$ 3.5)
+\item Installation, pre-requisites (like \Python $\geq$ 3.5).
+  Libraries \pythoninline{math} and \pythoninline{numpy} (as
+  \pythoninline{np}) are assumed.
 
 \item Precision, and equality of floats (and arrays of floats)
 
@@ -692,7 +694,7 @@ The implementation of this restricted Poisson distribution looks as
 follows.
 \begin{python}
 def poisson(lam, ub):
-    probabilities = [(lam ** k) * (math.e ** -lam) / factorial(k) 
+    probabilities = [(lam ** k) * (e ** -lam) / factorial(k) 
                      for k in range(ub)]
     s = sum(probabilities)
     return State([p/s for p in probabilities], range(ub))
@@ -3044,7 +3046,7 @@ $$\left(\begin{array}{ccc}
 \end{array}\right)$$
 
 \begin{python}
->>> vector_state(0.5 * math.sqrt(3), complex(0, 0.5))
+>>> vector_state(0.5 * sqrt(3), complex(0, 0.5))
 [[ 0.75+0.j         0.00-0.4330127j]
  [ 0.00+0.4330127j  0.25+0.j       ]]
 \end{python}
@@ -3180,22 +3182,14 @@ arbitrary (probabilist) predicates of dimension \pythoninline{n}.
 
 Each state of dimension $n$ is also a predicate of dimension $n$, but
 not the around --- take \pythoninline{falsity} for instance. The
-conversion is of states to predicates is not automatic, but requires
-an explicit function \pythoninline{as\_pred}, as in:
-\begin{python}
->>> s = random_state(2)
->>> s
-[[ 0.83208359+0.j         0.32540657-0.1359719j]
- [ 0.32540657+0.1359719j  0.16791641+0.j       ]]
->>> s.as_pred()
-[[ 0.83208359+0.j         0.32540657-0.1359719j]
- [ 0.32540657+0.1359719j  0.16791641+0.j       ]]
-\end{python}
+conversion is of states to predicates happens automatically
+in the \EfProb library, see Section~\ref{sec:qrandvar} for the
+bigger picture.
 
-\noindent It is important not to confuse states and predicates.  They
-are very different. As we shall see next, there are several logical
-operations on predicates which do not exists for states, in the
-sense that states are not closed under these operations.
+It is important not to confuse states and predicates.  They are very
+different. As we shall see next, there are several logical operations
+on predicates which do not exists for states, in the sense that states
+are not closed under these operations.
 
 
 
@@ -3288,19 +3282,16 @@ domain, whose sum \pythoninline{p1 + ... + pn} equals truth.  Such
 tests are used in measurements, see
 Subsection~\ref{subsec:qchannel:measurement}. The bell and GHZ basis
 vectors mentiond at the end of Section~\ref{sec:qstate} give rise to
-the following Bell\index{Bell!test} and GHZ\index{GHZ!test} tests.
+the following Bell\index{Bell!test} and GHZ\index{GHZ!test} tests,
+in which these states are used as predicates.
 \begin{python}
-bell_test = [bell00.as_pred(), bell01.as_pred(),
-             bell10.as_pred(), bell11.as_pred()]
-ghz_test = [ghz1.as_pred(), ghz2.as_pred(),
-            ghz3.as_pred(), ghz4.as_pred(),
-            ghz5.as_pred(), ghz6.as_pred(),
-            ghz7.as_pred(), ghz8.as_pred()]
+bell_test = [bell00, bell01, bell10, bell11]
+ghz_test = [ghz1, ghz2, ghz3, ghz4, ghz5, ghz6, ghz7, ghz8]
 \end{python}
 
 \noindent Indeed, the Bell predicates form a test:
 \begin{python}
->>> bell00.as_pred() + bell01.as_pred() + bell10.as_pred() + bell11.as_pred()
+>>> bell00 + bell01 + bell10 + bell11
 [[ 1.  0.  0.  0.]
  [ 0.  1.  0.  0.]
  [ 0.  0.  1.  0.]
@@ -3393,14 +3384,13 @@ trace $\tr(\omega\cdot p)$ of the product. It can be understood as the
 Hilbert-Schmidt inner product $\tuple{\omega\mid p}$, using that $p^*
 = p$.
 \begin{python}
->>> v = vector_state(0.5 * math.sqrt(3), complex(0, 0.5))
->>> p = v.as_pred()
->>> p
+>>> v = vector_state(0.5 * sqrt(3), complex(0, 0.5))
+>>> v
 [[ 0.75+0.j         0.00-0.4330127j]
  [ 0.00+0.4330127j  0.25+0.j       ]]
->>> ket(0) >= p
+>>> ket(0) >= v
 0.75000000000000033
->>> ket(1) >= p
+>>> ket(1) >= v
 0.25000000000000011
 \end{python}
 
@@ -3449,7 +3439,7 @@ random states and predicates, as in:
 conjunction $\andthen$ is \emph{not commutative}:
 \begin{python}
 >>> p = unit_pred(2,0)
->>> q = plus.as_pred()
+>>> q = plus
 >>> ket(0) >= p & q
 0.5
 >>> ket(0) >= q & p
@@ -3458,6 +3448,104 @@ conjunction $\andthen$ is \emph{not commutative}:
 
 \noindent See Example~\ref{ex:polarisation} for more such examples.
 
+Since a state is also a predicate, we can write states on both sides
+of the validity operator \pythoninline{>=}. The resulting validity
+does not depend on which of the two states is used as predicate.
+\begin{python}
+>>> s = random_state(8)
+>>> t = random_state(8)
+>>> s >= t
+0.116791838672 
+>>> t >= s
+0.116791838672
+\end{python}
+
+\noindent If these states \pythoninline{s} and \pythoninline{t} are
+vector states, then validity corresponds to the square of the inner product
+of the underlying states, as tested in:
+\begin{python}
+>>> v1 = np.random.rand(5)
+>>> v2 = v1/np.linalg.norm(v1)
+>>> w1 = np.random.rand(5)
+>>> w2 = w1/np.linalg.norm(w1)
+>>> s = vector_state(*v2)
+>>> t = vector_state(*w2)
+>>> s >= t
+0.659104940735
+>>> np.inner(v2, w2) ** 2 
+0.659104940735
+\end{python}
+
+
+\begin{example}
+\label{ex:linda}
+We illustrate sequential conjunction \pythoninline{\&} and disjunction
+\pythoninline{|} in the famous \emph{Linda
+  problem}\index{Linda~problem} leading to `conjunction
+fallacies'\index{conjunction!fallacy}\index{fallacy!conjunction~--}
+and `disjunction
+falacies',\index{disjunction!fallacy}\index{fallacy!disjunction~--}
+with their explanation in quantum cognition.\index{quantum~cognition}
+We follow the description in\cite{BusemeyerB12}. Consider the
+following quote and subsequent questions.
+\begin{quote}
+Linda is 31 years old, single, outspoken and very bright. She majored
+in philosophy. As a student, she was deeply concerned with issues of
+discrimination and social justice, and also participated in
+anti-nuclear demonstrations.
+\end{quote}
+
+\noindent What is the likelihood of the following events. Linda is:
+\begin{enumerate}
+\item \label{ex:linda:fem} active in the feminist movement;
+\item \label{ex:linda:bank} a bank teller;
+\item \label{ex:linda:femandbank} active in the feminist movement and a
+  bank teller;
+\item \label{ex:linda:femorbank} active in the feminist movement or a
+  bank teller.
+\end{enumerate}
+
+\noindent The `conjunction fallacy' concerns the fact that when asked
+many people say that option~\eqref{ex:linda:femandbank} is more likely
+than option~\eqref{ex:linda:bank}, and the `disjunction fallacy'
+occurs when option~\eqref{ex:linda:fem} is judged to be more likely
+than option~\eqref{ex:linda:femorbank}.
+
+We illustrate how to realise these fallacies using the
+following state from\cite{BusemeyerB12}.
+\begin{python}
+>>> s = vector_state(0.987, -0.1564)
+>>> feminist = unit_pred(2,0)
+>>> bankteller = vector_state(cos(0.4 * pi), sin(0.4 * pi))
+>>> s >= feminist 
+0.97550548153
+>>> s >= bankteller 
+0.0244489755636
+>>> s >= feminist & bankteller
+0.0931524844331
+>>> s >= bankteller | feminist
+0.906843166606
+\end{python}
+
+\noindent In this example the probability that Linda is \emph{both} a
+feminist and a bankteller (option~\ref{ex:linda:femandbank}) is higher
+than the probability that she is only a bankteller
+(option~\ref{ex:linda:bank}). Similarly, the probability that Linda is
+a bankteller \emph{or} a feminist (option~\ref{ex:linda:femorbank}) is
+lower than the probability that she is just a feminist
+(option~\ref{ex:linda:fem}).
+
+The above probabilities coincide with the numbers
+in\cite{BusemeyerB12}.  There is an important difference however: here
+these probabilities are obtained in an intuitive, high-level manner,
+via validities of generally defined `and' and `or' formulas in the
+logic of effects. In \emph{loc.\ cit.} they arise from detailed
+low-level calculations via inner products in the Hilbert space
+$\CN^2$. All that complexity is hidden here.  Similar illustrations
+are given in Examples~\ref{ex:carpreference} and~\ref{??}.
+\end{example}
+
+
 \begin{example}
 \label{ex:belltable}
 The Bell states are famous 2-qubit states which have been defined at
@@ -3465,12 +3553,10 @@ the end of Section~\ref{sec:qstate}. Of these four states be use the
 one named \pythoninline{bell00}. We additionally use the following
 predicates, obtained from states.
 \begin{python}
->>> v1 = vector_state(1/math.sqrt(2), 1/math.sqrt(2))
->>> A1 = v1.as_pred()
->>> B1 = v1.as_pred()
->>> v2 = vector_state(1/math.sqrt(2), 0.5/math.sqrt(2) * complex(1, math.sqrt(3)))
->>> A2 = v2.as_pred()
->>> B2 = v2.as_pred()
+>>> A1 = vector_state(1/sqrt(2), 1/sqrt(2))
+>>> B1 = A1
+>>> A2 = vector_state(1/sqrt(2), 0.5/sqrt(2) * complex(1, sqrt(3)))
+>>> B2 = A2
 >>> A1
 [[ 0.5  0.5]
  [ 0.5  0.5]]
@@ -3479,9 +3565,9 @@ predicates, obtained from states.
  [ 0.25+0.4330127j  0.50+0.j       ]]
 \end{python}
 
-\noindent These predicates \pythoninline{A1}, \pythoninline{A2},
-\pythoninline{B1}, \pythoninline{B2} may look a bit \emph{ad hoc} at
-this
+\noindent These states \pythoninline{A1}, \pythoninline{A2},
+\pythoninline{B1}, \pythoninline{B2} will be used as predicates. They
+may look a bit \emph{ad hoc} at this
 stage,\sidenote[][-3\baselineskip]{\label{sidenote:abramskycalculations}Detailed
   calculations and explanations of the coice of these predicates can
   be found at \url{https://arxiv.org/abs/1406.7386}.} but later in
@@ -3638,7 +3724,7 @@ We start with a random qubit state, and the relevant predicates.
 >>> s = random_state(2)
 >>> vert = unit_pred(2,0)
 >>> hor = unit_pred(2,1)
->>> diag = plus.as_pred()
+>>> diag = plus
 >>> s >= vert
 0.574918520238
 \end{python}
@@ -3902,7 +3988,7 @@ predicates and states.
 Validity \pythoninline{s >= rv} in state \pythoninline{s} is defined
 for a random variable \pythoninline{rv} and not just for a predicate.
 This validity is what is usually called the
-expectation.\index{expectation!--~of~a~quantum~random~variable} But,
+expectation.\index{expectation!of~a~quantum~random~variable} But,
 in contrast, conditioning \pythoninline{s / p} of a state
 \pythoninline{s} is defined only for a predicate \pythoninline{p}, and
 not for a random variable. These types are checked in the \EfProb
@@ -4101,12 +4187,12 @@ y_chan = channel_from_unitary(np.array([[0,-complex(0, 1)],
                                         [complex(0,1),0]]), [2])
 z_chan = channel_from_unitary(np.array([[1,0],
                                         [0,-1]]), [2])
-hadamard = channel_from_unitary((1/math.sqrt(2)) * np.array([ [1, 1],
+hadamard = channel_from_unitary((1/sqrt(2)) * np.array([ [1, 1],
                                                               [1, -1] ]), [2])
 def phase_shift(angle):
     return channel_from_unitary(np.array([[1, 0],
-                                          [0, complex(math.cos(angle),
-                                                      math.sin(angle))]]), [2])
+                                          [0, complex(cos(angle),
+                                                      sin(angle))]]), [2])
 \end{python}
 
 \noindent These are all channels $[2] \rightarrow [2]$.
@@ -4234,7 +4320,7 @@ as:\sidenote{See again the the reference
 >>> A1
 [[ 0.5+0.j  0.5+0.j]
  [ 0.5+0.j  0.5+0.j]]
->>> angle = math.pi / 3
+>>> angle = pi / 3
 >>> A2 = phase_shift(angle) << A1
 >>> A2
 [[ 0.50+0.j         0.25-0.4330127j]
@@ -4265,12 +4351,13 @@ $\ll$ works in backward direction.
 \begin{example}
 \label{ex:carpreference}
 We illustrate how the quantum setting can be used to capture different
-personal settings, via different states. The example is copied
-from\cite{BusemeyerB12}; we use the same numbers and show that the our
-logical language of predicates (effects) and conditioning makes the
-formulation of the relevant properties quite natural.
+personal perspectives or contexts, via different states. The example
+is copied from\cite{BusemeyerB12}; we use the same vectors (states)
+and obtain the same probabilities. We show that our logical language
+of predicates (effects) and conditioning makes the formulation of the
+relevant properties quite natural.
 
-A couple consisting of aman \pythoninline{M} and a woman
+A couple consisting of a man \pythoninline{M} and a woman
 \pythoninline{W} wish to buy a new car together. They consider three
 brands, namely BMW (\pythoninline{B}), Audi (\pythoninline{A}) and
 Cadillac (\pythoninline{C}), which will be modeled as the three basic
@@ -4294,11 +4381,11 @@ brands is expressed via validity:
 0.0303114710932
 \end{python}
 
-\noindent The woman's perspective in\cite{BusemeyerB12} is described
-via a different state \pythoninline{W}. It can be defined via state
-transformation \pythoninline{W = ch >> M} from the man's state
-\pythoninline{M}, where the channel \pythoninline{ch} is determined
-by a unitary matrix \pythoninline{U}:
+\noindent The woman's perspective is described via a different state
+\pythoninline{W}. It can be defined via state transformation
+\pythoninline{W = ch >> M} from the man's state \pythoninline{M},
+where the channel \pythoninline{ch} is determined by a unitary matrix
+\pythoninline{U}:
 \begin{python}
 >>> U = np.array([[1/sqrt(2), 1/2, -1/2], 
 ...               [1/sqrt(2), -1/2, 1/2], 
@@ -4313,15 +4400,18 @@ by a unitary matrix \pythoninline{U}:
 0.671442952067
 \end{python}
 
-\noindent Via the the transformation validity
-equation~\eqref{eqn:qvaliditytransformation} we can also obtain
-the latter preferences in the man's state as \pythoninline{M >= (ch << B)},
-\pythoninline{M >= (ch << A)} and \pythoninline{M >= (ch << C)}.
+\noindent Via the transformation validity
+equation~\eqref{eqn:qvaliditytransformation} we can also obtain the
+latter preferences of the woman in the man's state as validities of
+the transformed predicates: \pythoninline{M >= (ch << B)},
+\pythoninline{M >= (ch << A)} and \pythoninline{M >= (ch << C)}.  In
+the remainder of this example we shall use these transformed
+predicates for the woman's preferences.
 
 We can now describe what are called \emph{order
-  effects}\index{order!--~effect}\index{effect!order~--} cognition
+  effects}\index{order!effect}\index{effect!order~--} in cognition
 research. The probability that the man first thinks his wife prefers
-the Cadillac then he prefers the BMW is given by:
+the Cadillac and then he prefers the BMW is given by:
 \begin{python}
 >>> M >= (ch << C) & B
 0.167860738017
@@ -4330,7 +4420,19 @@ the Cadillac then he prefers the BMW is given by:
 \noindent Interestingly, taking the woman's preference for a Cadillac
 into account, the man's preference for a BMW goes down, wrt.\ the
 value \pythoninline{0.484844264453} of \pythoninline{M >= B} given
-above.
+above. But if the man thinks his wife wants a Caddilac his preference
+for the Caddilac goes up, a little bit.
+\begin{python}
+>>> M >= (ch << C) & C
+0.335721476033 
+>>> M >= C 
+0.0303114710932
+\end{python}
+
+\noindent This is an example where a conjunction has a higher
+probability than one of its components: another `conjunction fallacy',\index{conjunction!fallacy}\index{fallacy!conjunction~--}
+as in Example~\ref{ex:linda}. That is impossible in
+classical probability theory.
 
 Exchanging the two predicates we get:
 \begin{python}
@@ -4338,22 +4440,56 @@ Exchanging the two predicates we get:
 0.121211066113
 \end{python}
 
-\noindent We once again see that sequential conjunction \pythoninline{\&}
-is not commutative. 
+\noindent We once again see that sequential conjunction
+\pythoninline{\&} is not commutative, and thus creates an `order
+effect'.
 
+Let's now assume that the man and woman focus on making the same
+choice. They do so by looking at their joint state \pythoninline{M @
+  W} and forcing it to the situation where their choices coincide.  We
+then compute the probabilities for the various brands:
+\begin{python}
+>>> js = (M @ W) / (A @ A | B @ B | C @ C)
+>>> js >= A @ A
+0.886711592961
+>>> js >= B @ B
+0.0
+>>> js >= C @ C
+0.113288407039
+\end{python}
 
+\noindent Hence it is most likely that they buy an Audi. It is not
+hard to see that these three probabilities arise via normalisation
+from the three numbers:
+$$\mbox{\pythoninline{(M >= A) * (W >= A)}}
+\qquad
+\mbox{\pythoninline{(M >= B) * (W >= B)}}
+\qquad
+\mbox{\pythoninline{(M >= C) * (W >= C)}}$$
 
-%% 2.1.2.9 Coarse and complete measurements, pure and mixed states
+In the relatively new area of quantum
+cognition\index{quantum~cognition} one uses quantum structures to
+model these kinds of situations. Different quantum states in the same
+space are used to handle different perspectives of different people
+(see also Example~\ref{??}). Predicates correspond to questions that
+people answer correctly with a certain likelihood, given by
+validity. It is a well-known psychological phenomenon that the order
+in which questions are being asked influences the answers that people
+give. This is handled via the non-commutativity of sequential
+conjunction \pythoninline{\&}. Classical probability theory does not
+help here, since its sequential conjunction is commutative. Moreover,
+conditioning of states corresponds to `priming',\index{priming} where
+showing certain information before asking a question influences the
+answer. Again, this can be handled in a quantum setting.
 
-%% Given that wife wants luxurious, man wants sporty:  0.5
-%% Given that man wants sporty, wife wants luxurious:  0.5
-%% Given that man wants Audi, wife wants luxurious:  0.25
-
+The logic of effects that we are using here lifts these matters to a
+higher level of abstraction, as also argued in the Linda problem
+in Example~\ref{ex:linda}.
 \end{example}
 
 
 
-\subsection{Sequential and parallel composition}\label{subsec:qchannel:composition}
+\subsection{Sequential and parallel composition of channels}\label{subsec:qchannel:composition}
 
 As we have already discussed at a mathematical level in the beginning
 of this section, channels can be composed sequentially:
@@ -4771,8 +4907,8 @@ produces the resulting value as a probabilistic state. Concretely:
 \noindent The following abbreviations are convenient for binary
 measurement in the standard basis:
 \begin{python}
-meas0 = meas(ket(0).as_pred())
-meas1 = meas(ket(1).as_pred())
+meas0 = meas(ket(0))
+meas1 = meas(ket(1))
 \end{python}
 
 In quantum circuits it is custom to indicate the classical outcome of
@@ -4825,7 +4961,7 @@ measurement\index{Bell!measurement} illustration, using a measurement
 channel \pythoninline{meas\_test} that uses a test as
 input.\index{measurement!wrt.~a~test}
 \begin{python}
->>> bell_test = [bell00.as_pred(), bell01.as_pred(), bell10.as_pred(), bell11.as_pred()]
+>>> bell_test = [bell00, bell01, bell10, bell11]
 >>> meas_bell = meas_test(bell_test)
 >>> w = cnot >> (random_state(2) @ random_state(2))
 >>> meas_bell >> w 
@@ -4833,13 +4969,13 @@ input.\index{measurement!wrt.~a~test}
  [ 0.00000000+0.j  0.16059948+0.j  0.00000000+0.j  0.00000000+0.j]
  [ 0.00000000+0.j  0.00000000+0.j  0.31687829+0.j  0.00000000+0.j]
  [ 0.00000000+0.j  0.00000000+0.j  0.00000000+0.j  0.39304459+0.j]]
->>> w >= bell00.as_pred()
+>>> w >= bell00
 0.129477644519
->>> w >= bell01.as_pred()
+>>> w >= bell01
 0.160599477211
->>> w >= bell10.as_pred()
+>>> w >= bell10
 0.316878289196
->>> w >= bell11.as_pred()
+>>> w >= bell11
 0.393044589075
 \end{python}
 
@@ -5255,7 +5391,7 @@ quantum circuits.  Therefore we shall be more explicit about the types
 
 On Alice's side we use the following set-up.
 \begin{python}
->>> bell_test = [bell00.as_pred(), bell01.as_pred(), bell10.as_pred(), bell11.as_pred()]
+>>> bell_test = [bell00, bell01, bell10, bell11]
 >>> meas_bell = meas_test(bell_test)
 >>> meas_bell.dom
 [2,2]
@@ -5279,7 +5415,7 @@ Alice, via the Kronecker channel \pythoninline{kron}, into a joint
 probabilistic state with 8 options. Then he can make the relevant
 case distinctions:
 \begin{python}
->>> hadamard_test = [plus.as_pred(), minus.as_pred()]
+>>> hadamard_test = [plus, minus]
 >>> meas_hadamard = meas_test(hadamard_test)
 >>> bob = ( discard(8) @ idn(2) ) \
 ...       * ccase(idn(2), z_chan, x_chan, x_chan * z_chan, \
@@ -5344,10 +5480,7 @@ It is defined first.
 measures\index{GHZ!measurement} the two incoming qubits and his own
 third qubit of the GHZ state in the GHZ basis.
 \begin{python}
->>> ghz_test = [ghz1.as_pred(), ghz2.as_pred(),
-...             ghz3.as_pred(), ghz4.as_pred(),
-...             ghz5.as_pred(), ghz6.as_pred(),
-...             ghz7.as_pred(), ghz8.as_pred()]
+>>> ghz_test = [ghz1, ghz2, ghz3, ghz4, ghz5, ghz6, ghz7, ghz8]
 >>> meas_ghz = meas_test(ghz_test)
 >>> bob = meas_ghz
 >>  ghz_sdc = bob * (alice @ idn(2)) * (idn(8) @ ghz.as_chan())
