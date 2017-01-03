@@ -682,6 +682,70 @@ def teleportation_and_superdensecoding():
     print( w % [0,1,0] )
     print( w % [0,0,1] )
 
+def order_inference():
+
+    print("\nSection: Order inference effect example\n")    
+
+    print("* States for the three perspectives")
+    H = np.array([[2, 1, 1, 0],
+                  [1, -2, 0, 1],
+                  [1, 0, 0, 1],
+                  [0, 1, 1, 0]])
+    Ujp = scipy.linalg.expm(complex(0,-1) * 1.2393 * H)
+    Ujd = scipy.linalg.expm(complex(0,-1) * -3.8324 * H)
+    Upd = np.dot(Ujd, conjugate_transpose(Ujp))
+    Udp = np.dot(Ujp, conjugate_transpose(Ujd))
+    print("Self-adjoint and unitaries: ",
+          is_hermitian(H), is_unitary(Ujp), is_unitary(Ujd), is_unitary(Upd) )
+    chjp = channel_from_unitary(Ujp, Dom([4]), Dom([4]))
+    chjd = channel_from_unitary(Ujd, Dom([4]), Dom([4]))
+    chpd = channel_from_unitary(Upd, Dom([4]), Dom([4]))
+    chdp = channel_from_unitary(Udp, Dom([4]), Dom([4]))
+    J = vector_state(sqrt(0.459/2),sqrt(0.459/2),sqrt(0.541/2),sqrt(0.541/2))
+    P = chjp >> J
+    D = chjd >> J
+    print("Equality of states: ", D == chpd >> P, P == chdp >> D )
+
+    print("\n===\n")
+
+    print("* Predicates for the four kinds of information, and naieve perspective")
+    pGpE = unit_pred(4,0)
+    pGnE = unit_pred(4,1)
+    nGpE = unit_pred(4,2)
+    nGnE = unit_pred(4,3)
+    print( J >= pGpE | pGnE )
+    print( J >= nGpE | nGnE )
+
+    print("\n===\n")
+
+    print("* Prosecutor's perspective")
+    print("Guilt and non-guilt: ", P >= pGpE | pGnE, P >= nGpE | nGnE )
+    print("Similarly, via predicate transformation: ",
+          J >= chjp << (pGpE | pGnE), J >= chjp << (nGpE | nGnE) )
+    print( P / (pGpE | nGpE) >= (pGpE | pGnE) )
+    print("This can also be obtained by moving back and forth, since the channel is MIU")
+    print( chjp >> (J / (chjp << (pGpE | nGpE))) >= (pGpE | pGnE) )
+
+    print("\n===\n")
+
+    print("* Defense perspective")
+    print( D >= pGpE | pGnE )
+    print( D / (chdp << (pGpE | nGpE)) >= pGpE, 
+           D / (chdp << (pGpE | nGpE)) >= pGnE,
+           D / (chdp << (pGpE | nGpE)) >= nGpE,
+           D / (chdp << (pGpE | nGpE)) >= nGnE )
+    print( D / (chdp << (pGpE | nGpE)) >= pGpE | pGnE )
+
+    print("\n===\n")
+
+    print("* Neutral perspective")
+    P_ev = chjp << (pGpE | nGpE)
+    D_ev = chjd << (pGnE | nGnE)
+    print("Positive evidence of prosector first: ",
+          J / P_ev / D_ev >= pGpE | pGnE )
+    print("Negative evidence of defense first: ",
+          J / D_ev / P_ev >= pGpE | pGnE )
+
 
 
 def main():
@@ -694,11 +758,12 @@ def main():
     # conditioning()
     # weakening()
     # state_transformation()
-    predicate_transformation()
+    # predicate_transformation()
     # random_variables()
     # structural_channels()
     # measurement()
     # teleportation_and_superdensecoding()
+    order_inference()
 
 if __name__ == "__main__":
     main()

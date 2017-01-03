@@ -5544,6 +5544,178 @@ these implementation details.
 \end{example}
 
 
+\section{Order inference effect example}\label{sec:orderinference}
+
+In classical (discrete and continuous) probability the order of
+conditioning of states does not matter, as expressed by the equation:
+$(\omega|_{p})|_{q} = (\omega|_{q})_{p}$. This can be proven easily,
+via commutativity of sequential conjunction:
+$$\begin{array}{rcccccl}
+(\omega|_{p})|_{q}
+& = &
+\omega|_{p\andthen q}
+& = &
+\omega|_{q\andthen p}
+& = &
+(\omega|_{q})_{p}.
+\end{array}$$
+
+\noindent This argument does not work in the quantum case
+since quantum \pythoninline{\&} is not commutative.
+
+Indeed, in a quantum setting there is in general a difference between
+$(\omega|_{p})|_{q}$ and $(\omega|_{q})_{p}$. This means that the
+order in which evince, given by the predicates $p,q$, is presented has
+influence on the resulting (multiply conditioned) state.  This
+phenomenon has been picked up in the area of quantum
+cognition,\index{quantum~cognition} where it is used to explain what
+is known as the `order inference effect' in psychology: the order in
+which people are primed\index{priming} with evidence is relevant for
+what they believe. We include an illustration, adapted
+from\cite{BusemeyerB12}.
+
+
+\begin{example}
+\label{ex:orderinference}
+Consider a court case, with three points of view: the prosecutor's
+perspective \pythoninline{P}, the defense's perspective
+\pythoninline{D}, and the judge's perspective \pythoninline{J}.  These
+three perspectives are modeled as three states \pythoninline{P},
+\pythoninline{D}, \pythoninline{J} with four dimensions. They are
+connected via unitary matrices --- actually via the associated
+channels --- as suggested in:
+$$\xymatrix@R-1pc@C+1pc{
+\mbox{\pythoninline{P}} 
+& &
+\mbox{\pythoninline{J}}\ar[ll]_-{\mbox{\pythoninline{Ujp}}}
+   \ar[rr]^-{\mbox{\pythoninline{Ujd}}}
+& & 
+\mbox{\pythoninline{D}}
+}$$
+
+\noindent The precise form of these unitary matrices does not matter
+too much, but we copy the details from the orginal source. First, one
+starts from a self-adjoint matrix \pythoninline{H}, which is used as
+`Hamiltonian', like in the solution of Schr\"odinger's
+(time-independent) wave equation. It used to form the above two
+unitary matrices \pythoninline{Ujp} and \pythoninline{Ujd} via a
+matrix-exponent:
+\begin{python}
+>>> H = np.array([[2, 1, 1, 0],
+...               [1, -2, 0, 1],
+...               [1, 0, 0, 1],
+...               [0, 1, 1, 0]])
+>>> Ujp = scipy.linalg.expm(1.2393 * complex(0,-1) * H)
+>>> chjp = channel_from_unitary(Ujp, Dom([4]), Dom([4]))
+>>> Ujd = scipy.linalg.expm(-3.8324 * complex(0,-1) * H)
+>>> chjd = channel_from_unitary(Ujd, Dom([4]), Dom([4]))
+\end{python}
+
+\noindent With this infrastructure in place, we can define the three
+states, corresponding to the three different perspectives:
+\begin{python}
+>>> J = vector_state(sqrt(0.459/2),sqrt(0.459/2),sqrt(0.541/2),sqrt(0.541/2))
+>>> P = chjp >> J
+>>> D = chjd >> J
+\end{python}
+
+\noindent The information that is presented in this court case is
+modeled by the four basic predicates on our 4-dimensional space. There
+are four kinds of information: postive/negative guilt-hypotheses and
+postive/negative evidence (wrt.\ guilt). They are captured by the
+following abbreviations.
+\begin{python}
+>>> pGpE = unit_pred(4,0)
+>>> pGnE = unit_pred(4,1)
+>>> nGpE = unit_pred(4,2)
+>>> nGnE = unit_pred(4,3)
+>>> J >= pGpE | pGnE
+0.459
+>>> J >= nGpE | nGnE
+0.541
+\end{python}
+
+\noindent We see that the judge has a slight bias towards
+innocence (non-guilt).
+
+We turn to the prosecutor's perspective, in which guilt is seen as more
+likely:
+\begin{python}
+>>> P >= pGpE | pGnE
+0.833938321775
+\end{python}
+
+\noindent Via predicate transformation these same probabilities can be
+obtained in the judge's state,
+using Equation~\eqref{eqn:qvaliditytransformation}:
+\begin{python}
+>>> J >= chjp << (pGpE | pGnE)
+0.833938321775
+\end{python}
+
+%% \noindent When the prosecutioner's state is updated with the positive
+%% evidence, it leads to a slightly higher probability of guilt:
+%% \begin{python}
+%% >>> P / (pGpE | nGpE) >= (pGpE | pGnE)
+%% 0.870284240057
+%% \end{python}
+
+The defence is in this case apparantly not really convinced of
+innocence:
+\begin{python}
+>>> D >= pGpE | pGnE
+0.659557172917
+\end{python}
+
+The judge digests both the positive evindence \pythoninline{pGpE |
+  nGpE} of the prosecutor, via the channel \pythoninline{chjp}, and
+the negative evidence \pythoninline{pGnE | nGnE} of the defense, via
+the channel \pythoninline{chjd}. This can be done in two orders.
+Subsequently the guilt question is asked:
+\begin{python}
+>>> P_ev = chjp << (pGpE | nGpE)
+>>> D_ev = chjd << (pGnE | nGnE)
+>>> J / P_ev / D_ev >= pGpE | pGnE
+0.289907257861
+>>> J / D_ev / P_ev >= pGpE | pGnE
+0.350576430568
+\end{python}
+
+\noindent Hence the judge is likely to acquit. But more importantly,
+the likelihood depends on the order in which the evindence is
+presented: a clear 'order inference effect'. The judge is most
+convinced by the one who speaks last. This is a very human
+characteristic.
+\end{example}
+
+%% 4.2.4.2 Naive perspective
+
+%% Matrix H is Hermitian:  True 
+
+%% Guilt for the first judgement, without evidence:  0.459
+
+%% 4.2.4.3 Prosecution perspective
+
+%% Matrix Upn is unitary:  True
+%% State p can also be obtained from state transformation:  True
+
+%% Squared magnitudes of vector p:  [0.74132503408138983, 0.092613287693186941, 0.11049440600551746, 0.055567272219905588]
+
+%% This is the same as the validities of the 4 basic predicates:  0.741325034081 0.0926132876932 0.110494406006 0.0555672722199
+
+%% Judged probability of guilt for the second judgement, after the first piece of (positive) evidence:  0.870284240057
+
+%% 4.2.4.4 Defense perspective
+
+%% Matrices Udn and Udp are unitary:  True True
+%% State d can also be obtained from state transformations:  True True
+
+%% Validities of the 4 basic predicates in state d+:  0.500219890137 0.212420696339 0.0964238928938 0.190935520631
+
+%% Judged probability of guilt for the second judgement, after both pieces of evidence:  0.526633004283
+
+
+
 \section{Operators}\label{sec:operator}\marginpar{Unfinished}
 
 In Diagram~\eqref{diag:channelmatrix} we have described a channels an

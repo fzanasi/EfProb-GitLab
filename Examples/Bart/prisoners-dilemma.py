@@ -95,9 +95,17 @@ def HB(gam):
                                               [0, -1, 0, 1],
                                               [1, 0, -1, 0],
                                               [0, 1, 0, 1]]), Dom([4]))
+def K(delta):
+    return RandVar(np.array([[-1, 0, delta, 0],
+                             [0, -delta, 0, 1],
+                             [1, 0, -delta, 0],
+                             [0, delta, 0, -1]]), Dom([4]))
 
 def HC(mu_d, mu_c, gam):
     return HA(mu_d, mu_c) + HB(gam)
+
+def HK(gam, delta):
+    return HB(gam) + K(delta)
 
 s1 = HB(pi/2).evolution(Qpsi)(1)
 print("\nHB example", s1 >= QDD, s1 >= QDC, s1 >= QCD, s1 >= QCC )
@@ -120,9 +128,17 @@ print("\nHB example", s1 >= QDD, s1 >= QDC, s1 >= QCD, s1 >= QCC )
 # below describes what is called QD in the book. Is the plot QD'*QD ??
 # Does that explain the mismatch.
 #
-plot( lambda k: HA(k,k).evolution(Qpsi)(pi/2) >= (QDD + QCD), 0, 20 )
+#plot( lambda k: HA(k,k).evolution(Qpsi)(pi/2) >= (QDD + QCD), 0, 20 )
 
+# Book bottom p. 279
+h = 0.5263
+c = 2.2469
 
+post = HK(c,1).evolution(Qpsi)(pi/2)
+
+# last row of Table 9.4
+print("must be 0.72 ", post / (QDD | QDC) >= QDD + QCD )
+print("must be 0.84 ",  post / (QCD | QCC) >= QDD + QCD )
 
 print("\nQuantum Encryption test\n")
 

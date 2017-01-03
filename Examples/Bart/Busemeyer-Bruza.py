@@ -247,13 +247,13 @@ print("\n4.2.4.3 Prosecution perspective\n")
 # Shift to the prosecution's perspective
 #
 xp = 1.2393
-Upn = scipy.linalg.expm(complex(0,-1) * xp * conjugate_transpose(H))
+Unp = scipy.linalg.expm(complex(0,-1) * xp * conjugate_transpose(H))
 
-print("Matrix Upn is unitary: ", is_unitary(Upn) )
+print("Matrix Unp is unitary: ", is_unitary(Unp) )
 
-chpn = channel_from_unitary(conjugate_transpose(Upn), Dom([4]), Dom([4]))
+chnp = channel_from_unitary(conjugate_transpose(Unp), Dom([4]), Dom([4]))
 
-p = np.dot(Upn, n)
+p = np.dot(Unp, n)
 
 #
 # state incorporating prosecution's perspective
@@ -261,7 +261,7 @@ p = np.dot(Upn, n)
 p_state = vector_state(*p)
 
 print("State p can also be obtained from state transformation: ",
-      p_state == chpn >> n_state )
+      p_state == chnp >> n_state )
 
 print("\nSquared magnitudes of vector p: ", [ abs(x) ** 2 for x in p] )
 
@@ -284,33 +284,36 @@ print("\n4.2.4.4 Defense perspective\n")
 # Shift to defensive perspective, from neutral perspective
 #
 xd = -3.8324
-Udn = scipy.linalg.expm(complex(0,-1) * xd * conjugate_transpose(H))
+Und = scipy.linalg.expm(complex(0,-1) * xd * H)
 
 #
 # Shift to defense perspective, starting from prosection's perspective
 #
-Udp = np.dot(Udn, conjugate_transpose(Upn))
+Upd = np.dot(Und, conjugate_transpose(Unp))
 
-print("Matrices Udn and Udp are unitary: ", is_unitary(Udn), is_unitary(Udp) )
+print("Matrices Und and Upd are unitary: ", is_unitary(Und), is_unitary(Upd) )
 
-chdn = channel_from_unitary(conjugate_transpose(Udn), Dom([4]), Dom([4]))
-chdp = channel_from_unitary(conjugate_transpose(Udp), Dom([4]), Dom([4]))
+chnd = channel_from_unitary(Und, Dom([4]), Dom([4]))
+chpd = channel_from_unitary(Upd, Dom([4]), Dom([4]))
 
-d = np.dot(Udn, n)
+d = np.dot(Und, n)
 
 #
 # state incorporating defense perspective
 #
-d_state = chdn >> n_state
+d_state = chnd >> n_state
 
 print("State d can also be obtained from state transformations: ",
-      d_state == vector_state(*d), d_state == chdp >> p_state)
+      d_state == vector_state(*d), d_state == chpd >> p_state)
+
+print("Guilt probability from defense perspective: ",
+      d_state >= pGpE | pGnE )
 
 #
 # state incorporating defense perspective after seeing prosecution's
 # (positive) evidence
 #
-d_plus = chdp >> p_plus
+d_plus = chpd >> p_plus
 
 print("\nValidities of the 4 basic predicates in state d+: ", 
       d_plus >= pGpE, 
@@ -328,6 +331,9 @@ print("\nJudged probability of guilt for the second judgement, after both pieces
 
 print("\nOwn addition, as comparison: the probability of guilt given only the negative evidence is: ", 
       d_state / (pGnE | nGnE) >= pGnE )
+
+
+"""
 
 
 print("\n5.2 Non-compositional models of concept combinations based in quantum interference\n")
@@ -580,7 +586,7 @@ print("\nQuantum expected values from t=0 to t=40; somewhat different from Fig. 
 for i in range(21):
     print("at t = ", i, " ", (quantum_channel(i) >> quantum_prior) >= rand_var )
 
-plot( lambda i: (quantum_channel(i) >> quantum_prior) >= rand_var, 0, 100 )
+#plot( lambda i: (quantum_channel(i) >> quantum_prior) >= rand_var, 0, 100 )
 
 
 print("\n9.1 Allais and Ellsberg paradoxes\n")
@@ -663,3 +669,4 @@ print("Prior emergency and alarm probabilities: ", ABX >= PB, ABX >= PX)
 print("Resulting alarm probability: ", (idn(2) @ cnot) >> (ABX / PA) >= PX )
 
 
+"""
