@@ -142,9 +142,53 @@ def conditioning():
     print("* Dice conditionings")
     fdice = uniform_state([1,2,3,4,5,6])
     even = Predicate([0,1,0,1,0,1], [1,2,3,4,5,6])
-    atmost3 = Predicate([1,1,1,0,0,0], [1,2,3,4,5,6])
-    print( fdice / even >= atmost3 )
-    print( fdice / atmost3 >= ~even )
+    atmost4 = Predicate([1,1,1,1,0,0], [1,2,3,4,5,6])
+    print("Validity of even and atmost4 ", 
+          fdice >= even, fdice >= atmost4 )
+
+    print("\n===\n")
+
+    print("* even, given atmost4")
+    print( fdice / atmost4 >= even  )
+
+    print("\n===\n")
+
+    print("* dice, given atmost4")
+    print( fdice / atmost4 )
+
+    print("\n===\n")
+
+    print("* dice, given even")
+    print( fdice / even )
+    print( fdice / even >= atmost4 )
+
+    print("\n===\n")
+
+    print("* local conditioning check")
+    s = random_disc_state(2)
+    t = random_disc_state(3)
+    p = random_disc_pred(2)
+    print( (s @ t) / (p @ truth(t.dom)) )
+    print( (s / p) @ t )
+
+    print("\n===\n")
+
+    print("* Church medical example")
+    prior = flip(0.01) @ flip(0.005) @ flip(0.2) @ flip(0.1) @ flip(0.1)
+    up = Predicate([1,0], [True,False])
+    W = truth([True,False])
+    LC = up @ W @ W @ W @ W
+    TB = W @ up @ W @ W @ W
+    CO = W @ W @ up @ W @ W
+    SF = W @ W @ W @ up @ W
+    OT = W @ W @ W @ W @ up
+    cough = 0.5 * CO | 0.3 * LC | 0.7 * TB | 0.01 * OT
+    fever = 0.3 * CO | 0.5 * SF | 0.2 * TB | 0.01 * TB
+    chest_pain = 0.4 * LC | 0.5 * TB | 0.01 * OT
+    short_breath = 0.4 * LC | 0.5 * TB | 0.01 * OT
+    post = prior / (cough & fever & chest_pain & short_breath)
+    print( post % [1, 1, 0, 0, 0] )
+
 
     print("\n===\n")
 
@@ -158,7 +202,7 @@ def conditioning():
 
     print("\n===\n")
 
-    print("\n* Law of total probability")
+    print("* Law of total probability")
     s = random_disc_state(4)
     p = random_disc_pred(4)
     # scaling is used to make sure these predicates are summable
@@ -173,14 +217,102 @@ def conditioning():
           (s >= q1 & p) + (s >= q2 & p) + (s >= q3 & p) )
     print("the predicat's validity, directly:", s >= p )
 
+
+
 def random_variables():
 
     print("\nSection: Random Variables\n")
+
+    print("* umbrella sales expectation")
+    rain_state = flip(0.3)
+    umbrella_sales_rv = RandVar(lambda x: 100 if x else -20, [True,False])
+    print( umbrella_sales_rv.exp(rain_state) )
+
+    print("\n===\n")
+
+    print("* two-dice expectation")
+    fdice = uniform_state([1,2,3,4,5,6])
+    twodice = fdice @ fdice
+    sum_rv = RandVar(lambda x,y: x+y, twodice.dom)
+    print( sum_rv.exp(twodice) )
+
+    print("\n===\n")
+
+    print("* Even-odd expectation")
+    even = Predicate([0,1,0,1,0,1], [1,2,3,4,5,6])
+    odd = ~even
+    print( sum_rv.exp( twodice / (even @ even) ) )
+    print( sum_rv.exp( twodice / (odd @ odd) ) )
+
+    print("\n===\n")
+
+    print("* Dice sums expectation")
+    def sums_exp(n): return RandVar(lambda *xs: sum(xs),
+                                    (fdice ** n).dom).exp(fdice ** n)
+    print( sums_exp(1) )
+    print( sums_exp(2) )
+    print( sums_exp(3) )
+    #print( sums_exp(8) )
+
+    print("\n===\n")
+
+    print("* Dice even sums expectation")
+    def even_sums_exp(n): return RandVar(lambda *xs: sum(xs),
+                                         (fdice ** n).dom).exp( (fdice ** n) / (even ** n) )
+    print( even_sums_exp(1) )
+    print( even_sums_exp(2) )
+    #print( even_sums_exp(8) )
+
+
+    print("\n===\n")
+
+#     print("* Conditional expectation")
+#     # https://www.ma.utexas.edu/users/gordanz/notes/conditional_expectation.pdf
+#     domain = ['a', 'b', 'c', 'd', 'e', 'f']
+#     unif = uniform_state(domain)
+#     X = RandVar(lambda x: 1 if x == 'a' else 
+#                 3 if x == 'b' or x == 'c' else
+#                 5 if x == 'd' or x == 'e' else
+#                 7,
+#                 domain)
+#     Y = RandVar([1,3,3,5,5,7], domain)
+#     print( X.exp(unif) )
+#     print( Y.exp(unif) )
+#     Y = RandVar(lambda x: 2 if x == 'a' or x == 'b' else 
+#                 1 if x == 'c' or x == 'd' else
+#                 7,
+#                 domain)
+#     Z = RandVar([3,3,3,3,2,2], domain)
+#     X = RandVar([1,3,3,5,5,7], domain)
+#     Y = RandVar([2,2,1,1,7,7], domain)
+#     #print("Expected values of X,Y: ", X.exp(unif), Y.exp(unif) )
+#     #print( Y.funs[0]('f') )
+#     print( Y.funs[5] )
+#     print( Predicate([1 if Y.funs[x]==Y.funs[3] else 0 for x in range(len(domain))], 
+#                          domain) )
+#     for i in range(len(domain)):
+#         print(domain[i], 
+# #              X.exp(unif / Predicate([1 if Y.funs[0](x)==Y.funs[0](domain[i]) else 0 for x in domain], 
+#               X.exp(unif / Predicate([1 if Y.funs[x]==Y.funs[i] else 0 for x in range(len(domain))], 
+#                          domain)) )
+
+
+
+
 
 
 def channels():
 
     print("\nSection: Channels\n")
+
+    c = cpt(0.2, 0.5)
+    s = bn_prior(random.uniform(0,1))
+    print( s )
+    print( (graph(c) >> s) % [1,0] )
+    print( c >> s )
+    print( (graph(c) >> s) % [0,1] )
+
+
 
 def state_pred_transformation():
 
@@ -336,9 +468,9 @@ def main():
     #predicates()
     #operations_on_predicates()
     #validity()
-    conditioning()
+    #conditioning()
     #random_variables()
-    #channels()
+    channels()
     #state_pred_transformation()
     #seq_par_composition()
     #bayesian_networks()

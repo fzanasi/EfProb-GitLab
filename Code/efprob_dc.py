@@ -1053,6 +1053,10 @@ def copy(dom):
         array[n, n, n] = 1.0
     return Channel(array, dom, dom+dom)
 
+def graph(c):
+    return (idn(c.dom) @ c) * copy(c.dom)
+
+
 
 class DetChan:
     """Deterministic channels."""

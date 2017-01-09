@@ -80,8 +80,6 @@ def Mch(t, mu_d, mu_c):
 #plot( lambda k: (Mch(pi/2, k, k) >> Mpsi) >= (MDD + MCD), 0, 45 )
 
 
-
-
 def HA(mu_d, mu_c):
     f_d = 1 / sqrt(1 + (mu_d ** 2))
     f_c = 1 / sqrt(1 + (mu_c ** 2))

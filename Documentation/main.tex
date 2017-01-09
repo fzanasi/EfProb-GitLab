@@ -270,6 +270,8 @@
 \newcommand{\NN}{\mathbb{N}}     % natural numbers
 \newcommand{\Mat}{\mathsf{M}}
 \newcommand{\tr}{\mathsf{tr}}
+\newcommand{\gp}{\mathsf{gp}}
+\newcommand{\extr}{\mathsf{extr}}
 \newcommand{\lb}{\mathsf{lb}}
 \newcommand{\ub}{\mathsf{ub}}
 \newcommand{\intd}{{\kern.2em}\mathrm{d}{\kern.03em}}
@@ -1563,7 +1565,7 @@ cancer (LC) and tuberculosis (TC), given these observed symptoms? This
 is a typical conditional probability problem. The solution is obtained
 by taking the appropriate marginals of the conditional state:
 \begin{python}
-print( post % [1, 1, 0, 0, 0] )
+>>> post % [1, 1, 0, 0, 0] 
 0.0161|True,True> + 0.242|True,False> + 0.741|False,True> + 0.000919|False,False>
 \end{python}
 
@@ -1750,7 +1752,6 @@ dices:
 \begin{python}
 >>> def sums_exp(n): return RandVar(lambda *xs: sum(xs), 
 ... (fdice ** n).dom).exp(fdice ** n)
-... 
 >>> sums_exp(1)
 3.5
 >>> sums_exp(2)
@@ -1770,8 +1771,8 @@ elements.\marginnote{One sees a pattern emerging, namely that
 trick for arbitrary-length sequences of arguments, namely by adding a
 star in \pythoninline{lambda *xs: sum(xs)}.
 
-Below is a variation where we look at the expected value for
-\pythoninline{n} dices with \pythoninline{even} outcome, via via
+Below is a variation where we look at the `conditional' expected value
+for \pythoninline{n} dices with \pythoninline{even} outcome, via
 conditional states.\marginnote[3\baselineskip]{Here the pattern is
   \pythoninline{even\_sums\_exp(n)} equals \pythoninline{4 * n}.}
 \begin{python}
@@ -1781,9 +1782,9 @@ conditional states.\marginnote[3\baselineskip]{Here the pattern is
 >>> even_sums_exp(1)
 4.0
 >>> even_sums_exp(2)
-7.9999999999999991
+8.0
 >>> even_sums_exp(8)
-32.00000000000027
+32.0
 \end{python}
 
 As described above, random variables are functions from a domain to
@@ -5718,8 +5719,8 @@ characteristic.
 
 \section{Operators}\label{sec:operator}\marginpar{Unfinished}
 
-In Diagram~\eqref{diag:channelmatrix} we have described a channels an
-$m\times m$ matrix of $n\times n$ matrices. In this section we
+In Diagram~\eqref{diag:channelmatrix} we have described a channel as
+an $m\times m$ matrix of $n\times n$ matrices. In this section we
 describe a slightly different representation, namely as a square $(n
 \cdot m) \times (n\cdot m)$ matrix. This representation is captured in
 what is called a \emph{transition operator}, or simply an
@@ -5743,17 +5744,17 @@ $$\begin{array}{rcl}
 \noindent where $0 \leq i,j < n$ and $0 \leq k,\ell < m$.
 
 For a state $s$ represented by a $n\times n$ density matrix
-$A$ we can do state transformation \pythoninline{c >> s}, say
-represented by an $m\times m$ matrix $B$, where, according
+$S$ we can do state transformation \pythoninline{c >> s}, say
+represented by an $m\times m$ matrix $S'$, where, according
 to~\eqref{eqn:qstatetransform}:
 $$\begin{array}{rcl}
-B_{\ell\,k}
+S'_{\ell\,k}
 & = &
-\tr(A\cdot C_{k\ell}).
+\tr(S\cdot C_{k\ell}).
 \end{array}$$
 
-\noindent This same matrix $B$ can then be obtained as transpose of
-the partial trace $\tr_{2}((A\otimes\idmap[m])\widehat{C})$. The
+\noindent This same matrix $S'$ can then be obtained as transpose of
+the partial trace $\tr_{2}((S\otimes\idmap[m])\widehat{C})$. The
 first and second partial trace maps, are written, in analogy with
 projections as:
 $$\xymatrix{
@@ -5762,64 +5763,307 @@ $$\xymatrix{
 
 \noindent We can then check:
 $$\begin{array}{rcl}
-\tr_{2}((A\otimes \idmap[m])\widehat{C})_{k\ell}
+\tr_{2}((S\otimes \idmap[m])\widehat{C})_{k\ell}
 & = &
-\bra{k}\tr_{2}((A\otimes \idmap[m])\widehat{C})\ket{\ell}
+\bra{k}\tr_{2}((S\otimes \idmap[m])\widehat{C})\ket{\ell}
 \\
 & = &
-\bra{k}\sum_{j}(\bra{j}\otimes\idmap[m])(A\otimes \idmap[m])
+\bra{k}\sum_{j}(\bra{j}\otimes\idmap[m])(S\otimes \idmap[m])
     \widehat{C})(\ket{j}\otimes\idmap[m])\ket{\ell}
 \\
 & = &
-\sum_{j}\,(\bra{j}\otimes\bra{k})(A\otimes \idmap[m])
+\sum_{j}\,(\bra{j}\otimes\bra{k})(S\otimes \idmap[m])
     \widehat{C})(\ket{j}\otimes\ket{\ell})
 \\
 & = &
-\sum_{i,j}\,\bra{j}A\ket{i} \cdot 
+\sum_{i,j}\,\bra{j}S\ket{i} \cdot 
     (\bra{i}\otimes\bra{k})\widehat{C}(\ket{j}\otimes\ket{\ell})
 \\
 & = &
-\sum_{i,j}\,\bra{j}A\ket{i} \cdot \bra{i}\bra{k}C\ket{\ell}\ket{j}
+\sum_{i,j}\,\bra{j}S\ket{i} \cdot \bra{i}\bra{k}C\ket{\ell}\ket{j}
 \\
 & = &
-\sum_{j}\,\bra{j}(A \cdot \bra{k}C\ket{\ell})\ket{j} 
+\sum_{j}\,\bra{j}(S \cdot \bra{k}C\ket{\ell})\ket{j} 
 \\
 & = &
-\tr(A \cdot \bra{k}C\ket{\ell})
-\\
-& = &
-\tr(A\cdot C_{k\ell}) 
+\tr(S \cdot C_{k\ell})
 \\
 & = &
 B_{\ell\,k}.
 \end{array}$$
 
-Similarly, for $P\in\Mat_{m}$ representing a predicate,
+Similarly, for $P\in\Mat_{m}$ representing a predicate, we elaborate
+the formula for predicate transformation for operators:
 $$\begin{array}{rcl}
-\tr_{1}\big((\idmap[n]\otimes P)\widehat{C}\big)_{ij}
+\tr_{1}\big((\idmap[n]\otimes P^{T})\widehat{C}\big)_{ij}
 & = &
-\bra{i}\tr_{1}\big((\idmap[n]\otimes P)\widehat{C}\big)\ket{j}
+\bra{i}\tr_{1}\big((\idmap[n]\otimes P^{T})\widehat{C}\big)\ket{j}
 \\
 & = &
-\sum_{\ell}\,(\bra{i}\otimes\bra{\ell})(\idmap[n]\otimes P)\widehat{C})
+\sum_{\ell}\,(\bra{i}\otimes\bra{\ell})(\idmap[n]\otimes P^{T})\widehat{C})
    (\ket{j}\otimes\ket{\ell})
 \\
 & = &
-\sum_{k,\ell}\, \bra{\ell}P\ket{k}\cdot 
+\sum_{k,\ell}\, \bra{\ell}P^{T}\ket{k}\cdot 
    (\bra{i}\otimes\bra{k})\widehat{C}(\ket{j}\otimes\ket{\ell})
 \\
 & = &
-\sum_{k,\ell}\, \bra{\ell}P\ket{k}\cdot \bra{i}\bra{k}C\ket{\ell}\ket{j}
+\sum_{k,\ell}\, \bra{k}P\ket{\ell}\cdot \bra{i}\bra{k}C\ket{\ell}\ket{j}
 \\
 & = &
-\bra{i}\big(\sum_{k,\ell}\, \bra{\ell}P\ket{k}\cdot 
-   \bra{k}C\ket{\ell}\big)\ket{j}.
+\bra{i}\big(\sum_{k,\ell}\, \bra{k}P\ket{\ell}\cdot 
+   \bra{k}C\ket{\ell}\big)\ket{j}
+\\
+& = &
+\big(\sum_{k,\ell}\, P_{k\ell} \cdot C_{k\ell}\big)_{ij}
 \end{array}$$
 
 \noindent The inner expression corresponds to predicate
-transformation~\eqref{eqn:qpredtransform}.\marginpar{Strangely, in the
-  implementation we need an additional transpose after the partial
-  trace $\tr_1$.}
+transformation~\eqref{eqn:qpredtransform}.
+
+For a channel $c \colon n \rightarrow m$ and a state $s$ with domain
+$n$ we define a joint state $\gp(s,c)$ with domain $[n,m]$ following
+the construction in\cite{LeiferS13}. The abbreviation `$\gp$' stands
+for `graph-pair'. The matrix of the state $\gp(s,c)$ has type $(n\cdot
+m) \times (n\cdot m)$. We write, as above $C$ for the matrix associated
+with the channel $c$, with operator version $\widehat{C}$, and $S$ for
+the matrix associated with the state $s$. The joint state $\gp(s,c)$
+is then defined as:
+$$\begin{array}{rcl}
+\gp(s,c)
+& = &
+(\sqrt{S}\otimes\idmap[m]) \cdot \widehat{C} \cdot (\sqrt{S}\otimes\idmap[m]).
+\end{array}$$
+
+\noindent We first have to check that this yields a state:
+$$\begin{array}{rcl}
+\tr\big(\gp(s,c)\big)
+& = &
+\sum_{i,k}\, (\bra{i}\otimes\bra{k})\Big((\sqrt{S}\otimes\idmap[m]) \cdot 
+   \widehat{C} \cdot (\sqrt{S}\otimes\idmap[m])\Big)(\ket{i}\otimes\ket{k})
+\\
+& = &
+\sum_{i,k,j,j'}\, \bra{i}\sqrt{S}\ket{j} \cdot (\bra{j}\otimes\bra{k})
+   \widehat{C}(\ket{j'}\otimes\ket{k}) \cdot \bra{j'}\sqrt{S}\ket{i}
+\\
+& = &
+\sum_{k,j,j'}\, \big(\sum_{i} \bra{j'}\sqrt{S}\ket{i} \cdot 
+   \bra{i}\sqrt{S}\ket{j}\big) \cdot \bra{j}\bra{k}C\ket{k}\ket{j'}
+\\
+& = &
+\sum_{j,j'}\, \bra{j'}(\sqrt{S}\cdot\sqrt{S}\ket{j} \cdot 
+   \bra{j}(\sum_{k}(\idmap[m])_{kk} \cdot C_{kk})\ket{j'}
+\\
+& \smash{\stackrel{\eqref{eqn:qpredtransform}}{=}} &
+\sum_{j'}\, \bra{j'}(S \cdot (c \ll \mbox{\pythoninline{truth}}))\ket{j'}
+\\
+& = &
+\tr(S \cdot \mbox{\pythoninline{truth}})
+\\
+& = &
+\tr(S \cdot \idmap[n])
+\\
+& = &
+1.
+\end{array}$$
+
+\noindent The state $s$ can be recovered from $\gp(s,c)$ via the
+first marginal:
+$$\begin{array}{rcl}
+\tr_{1}\big(\gp(s,c)\big)_{ij}
+& = &
+\sum_{k}\, (\bra{i}\otimes\bra{k})\Big((\sqrt{S}\otimes\idmap[m]) \cdot 
+   \widehat{C} \cdot (\sqrt{S}\otimes\idmap[m])\Big)(\ket{j}\otimes\ket{k})
+\\
+& = &
+\sum_{k}\, \bra{i}\big(\sqrt{S} \cdot 
+   (\idmap[n]\otimes\bra{k})\widehat{C}(\idmap[n]\otimes\ket{k}) 
+   \cdot \sqrt{S}\big)\ket{j}
+\\
+& = &
+\sum_{k,i',j'}\, \bra{i}\sqrt{S}\ket{i'} \cdot 
+   (\bra{i'}\otimes\bra{k})\widehat{C}(\ket{j'}\otimes\ket{k}) 
+   \cdot \bra{j'}\sqrt{S}\ket{j}
+\\
+& = &
+\sum_{i',j'}\, \bra{i}\sqrt{S}\ket{i'} \cdot 
+   \bra{i'}(\sum_{k}\bra{k}C\ket{k})\ket{j'} \cdot \bra{j'}\sqrt{S}\ket{j}
+\\
+& = &
+\sum_{i',j'}\, \bra{i}\sqrt{S}\ket{i'} \cdot 
+   \bra{i'}\idmap[n]\ket{j'} \cdot \bra{j'}\sqrt{S}\ket{j} 
+\\
+& & \qquad \mbox{as in the previous calculation}
+\\
+& = &
+\sum_{i'}\, \bra{i}\sqrt{S}\ket{i'} \cdot \bra{i'}\sqrt{S}\ket{j} 
+\\
+& = &
+S_{ij}.
+\end{array}$$
+
+\noindent The second marginal of $\gp(s,c)$ is the transpose
+of the state transformation $c \gg s$, since:
+$$\begin{array}{rcl}
+\tr_{2}\big(\gp(s,c)\big)_{k\ell}
+& = &
+\sum_{i}\, (\bra{i}\otimes\bra{k})\Big((\sqrt{S}\otimes\idmap[m]) \cdot 
+   \widehat{C} \cdot (\sqrt{S}\otimes\idmap[m])\Big)(\ket{i}\otimes\ket{\ell})
+\\
+& = &
+\sum_{i}\, \bra{i}\big(\sqrt{S} \cdot 
+   (\idmap[n]\otimes\bra{k})\widehat{C}(\idmap[n]\otimes\ket{\ell}) 
+   \cdot \sqrt{S}\big)\ket{i}
+\\
+& = &
+\sum_{i,j,j'}\, \bra{i}\sqrt{S}\ket{j} \cdot 
+   (\bra{j}\otimes\bra{k})\widehat{C}(\ket{j'}\otimes\ket{\ell}) 
+   \cdot \bra{j'}\sqrt{S}\ket{i}
+\\
+& = &
+\sum_{j,j'}\, \big(\sum_{i}\bra{j'}\sqrt{S}\ket{i} \cdot 
+   \bra{i}\sqrt{S}\ket{j}\big) \cdot 
+   \bra{j}\bra{k}C\ket{\ell}\ket{j'}
+\\
+& = &
+\sum_{j,j'}\, \bra{j'}S\ket{j}\big) \cdot \bra{j}C_{k\ell}\ket{j'}
+\\
+& = &
+\tr(S \cdot C_{k\ell})
+\\
+& \smash{\stackrel{\eqref{eqn:qstatetransform}}{=}} &
+(c \gg s\big)_{\ell k}.
+\end{array}$$
+
+In the other direction, given a joint state $w$ of type $[n,m]$ we can
+obtain a state $w_{1} = \tr_{1}(w)$ of type $[n]$ by taking the first
+marginal.  We can also extract a channel $\extr(w) \colon n
+\rightarrow m$ corresponding to the operator given by the $(n\cdot
+m)\times(n\cdot m)$ matrix defined as:
+$$(\sqrt{w_{1}}^{-1}\otimes\idmap[m]) \cdot w \cdot 
+   (\sqrt{w_{1}}^{-1}\otimes\idmap[m])$$
+
+\noindent This requires that the (square root of the) first marginal
+$w_1$ of $w$ is invertible. We shall assume so in the sequel.
+
+The disintegration equation that we prove for this that $\extr(w) \gg
+w_{1}$ is the transpose of the second marginal $w_{2} = \tr_{2}(w)$.
+The proof works as follows.
+$$\begin{array}{rcl}
+\lefteqn{\big(\extr(w) \gg w_{1}\big)_{k\ell}} 
+\\
+& \smash{\stackrel{\eqref{eqn:qstatetransform}}{=}} &
+\tr\big(w_{1} \cdot \extr(w)_{\ell k}\big)
+\\
+& = &
+\sum_{i}\, \bra{i}\big(w_{1} \cdot \bra{\ell}\extr(w)\ket{k}\big)\ket{i}
+\\
+& = &
+\sum_{i,j}\, \bra{i}w_{1}\bra{j} \cdot \ket{j}\bra{\ell}\extr(w)\ket{k}\ket{i}
+\\
+& = &
+\sum_{i,j}\, \bra{i}w_{1}\ket{j} \cdot 
+   (\bra{j}\otimes\bra{\ell})\Big((\sqrt{w_{1}}^{-1}\otimes\idmap[m]) \cdot 
+   w \cdot (\sqrt{w_{1}}^{-1}\otimes\idmap[m])\Big)(\ket{i}\otimes\ket{k})
+\\
+& = &
+\sum_{i,j,i',j'}\, \bra{i}w_{1}\ket{j} \cdot \bra{j}\sqrt{w_{1}}^{-1}\ket{j'} 
+   \cdot  (\bra{j'}\otimes\bra{\ell})w(\ket{i'}\otimes\ket{k}) \cdot 
+   \bra{i'}\sqrt{w_{1}}^{-1}\ket{i}
+\\
+& = &
+\sum_{i',j'}\, \big(\sum_{i,j}\,\bra{i'}\sqrt{w_{1}}^{-1} \cdot 
+   \ket{i}\bra{i}w_{1}\ket{j} \cdot \bra{j}\sqrt{w_{1}}^{-1}\ket{j'}\big)
+   \cdot  (\bra{j'}\otimes\bra{\ell})w(\ket{i'}\otimes\ket{k})
+\\
+& = &
+\sum_{i',j'}\, \bra{i'}(\sqrt{w_{1}}^{-1} \cdot w_{1} \cdot 
+   \sqrt{w_{1}}^{-1})\ket{j'}
+   \cdot  (\bra{j'}\otimes\bra{\ell})w(\ket{i'}\otimes\ket{k})
+\\
+& = &
+\sum_{i',j'}\, \bra{i'}\idmap[n]\ket{j'}
+   \cdot  (\bra{j'}\otimes\bra{\ell})w(\ket{i'}\otimes\ket{k})
+\\
+& = &
+\sum_{i}\, (\bra{i}\otimes\bra{\ell})w(\ket{i}\otimes\ket{k})
+\\
+& = &
+\tr_{2}(w)_{\ell k}.
+\end{array}$$
+
+
+We now concentrate on showing that the graph-pair and extract
+operations are each other's inverses.  Starting from a state-channel
+pair $(s,c)$, we have already seen that the first marginal of the
+graph-pair $\gp(s,c)$ is $s$. We can also recover the channel $c$ via
+the extract function:
+$$\begin{array}{rcl}
+\lefteqn{\Big(\extr\big(\gp(s,c)\big)_{k\ell}\Big)_{ij}}
+\\
+& = &
+(\bra{i}\otimes\bra{k})\Big((\sqrt{S}^{-1}\otimes\idmap[m]) \cdot 
+   \gp(s,c) \cdot 
+   (\sqrt{S}^{-1}\otimes\idmap[m])\Big)(\ket{j}\otimes\ket{\ell})
+\\
+& = &
+\bra{i}\big(\sqrt{S}^{-1} \cdot 
+   (\idmap[n]\otimes\bra{k})\gp(s,c)(\idmap[n]\otimes\ket{\ell}) \cdot 
+   \sqrt{S}^{-1}\big)\ket{j}
+\\
+& = &
+\sum_{i',j'}\, \bra{i}\sqrt{S}^{-1}\ket{i'} \cdot 
+   (\bra{i'}\otimes\bra{k})\gp(s,c)(\ket{j'}\otimes\ket{\ell}) \cdot 
+   \ket{j'}\sqrt{S}^{-1}\ket{j}
+\\
+& = &
+\sum_{i',j'}\, \bra{i}\sqrt{S}^{-1}\ket{i'} \cdot 
+   (\bra{i'}\otimes\bra{k})\big(\sqrt{S}\otimes\idmap[m]) \cdot 
+   \widehat{C} \cdot (\sqrt{S}\otimes\idmap[m]\big)(\ket{j'}\otimes\ket{\ell}) 
+   \cdot \ket{j'}\sqrt{S}^{-1}\ket{j}
+\\
+& = &
+\sum_{i',j',i'',j''}\, \bra{i}\sqrt{S}^{-1}\ket{i'} \cdot \bra{i'}\sqrt{S}\ket{i''} \cdot 
+   (\bra{i''}\otimes\bra{k})\widehat{C}(\ket{j''}\otimes\ket{\ell}) 
+   \cdot \ket{j''}\sqrt{S}\ket{j'} \cdot \ket{j'}\sqrt{S}^{-1}\ket{j}
+\\
+& = &
+\sum_{i'',j''}\, \bra{i}(\sqrt{S}^{-1}\cdot\sqrt{S})\ket{i''} \cdot 
+   \bra{i''}\bra{k}C\ket{\ell}\ket{j''} 
+   \cdot \ket{j''}(\sqrt{S}\cdot \sqrt{S}^{-1})\ket{j}
+\\
+& = &
+\sum_{i'',j''}\, \bra{i}\idmap[n]\ket{i''} \cdot 
+   \bra{i''}\bra{k}C\ket{\ell}\ket{j''} 
+   \cdot \ket{j''}\idmap[n]\ket{j}
+\\
+& = &
+\bra{i}\bra{k}C\ket{\ell}\ket{j} 
+\\
+& = &
+\big(C_{k\ell}\big)_{ij}.
+\end{array}$$
+
+Also in the other direction these operations are well-behaved: if we
+start with a joint state $w$, it can be recovered from the graph-pair
+of its first marginal and extracted channel:
+$$\begin{array}{rcl}
+\lefteqn{\gp(w_{1}, \extr(w))}
+\\
+& = &
+(\sqrt{w_1}\otimes\idmap[m]) \cdot \widehat{\extr(w)} \cdot 
+   (\sqrt{w_1}\otimes\idmap[m])
+\\
+& = &
+(\sqrt{w_1}\otimes\idmap[m]) \cdot (\sqrt{w_{1}}^{-1}\otimes\idmap[m]) \cdot 
+   w \cdot (\sqrt{w_{1}}^{-1}\otimes\idmap[m]) \cdot (\sqrt{w_1}\otimes\idmap[m])
+\\
+& = &
+w.
+\end{array}$$
+
+\noindent Of course, this works under the assumption that the relevant
+inverse matrix exists.
 
 
 

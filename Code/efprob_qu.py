@@ -414,6 +414,7 @@ class Predicate(RandVar):
 class State(Predicate):
     def __init__(self, ar, dom):
         if not is_positive(ar):
+            print(ar)
             raise Exception('State creation requires a positive matrix')
         if round(np.trace(ar).real) != 1.0 or round(np.trace(ar).imag) != 0.0:
             print("\n**Warning**: trace is not (precisely) 1.0 in state creation, but is:") 
@@ -614,19 +615,16 @@ class Operator:
     def __ne__(self, other):
         return not (self == other)
 
-    # backward predicate transformation
     def __lshift__(self, p):
+        """ backward predicate transformation """
         if p.dom != self.cod:
             raise Exception('Non-match in predicate transformation')
-        m = p.dom.size # = self.cod.size
         n = self.dom.size
-        # It is unclear why the transpose is needed here...
-        out = tr1( np.dot(np.kron(np.eye(n), p.array), self.array), n ).T
+        out = tr1( np.dot(np.kron(np.eye(n), p.array.T), self.array), n )
         return Predicate(out, self.dom)
-
-    # forward state transformation
+    
     def __rshift__(self, s):
-        #print("rshift dims", s.dims, self.dom_dims)
+        """ forward state transformation """
         if s.dom != self.dom:
             raise Exception('Non-match in state transformation')
         n = s.dom.size # = self.dom.size
@@ -635,6 +633,7 @@ class Operator:
         return State(out, self.cod)
 
     def as_channel(self):
+        """ turn operator into channel """
         n = self.dom.size
         m = self.cod.size
         mat = np.zeros((m,m,n,n)) + 0j
@@ -646,6 +645,7 @@ class Operator:
         return Channel(mat, self.dom, self.cod)
 
     def as_kraus(self):
+        """ produce Kraus operators associated with operator """
         n = self.dom.size
         m = self.cod.size
         SD = spectral_decomposition(self.array)
@@ -896,9 +896,9 @@ def choi(u):
 #   chan(u) << p  =  u * p.array * conj_trans(u)
 #
 def channel_from_unitary(u, dom, cod):
-     if not is_unitary(u):
-         raise Exception('Unitary matrix required for channel construction')
-     return Channel(choi(u), dom, cod)
+    #if not is_unitary(u):
+    #    raise Exception('Unitary matrix required for channel construction')
+    return Channel(choi(u), dom, cod)
 
 
 
@@ -1581,7 +1581,7 @@ def pair_extract(w):
     n = w.dom.dims[0]
     m = w.dom.dims[1]
     w1 = w % [1,0]
-    w2 = np.kron(matrix_square_root(np.linalg.inv(w1.array)), np.eye(m))
+    w2 = np.kron(np.linalg.inv(matrix_square_root(w1.array)), np.eye(m))
     oper = Operator(np.dot(w2, np.dot(w.array, w2)), Dom([n]), Dom([m]))
     return (w1, oper.as_channel())
 
@@ -1922,22 +1922,34 @@ def transition():
            y_chan >> s == y_oper >> s,
            z_chan >> s == z_oper >> s,
            (hadamard @ x_chan) >> w == (hadamard @ x_chan).as_operator() >> w )
+    print("* transition predicate transformation is channel predicate transformation:")
+    p = random_pred(2)
+    q = kron(2,2) << random_pred(4)
+    print( hadamard << p == hadamard_oper << p,
+           x_chan << p == x_oper << p,
+           y_chan << p == y_oper << p,
+           z_chan << p == z_oper << p,
+           (hadamard @ x_chan) << q == (hadamard @ x_chan).as_operator() << q )
     print("* Channel-to-operator conversions test")
     opr = hadamard_oper
     c = x_chan * hadamard * y_chan * z_chan
     print( c.as_operator().as_channel() == c,
            opr.as_channel().as_operator() == opr )
-    print("* Leiffer Spekkens")
+    print("* Leifer Spekkens")
     ls = graph_pair(s, c)
+    print("graph_pair positive with trace: ", 
+          is_positive(ls.array), np.trace(ls.array) )
     print( np.all(np.isclose((ls % [0,1]).array, (c >> s).array.T)) )
     print( pair_extract(ls)[0] == s, pair_extract(ls)[1] == c )
     w = chadamard >> (random_state(2) @ random_state(2))
     sp = pair_extract(w)
-    print( graph_pair(sp[0], sp[1]) == w )
+    print("pair extract equations: ",
+          np.allclose((sp[1] >> sp[0]).array, (w % [0,1]).array.T), 
+          graph_pair(sp[0], sp[1]) == w)
     c = chadamard * swap * cnot * swap
     p = cnot << (random_pred(2) @ random_pred(2))
     s = cnot >> (random_state(2) @ random_state(2))
-    print("* Multidimensional Leiffer Spekkes")
+    print("* Multidimensional Leifer Spekkes")
     print( graph_pair(s, c).dom )
     print("* Kraus test:",
           c << p == c.as_kraus() << p, c >> s == c.as_kraus() >> s )
@@ -1956,22 +1968,26 @@ def experiment():
     c = hadamard * x_chan
     print( c )
     # same outcome for x_chan, y_chan
-    print( chan2productpredicate(c) )
-    print( chan2productstate(c) )
+    #print( chan2productpredicate(c) )
+    #print( chan2productstate(c) )
     # all marginals exist, and are the identity so far
-    print("first marginal\n", chan2productpredicate(c) % [1, 0] )
-    print("second marginal\n",  chan2productpredicate(c) % [0, 1] )
-    print("shapes", chan2productpredicate(c).array.shape,
-          chan2productstate(c).array.shape)
+    #print("first marginal\n", chan2productpredicate(c) % [1, 0] )
+    #print("second marginal\n",  chan2productpredicate(c) % [0, 1] )
+    #print("shapes", chan2productpredicate(c).array.shape,
+    #      chan2productstate(c).array.shape)
     p1 = random_pred(2)    
     t = random_state(2)
-    # "conditional state" from Leiffer note: outcomes appear at strange points
-    print( ((t @ truth(2)) & chan2productpredicate(c)) % [0, 1] )
-    print("predicate transformer\n", c << t, "\n", c >> t )
+    # "conditional state" from Leifer note: outcomes appear at strange points
+    #print( ((t @ truth(2)) & chan2productpredicate(c)) % [0, 1] )
+    #print("predicate transformer\n", c << t, "\n", c >> t )
 
     # The next two things look mysteriously similar...
     #print( ((s2p(t) @ truth(2)) & chan2productpredicate(c)) % [0, 1] )
     #print("state transformer\n", s2p(c >> t.conjugate()) )
+
+    print( channel_from_unitary((np.array([[2, 3],
+                                                          [5, 7]])), 
+                                Dom([2]), Dom([2])) )
 
 
 def main():
@@ -1981,11 +1997,12 @@ def main():
     #instrument()
     #conditioning()
     #channel()
-    #experiment()
-    bayesian_probability()
+    #bayesian_probability()
     #kappa_copy()
     #graphs()
-    #transition()
+    transition()
+    #experiment()
+
 
 if __name__ == "__main__":
     main()

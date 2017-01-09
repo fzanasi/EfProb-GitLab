@@ -705,6 +705,9 @@ def order_inference():
     P = chjp >> J
     D = chjd >> J
     print("Equality of states: ", D == chpd >> P, P == chdp >> D )
+    print("Alternative descriptions via evolution: ",
+          P == RandVar(H, Dom([4])).evolution(J)(1.2393),
+          D == RandVar(H, Dom([4])).evolution(J)(-3.8324) )
 
     print("\n===\n")
 
@@ -738,14 +741,13 @@ def order_inference():
 
     print("\n===\n")
 
-    print("* Neutral perspective")
+    print("* Judge's perspective")
     P_ev = chjp << (pGpE | nGpE)
     D_ev = chjd << (pGnE | nGnE)
     print("Positive evidence of prosector first: ",
           J / P_ev / D_ev >= pGpE | pGnE )
     print("Negative evidence of defense first: ",
           J / D_ev / P_ev >= pGpE | pGnE )
-
 
 
 def main():
