@@ -90,41 +90,94 @@ print("\nBayesian approach")
 print("=================\n")
 
 #
-# Number of Yellow and Black balls
-# Number of Red balls is N/2
+# N is a constant for the number of Red balls in an urn. The sum of
+# the numbers of Yellow and Black balls is 2*N.
+# 
+# We use the variable y for the (unknown) number of Yellow
+# balls. Notice that 0 <= y <= 2*N. Hence the domain of the state for
+# y has size 2*N+1
 #
-N=20 
+N=30 
+yellow_domain = range(2*N+1)
+unif_prior = dc.uniform_disc_state(2*N+1)
+halfway_prior = dc.unit_disc_state(2*N+1, N)
 
-options1 = ['A', 'B']
+#
+# A : Red ball
+# B : Black ball
+#
+bet1_domain = ['A', 'B']
+A_bet = dc.Predicate([1,0], bet1_domain)
+B_bet = dc.Predicate([0,1], bet1_domain)
 
-A_bet = dc.Predicate([1,0], options1)
-B_bet = dc.Predicate([0,1], options1)
+#
+# Probability of A: 1/3
+# Probability of B: 2/3 * (2*N-y)/(2*N)
+# Normalisation yields the probability N/(3*N-y) for A used below.
+#
+bet1 = dc.chan_fromklmap(lambda y: dc.flip(N/(3*N-y), bet1_domain),
+                         yellow_domain,
+                         bet1_domain)
 
-bet1 = dc.chan_fromklmap(#lambda i, x: N/(2*i+N) if x=='A' else  2*i/(2*i+N),
-    lambda i: dc.State([N/(2*i+N), 2*i/(2*i+N)], options1),
-    range(N+1),
-    options1)
-
-prior1 = dc.uniform_disc_state(N+1)
-
-print("Half black prior distribution: ", 
-      bet1 >> dc.unit_disc_state(N+1, int(N/2)) )
-print("Uniform prior distribution: ", bet1 >> prior1 )
+print("* First bet")
+print("Half black prior distribution: ", bet1 >> halfway_prior )
+print("Uniform prior distribution: ", bet1 >> unif_prior )
 
 #
 # 0 = A_bet, 1 = B_bet
 #
 bet1_list = [0]*40 + [1]*19
 
-post1 = prior1
+post1 = unif_prior
 for i in bet1_list:
     bet_pred = A_bet if i==0 else B_bet
     post1 = post1 / (bet1 << bet_pred)
 
 print("Posterior distribution: ", bet1 >> post1 )
-post1.plot()
+exp1 = dc.RandVar(lambda x: x, yellow_domain).exp(post1)
+print("Expected Yellow value: ", exp1 )
+print("Distribution for y =", floor(exp1+0.5), " is ",
+      bet1 >> dc.unit_disc_state(2*N+1, floor(exp1+0.5)))
+#post1.plot()
 
 
+print("\n* Second bet")
+#
+# C : Red or Yellow
+# D : Yellow or Black
+#
+bet2_domain = ['C', 'D']
+C_bet = dc.Predicate([1,0], bet2_domain)
+D_bet = dc.Predicate([0,1], bet2_domain)
+
+#
+# Probability of C: 1/3 + 2/3 * y/(2*N)
+# Probability of D: 2/3
+# Normalisation gives the probability used below for C.
+#
+bet2 = dc.chan_fromklmap(lambda y: dc.flip((N+y)/(3*N+y), bet2_domain),
+                         yellow_domain,
+                         bet2_domain)
+
+print("Half black prior distribution: ", bet2 >> halfway_prior )
+print("Uniform prior distribution: ", bet2 >> unif_prior )
+
+#
+# 0 = C_bet, 1 = D_bet
+#
+bet2_list = [0]*18 + [1]*41
+
+post2 = unif_prior
+for i in bet2_list:
+    bet_pred = C_bet if i==0 else D_bet
+    post2 = post2 / (bet2 << bet_pred)
+
+print("Posterior distribution: ", bet2 >> post2 )
+exp2 = dc.RandVar(lambda x: x, yellow_domain).exp(post2)
+print("Expected Yellow value: ", exp2)
+print("Distribution for y = ", floor(exp2+0.5), " is ",
+      bet2 >> dc.unit_disc_state(2*N+1, floor(exp2+0.5)))
+#post2.plot()
 
 
 """
