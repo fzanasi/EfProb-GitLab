@@ -180,6 +180,43 @@ print("Distribution for y = ", floor(exp2+0.5), " is ",
 #post2.plot()
 
 
+print("\nMachina paradox")
+print("===============\n")
+
+
+#
+# 
+#
+machina_domain = [range(51), range(52)]
+
+mach1 = dc.chan_fromklmap(lambda x,y: dc.flip(772650/(5151*(x+50) + 5050*(y+51) + 772650), [1,2]),
+                          machina_domain,
+                          [1,2])
+
+half_min_mach_prior = dc.unit_disc_state(51,25) @ dc.unit_disc_state(52,25)
+half_plus_mach_prior = dc.unit_disc_state(51,25) @ dc.unit_disc_state(52,26)
+unif_mach_prior = dc.uniform_disc_state(51) @ dc.uniform_disc_state(52)
+
+print( mach1 >> half_min_mach_prior )
+print( mach1 >> half_plus_mach_prior )
+print( mach1 >> unif_mach_prior )
+
+pred1 = dc.Predicate([1,0], [1,2])
+pred2 = dc.Predicate([0,1], [1,2])
+
+mach_bet1_list = [1,2,1,1,1,2]
+
+mach1_post = unif_mach_prior
+for i in mach_bet1_list:
+    pred = pred1 if i==1 else pred2
+    mach1_post = mach1_post / (mach1 << pred)
+
+print("Posterior: ",  mach1 >> mach1_post )
+print("Expected values: ",
+      dc.RandVar(lambda *x: x, machina_domain).exp(mach1_post))
+
+
+
 """
 
 print("\nQuantum version")
