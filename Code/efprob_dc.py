@@ -1094,7 +1094,7 @@ class DetChan:
         d_len = len(self.dom.disc) + len(self.dom.cont)
         funs = ([lambda *args: f(*args[:d_len]) for f in self.funs]
                 + [lambda *args: f(*args[d_len:]) for f in other.funs])
-        return DetChan(funs, self.dom + other.dom)
+        return type(self)(funs, self.dom + other.dom)
 
     def __matmul__(self, other):
         return self.joint(other)
