@@ -175,7 +175,7 @@ for i in bet2_list:
 print("Posterior distribution: ", bet2 >> post2 )
 exp2 = dc.RandVar(lambda x: x, yellow_domain).exp(post2)
 print("Expected Yellow value: ", exp2)
-print("Distribution for y = ", floor(exp2+0.5), " is ",
+print("Distribution for y =", floor(exp2+0.5), " is ",
       bet2 >> dc.unit_disc_state(2*N+1, floor(exp2+0.5)))
 #post2.plot()
 
@@ -183,13 +183,11 @@ print("Distribution for y = ", floor(exp2+0.5), " is ",
 print("\nMachina paradox")
 print("===============\n")
 
-
-#
-# 
-#
 machina_domain = [range(51), range(52)]
 
-mach1 = dc.chan_fromklmap(lambda x,y: dc.flip(772650/(5151*(x+50) + 5050*(y+51) + 772650), [1,2]),
+mach1 = dc.chan_fromklmap(lambda x,y: 
+                          dc.flip(772650/(5151*(x+50) + 5050*(y+51) + 772650), 
+                                  [1,2]),
                           machina_domain,
                           [1,2])
 
@@ -197,23 +195,46 @@ half_min_mach_prior = dc.unit_disc_state(51,25) @ dc.unit_disc_state(52,25)
 half_plus_mach_prior = dc.unit_disc_state(51,25) @ dc.unit_disc_state(52,26)
 unif_mach_prior = dc.uniform_disc_state(51) @ dc.uniform_disc_state(52)
 
-print( mach1 >> half_min_mach_prior )
-print( mach1 >> half_plus_mach_prior )
-print( mach1 >> unif_mach_prior )
-
-pred1 = dc.Predicate([1,0], [1,2])
-pred2 = dc.Predicate([0,1], [1,2])
+print("* First bet")
+print("Just below half: ", mach1 >> half_min_mach_prior )
+print("Just above half: ", mach1 >> half_plus_mach_prior )
+print("Uniform: ", mach1 >> unif_mach_prior )
 
 mach_bet1_list = [1,2,1,1,1,2]
 
 mach1_post = unif_mach_prior
 for i in mach_bet1_list:
-    pred = pred1 if i==1 else pred2
+    pred = dc.Predicate([1,0], [1,2]) if i==1 else dc.Predicate([0,1], [1,2])
     mach1_post = mach1_post / (mach1 << pred)
 
 print("Posterior: ",  mach1 >> mach1_post )
-print("Expected values: ",
+print("Expected values of 1 and 3: ",
       dc.RandVar(lambda *x: x, machina_domain).exp(mach1_post))
+
+print("\n* Second bet")
+
+mach2 = dc.chan_fromklmap(lambda x,y: 
+                          dc.flip((5151*x + 515100 + 5050*y) / 
+                                  (15453*x + 772650 + 15150*y), 
+                                  [3,4]),
+                          machina_domain,
+                          [3,4])
+
+print("Just below half: ", mach2 >> half_min_mach_prior )
+print("Just above half: ", mach2 >> half_plus_mach_prior )
+print("Uniform: ", mach2 >> unif_mach_prior )
+
+mach_bet2_list = [3,4,3,3,3,4]
+
+mach2_post = unif_mach_prior
+
+for i in mach_bet2_list:
+    pred = dc.Predicate([1,0], [3,4]) if i==3 else dc.Predicate([0,1], [3,4])
+    mach2_post = mach2_post / (mach2 << pred)
+
+print("Posterior: ",  mach2 >> mach2_post )
+print("Expected values of 1 and 3: ",
+      dc.RandVar(lambda *x: x, machina_domain).exp(mach2_post))
 
 
 
