@@ -343,8 +343,8 @@ class Fun:
 
     u_ortho = np.frompyfunc(lambda f, dom: f.ortho(dom), 2, 1)
 
-    def plot(self, preargs=[], interval=None,
-             postargs=[], steps=256, block=True):
+    def plot(self, preargs=(), interval=None,
+             postargs=(), steps=256, block=True):
         axis = len(preargs)
         if interval:
             start = interval[0]
@@ -556,8 +556,8 @@ class StateOrPredicate:
                 interval = self.dom.cont[axis]
                 if not interval.issubset(self.dom.cont[axis]):
                     raise ValueError("Interval must be a subset of domain")
-                fun.plot(preargs=preargs, interval=interval,
-                         postargs=postargs, **kwargs)
+            fun.plot(preargs=preargs, interval=interval,
+                     postargs=postargs, **kwargs)
         else:
             raise ValueError("Nothing to plot")
 
@@ -736,13 +736,21 @@ class Fun2:
     u_pred_trans_scalar = np.frompyfunc(lambda f, p:
                                         f.pred_trans_scalar(p), 2, 1)
 
-    def fun_at(self, *xs):
+    def fun_at1(self, *xs):
         return Fun(lambda *ys: self(xs, ys), self.cod_supp)
 
-    _u_fun_at = np.frompyfunc(lambda f, xs: f.fun_at(*xs), 2, 1)
+    _u_fun_at1 = np.frompyfunc(lambda f, xs: f.fun_at1(*xs), 2, 1)
 
-    def vect_fun_at(array, xs):
-        return Fun2._u_fun_at(array, _wrap(xs))
+    def vect_fun_at1(array, xs):
+        return Fun2._u_fun_at1(array, _wrap(xs))
+
+    def fun_at2(self, *ys):
+        return Fun(lambda *xs: self(xs, ys), self.dom_supp)
+
+    _u_fun_at2 = np.frompyfunc(lambda f, ys: f.fun_at2(*ys), 2, 1)
+
+    def vect_fun_at2(array, ys):
+        return Fun2._u_fun_at2(array, _wrap(ys))
 
     def comp(self, other): # self o other
         def fun(xs, zs):
@@ -952,10 +960,21 @@ class Channel:
         indices = self.dom.get_disc_indices(disc_args)
         array = self.array[(...,)+indices]
         if self.iscont:
-            array = Fun2.vect_fun_at(array, cont_args)
+            array = Fun2.vect_fun_at1(array, cont_args)
             if not self.cod.iscont:
                 array = Fun.vect_asscalar(array)
         return State(array, self.cod)
+
+    def get_likelihood(self, *args, disc_args=None, cont_args=None):
+        if disc_args is None or cont_args is None:
+            disc_args, cont_args = self.cod.split(args)
+        indices = self.cod.get_disc_indices(disc_args)
+        array = self.array[indices+(...,)]
+        if self.iscont:
+            array = Fun2.vect_fun_at2(array, cont_args)
+            if not self.dom.iscont:
+                array = Fun.vect_asscalar(array)
+        return Predicate(array, self.dom)
 
     def comp(self, other):
         """Computes the composition (self after other)."""

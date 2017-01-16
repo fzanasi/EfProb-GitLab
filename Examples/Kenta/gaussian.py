@@ -26,11 +26,25 @@ data = [9, 8]
 mu.plot(R(-20, 20))
 
 # Conditioning using 'Gaussian' predicate
-mu_post = mu
-for d in data:
-    mu_post = mu_post / (chan << gaussian_pred(d, 0.1, R))
+pred = chan << gaussian_pred(data[0], 0.1, R)
+for d in data[1:]:
+    pred = pred & (chan << gaussian_pred(d, 0.1, R))
+mu_post = mu / pred
+
+## This is the same as iterated conditioning below, which is slower.
+# mu_post = mu
+# for d in data:
+#     mu_post = mu_post / (chan << gaussian_pred(d, 0.1, R))
 
 mu_post.plot(R(-20, 20))
+
+# Use likelihood (it's precise and faster)
+lik = chan.get_likelihood(data[0])
+for d in data[1:]:
+    lik = lik & chan.get_likelihood(d)
+mu_post2 = mu / lik
+
+mu_post2.plot(R(-20, 20))
 
 # not implemented yet...
 
