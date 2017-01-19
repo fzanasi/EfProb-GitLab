@@ -259,7 +259,7 @@ class RandVar:
     def __matmul__(self, other):
         """ Parallel product @ """
         if not isinstance(other, RandVar):
-            raise Exception('Addition of random variables requires a random variable argument')
+            raise Exception('Parallel composition of random variables requires a random variable argument')
         return type(self)(np.kron(self.array, other.array), self.dom + other.dom)
 
     def __pow__(self, n):
@@ -267,38 +267,6 @@ class RandVar:
         if n == 0:
             raise Exception('Power of a random variable must be at least 1')
         return reduce(lambda r1, r2: r1 @ r2, [self] * n)
-
-    def __mod__(self, selection):
-        """Marginalisation. The selection is a dim-length list of 0's and
-        1's, where 0 corresponds to marginalisation of the
-        corresponding component.
-
-        How this works in a state with 3 components
-        third marginal
-        mat.trace(axis1 = 0, axis2 = 3).trace(axis1 = 0, axis2 = 2))
-        second marginal
-        mat.trace(axis1 = 0, axis2 = 3).trace(axis1 = 1, axis2 = 3))
-        first marginal
-        mat.trace(axis1 = 1, axis2 = 4).trace(axis1 = 1, axis2 = 3))
-        """
-        n = len(selection)
-        if n != len(self.dom.dims):
-            raise Exception('Wrong length of marginal selection')
-        dims = [n for (n,i) in zip(self.dom.dims, selection) if i == 1]
-        mat = self.array.reshape(tuple(self.dom.dims + self.dom.dims))
-        #print(mat.shape)
-        marg_pos = 0
-        marg_dist = n
-        for i in range(n):
-            if selection[i] == 1:
-                marg_pos = marg_pos+1
-                continue
-            #print(i, marg_pos, marg_dist)
-            mat = mat.trace(axis1 = marg_pos, axis2 = marg_pos + marg_dist)
-            marg_dist = marg_dist - 1
-        p = prod(dims)
-        mat.resize(p,p)
-        return type(self)(mat, Dom(dims))
 
     def variance(self, state):
         """ Variance """
@@ -379,11 +347,11 @@ class Predicate(RandVar):
 
     def __add__(self, pred):
         """ Partial addition + """
-        if isinstance(pred, RandVar):
+        if not isinstance(pred, Predicate) and isinstance(pred, RandVar):
             return super().__add__(pred)
         if not isinstance(pred, Predicate):
             raise Exception('Sum of predicates requires a predicate argument')
-        if self.dom != p.dom:
+        if self.dom != pred.dom:
             raise Exception('Mismatch of dimensions in sum of predicates')
         mat = self.array + pred.array
         if not lowner_le(mat, np.eye(self.dom.size)):
@@ -408,18 +376,19 @@ class Predicate(RandVar):
         matrix, from which the validity can be extracted via indices
         [0][0]. """
         return Channel(self.array.reshape(1,1, self.dom.size, self.dom.size), 
-                       self.dom, Dom([]))
+                       self.dom, [])
 
 
-class State(Predicate):
+class State:
     def __init__(self, ar, dom):
+        self.array = ar
+        self.dom = dom if isinstance(dom, Dom) else Dom(dom)
         if not is_positive(ar):
             print(ar)
             raise Exception('State creation requires a positive matrix')
         if round(np.trace(ar).real) != 1.0 or round(np.trace(ar).imag) != 0.0:
             print("\n**Warning**: trace is not (precisely) 1.0 in state creation, but is:") 
             print(np.trace(ar), "\n")
-        super().__init__(ar, dom)
 
     # unfinished
     def __repr__(self):
@@ -428,6 +397,50 @@ class State(Predicate):
     #                            separator=',  ',
     #                            formatter={'complexfloat':lambda x: '%3g + %3gi' 
 #                                          % (x.real, x.imag)})
+
+    def __mod__(self, selection):
+        """Marginalisation. The selection is a dim-length list of 0's and
+        1's, where 0 corresponds to marginalisation of the
+        corresponding component.
+
+        How this works in a state with 3 components
+        third marginal
+        mat.trace(axis1 = 0, axis2 = 3).trace(axis1 = 0, axis2 = 2))
+        second marginal
+        mat.trace(axis1 = 0, axis2 = 3).trace(axis1 = 1, axis2 = 3))
+        first marginal
+        mat.trace(axis1 = 1, axis2 = 4).trace(axis1 = 1, axis2 = 3))
+        """
+        n = len(selection)
+        if n != len(self.dom.dims):
+            raise Exception('Wrong length of marginal selection')
+        dims = [n for (n,i) in zip(self.dom.dims, selection) if i == 1]
+        mat = self.array.reshape(tuple(self.dom.dims + self.dom.dims))
+        #print(mat.shape)
+        marg_pos = 0
+        marg_dist = n
+        for i in range(n):
+            if selection[i] == 1:
+                marg_pos = marg_pos+1
+                continue
+            #print(i, marg_pos, marg_dist)
+            mat = mat.trace(axis1 = marg_pos, axis2 = marg_pos + marg_dist)
+            marg_dist = marg_dist - 1
+        p = prod(dims)
+        mat.resize(p,p)
+        return State(mat, Dom(dims))
+
+    def __matmul__(self, other):
+        """ Parallel product @ """
+        if not isinstance(other, State):
+            raise Exception('Parallel compositon of states requires a state argument')
+        return State(np.kron(self.array, other.array), self.dom + other.dom)
+
+    def __pow__(self, n):
+        """ Iterated parallel product """
+        if n == 0:
+            raise Exception('Power of a random variable must be at least 1')
+        return reduce(lambda r1, r2: r1 @ r2, [self] * n)
 
     def __ge__(self, rv):
         """ Validity """
@@ -726,7 +739,19 @@ def vector_state(*ls):
     s = np.linalg.norm(v)
     v = v / s
     mat = np.outer(v, np.conjugate(v))
-    return State(mat, Dom([len(v)]))
+    return State(mat, [len(v)])
+
+#
+# Predicate from vector v via outer product |v><v|
+#
+def vector_pred(*ls):
+    if len(ls) == 0:
+        raise Exception('Vector state creation requires a non-empty lsit')
+    v = np.array(ls)
+    s = np.linalg.norm(v)
+    v = v / s
+    mat = np.outer(v, np.conjugate(v))
+    return Predicate(mat, [len(v)])
 
 #
 # Computational unit state |i><i| of dimension n
@@ -760,7 +785,7 @@ def probabilistic_state(*ls):
     mat = np.zeros((n,n))
     for i in range(n):
         mat[i,i] = ls[i]/s
-    return State(mat, Dom([n]))
+    return State(mat, [n])
 
 #
 # The uniform probabilistic state of size n, with probability 1/n on
@@ -770,7 +795,7 @@ def uniform_probabilistic_state(n):
     mat = np.zeros((n,n))
     for i in range(n):
         mat[i,i] = 1/n
-    return State(mat, Dom([n]))
+    return State(mat, [n])
 
 #
 # A random vector state of size n, using Python's random number
@@ -804,7 +829,7 @@ def random_state(n):
     amps = [random.uniform(0.0, 1.0) for i in range(n)]
     s = sum(amps)
     mat = sum([amps[i]/s * ls[i].array for i in range(n)])
-    return State(mat, Dom([n]))
+    return State(mat, [n])
 
 #
 # A random probabilistic state of size n, with n probabilities that
@@ -820,9 +845,9 @@ def random_probabilistic_state(n):
 #
 def truth(*dims):
     if len(dims) == 0:
-        return Predicate(np.eye(1), Dom([]))
+        return Predicate(np.eye(1), [])
     n = dims[0]
-    p = Predicate(np.eye(n), Dom([n]))
+    p = Predicate(np.eye(n), [n])
     if len(dims) == 1:
         return p
     return p @ truth(*dims[1:])
@@ -836,7 +861,7 @@ def probabilistic_pred(*ls):
         raise Exception('A non-empty list of numbers is required for a probabilistic predicate')
     if any([r < 0 or r > 1 for r in ls]):
         raise Exception('Probabilities cannot exceed 1 for a probabilistic predicate')
-    return Predicate(np.diag(ls), Dom([n]))
+    return Predicate(np.diag(ls), [n])
 
 def unit_pred(n, i):
     ls = [0] * n
@@ -860,13 +885,13 @@ def random_pred(n):
     mat = sum([amps[i] * ls[i].array for i in range(n)])
     E = np.linalg.eigvals(mat)
     m = max([x.real for x in E])
-    return Predicate(mat/m, Dom([n]))
+    return Predicate(mat/m, [n])
 
 def random_randvar(n):
     ar = complex(20, 0) * (np.random.rand(n,n) - 0.5)
     ai = complex(0, 20) * (np.random.rand(n,n) - 0.5)
     a = ar + ai
-    return RandVar(a + conjugate_transpose(a), Dom([n]))
+    return RandVar(a + conjugate_transpose(a), [n])
 
 #
 # Choi matrix n x n of n x n matrices, obtained from n x n matrix u,
@@ -915,7 +940,7 @@ def cflip(r):
     if r < 0 or r > 1:
         raise Exception('Coin flip requires a number in the unit interval')
     return State(np.array([[r, 0],
-                           [0, 1 - r]]), Dom([2]))
+                           [0, 1 - r]]), [2])
 
 cfflip = cflip(0.5)
 
@@ -947,7 +972,7 @@ def convex_state_sum(*ls):
 def idn(*dims):
     if len(dims) == 0:
         raise Exception('Identity channel requires non-empty list of dimensions')
-    ch = channel_from_unitary( np.eye(dims[0]), Dom([dims[0]]), Dom([dims[0]]) )
+    ch = channel_from_unitary( np.eye(dims[0]), [dims[0]], [dims[0]] )
     if len(dims) == 1:
         return ch
     return ch @ idn(*dims[1:])
@@ -961,7 +986,7 @@ def discard(*dims):
     n = dims[0]
     mat = np.eye(n)
     mat.resize((1,1,n,n))
-    ch = Channel(mat, Dom([n]), Dom([]))
+    ch = Channel(mat, [n], [])
     if len(dims) == 1:
         return ch
     return ch @ discard(*dims[1:])
@@ -979,7 +1004,7 @@ def classic(*dims):
         tmp = np.zeros((n,n))
         tmp[i][i] = 1
         mat[i][i] = tmp
-    ch = Channel(mat, Dom([n]), Dom([n]))
+    ch = Channel(mat, [n], [n])
     if len(dims) == 1:
         return ch
     return ch @ classic(*dims[1:])
@@ -996,7 +1021,7 @@ def kappa(m,k,n):
     for i in range(n):
         for j in range(n):
             mat[k*n+i][k*n+j] = ar[i][j]
-    return Channel(mat, Dom([n]), Dom([m,n]))
+    return Channel(mat, [n], [m,n])
 
 #
 # copy : n -> m @ n channel with as main property:
@@ -1012,7 +1037,7 @@ def copy(m,n):
         for i in range(n):
             for j in range(n):
                 mat[k*n+i][k*n+j] = ar[i][j]
-    return Channel(mat, Dom([n]), Dom([m,n]))
+    return Channel(mat, [n], [m,n])
 
 
 #
@@ -1022,7 +1047,7 @@ swap = channel_from_unitary(np.array([ [1, 0, 0, 0],
                                        [0, 0, 1, 0],
                                        [0, 1, 0, 0],
                                        [0, 0, 0, 1] ]), 
-                            Dom([2,2]), Dom([2,2]))
+                            [2,2], [2,2])
 
 #
 # swap channel 2 @ 3 -> 3 @ 2
@@ -1033,7 +1058,7 @@ swap23 = channel_from_unitary(np.array([ [1, 0, 0, 0, 0, 0],
                                          [0, 1, 0, 0, 0, 0],
                                          [0, 0, 0, 1, 0, 0],
                                          [0, 0, 0, 0, 0, 1] ]), 
-                            Dom([2,3]), Dom([3,2]))
+                            [2,3], [3,2])
 #
 # swap channel 3 @ 2 -> 2 @ 3
 #
@@ -1043,7 +1068,7 @@ swap32 = channel_from_unitary(np.array([ [1, 0, 0, 0, 0, 0],
                                          [0, 0, 0, 0, 1, 0],
                                          [0, 0, 1, 0, 0, 0],
                                          [0, 0, 0, 0, 0, 1] ]), 
-                            Dom([3,2]), Dom([2,3]))
+                            [3,2], [2,3])
 
 def swaps(n,m):
     mat = np.zeros((n*m, n*m))
@@ -1054,7 +1079,7 @@ def swaps(n,m):
             ar1[i] = 1
             ar2[j] = 1
             mat[i*m+j] = np.kron(ar2, ar1)
-    return channel_from_unitary(mat, Dom([n,m]), Dom([m,n]))
+    return channel_from_unitary(mat, [n,m], [m,n])
 
 # #
 # # first projection channel 2 @ 2 -> 2
@@ -1099,13 +1124,13 @@ def swaps(n,m):
 # Kronecker channel n @ m -> n*m
 #
 def kron(n,m):
-    return Channel(choi(np.eye(n*m)), Dom([n, m]), Dom([n*m]))
+    return Channel(choi(np.eye(n*m)), [n, m], [n*m])
 
 #
 # Kronecker inverse channel n*m -> n @ m
 #
 def kron_inv(n,m):
-    return Channel(choi(np.eye(n*m)), Dom([n*m]), Dom([n, m]))
+    return Channel(choi(np.eye(n*m)), [n*m], [n, m])
 
 #
 # Auxiliary function, placing a matrix in the lower-right corner of a
@@ -1140,14 +1165,14 @@ x_matrix = np.array([[0,1],
 #
 # Pauli-X channel 2 -> 2
 #
-x_chan = channel_from_unitary(x_matrix, Dom([2]), Dom([2]))
+x_chan = channel_from_unitary(x_matrix, [2], [2])
 
 #
 # cnot channel 2 @ 2 -> 2 @ 2
 #
 # This should be the same as quantum-control(x_chan)
 #
-cnot = channel_from_unitary(lower_right_one(x_matrix), Dom([2, 2]), Dom([2, 2]))
+cnot = channel_from_unitary(lower_right_one(x_matrix), [2, 2], [2, 2])
 
 
 y_matrix = np.array([[0,-complex(0, 1)],
@@ -1156,7 +1181,7 @@ y_matrix = np.array([[0,-complex(0, 1)],
 #
 # Pauli-Y channel 2 -> 2
 #
-y_chan = channel_from_unitary(y_matrix, Dom([2]), Dom([2]))
+y_chan = channel_from_unitary(y_matrix, [2], [2])
 
 
 z_matrix = np.array([[1,0],
@@ -1165,7 +1190,7 @@ z_matrix = np.array([[1,0],
 #
 # Pauli-Z channel 2 -> 2
 #
-z_chan = channel_from_unitary(z_matrix, Dom([2]), Dom([2]))
+z_chan = channel_from_unitary(z_matrix, [2], [2])
 
 
 hadamard_matrix = (1/math.sqrt(2)) * np.array([ [1, 1],
@@ -1174,7 +1199,7 @@ hadamard_matrix = (1/math.sqrt(2)) * np.array([ [1, 1],
 #
 # Hadamard channel 2 -> 2
 #
-hadamard = channel_from_unitary(hadamard_matrix, Dom([2]), Dom([2]))
+hadamard = channel_from_unitary(hadamard_matrix, [2], [2])
 
 #
 # Basic states, commonly written as |+> and |->
@@ -1182,14 +1207,13 @@ hadamard = channel_from_unitary(hadamard_matrix, Dom([2]), Dom([2]))
 plus = hadamard >> ket(0)
 minus = hadamard >> ket(1)
 
-hadamard_test = [plus,
-                 minus]
+hadamard_test = [plus.as_pred(), minus.as_pred()]
 
 #
 # Controlled Hadamard 2 @ 2 -> 2 @ 2
 #
 chadamard = channel_from_unitary(lower_right_one(hadamard_matrix), 
-                                 Dom([2, 2]), Dom([2, 2]))
+                                 [2, 2], [2, 2])
 
 #
 # channel 2 @ 2 -> 2 @ 2 for producing Bell states
@@ -1205,15 +1229,15 @@ bell01_vect = np.array([0,1,1,0])
 bell10_vect = np.array([1,0,0,-1])
 bell11_vect = np.array([0,1,-1,0])
 
-bell00 = State(0.5 * np.outer(bell00_vect, bell00_vect), Dom([2,2]))
-bell01 = State(0.5 * np.outer(bell01_vect, bell01_vect), Dom([2,2]))
-bell10 = State(0.5 * np.outer(bell10_vect, bell10_vect), Dom([2,2]))
-bell11 = State(0.5 * np.outer(bell11_vect, bell11_vect), Dom([2,2]))
+bell00 = State(0.5 * np.outer(bell00_vect, bell00_vect), [2,2])
+bell01 = State(0.5 * np.outer(bell01_vect, bell01_vect), [2,2])
+bell10 = State(0.5 * np.outer(bell10_vect, bell10_vect), [2,2])
+bell11 = State(0.5 * np.outer(bell11_vect, bell11_vect), [2,2])
 
-bell_test = [bell00,
-             bell01,
-             bell10,
-             bell11]
+bell_test = [bell00.as_pred(),
+             bell01.as_pred(),
+             bell10.as_pred(),
+             bell11.as_pred()]
 
 #
 # Greenberger-Horne-Zeilinger states
@@ -1231,32 +1255,32 @@ ghz_vect6 = np.array([0,0,1,0,0,-1,0,0])
 ghz_vect7 = np.array([0,1,0,0,0,0,1,0])
 ghz_vect8 = np.array([0,1,0,0,0,0,-1,0])
 
-ghz1 = State(0.5 * np.outer(ghz_vect1, ghz_vect1), Dom([2,2,2]))
-ghz2 = State(0.5 * np.outer(ghz_vect2, ghz_vect2), Dom([2,2,2]))
-ghz3 = State(0.5 * np.outer(ghz_vect3, ghz_vect3), Dom([2,2,2]))
-ghz4 = State(0.5 * np.outer(ghz_vect4, ghz_vect4), Dom([2,2,2]))
-ghz5 = State(0.5 * np.outer(ghz_vect5, ghz_vect5), Dom([2,2,2]))
-ghz6 = State(0.5 * np.outer(ghz_vect6, ghz_vect6), Dom([2,2,2]))
-ghz7 = State(0.5 * np.outer(ghz_vect7, ghz_vect7), Dom([2,2,2]))
-ghz8 = State(0.5 * np.outer(ghz_vect8, ghz_vect8), Dom([2,2,2]))
+ghz1 = State(0.5 * np.outer(ghz_vect1, ghz_vect1), [2,2,2])
+ghz2 = State(0.5 * np.outer(ghz_vect2, ghz_vect2), [2,2,2])
+ghz3 = State(0.5 * np.outer(ghz_vect3, ghz_vect3), [2,2,2])
+ghz4 = State(0.5 * np.outer(ghz_vect4, ghz_vect4), [2,2,2])
+ghz5 = State(0.5 * np.outer(ghz_vect5, ghz_vect5), [2,2,2])
+ghz6 = State(0.5 * np.outer(ghz_vect6, ghz_vect6), [2,2,2])
+ghz7 = State(0.5 * np.outer(ghz_vect7, ghz_vect7), [2,2,2])
+ghz8 = State(0.5 * np.outer(ghz_vect8, ghz_vect8), [2,2,2])
 
 #
 # The associated test
 #
-ghz_test = [ghz1,
-            ghz2,
-            ghz3,
-            ghz4,
-            ghz5,
-            ghz6,
-            ghz7,
-            ghz8]
+ghz_test = [ghz1.as_pred(),
+            ghz2.as_pred(),
+            ghz3.as_pred(),
+            ghz4.as_pred(),
+            ghz5.as_pred(),
+            ghz6.as_pred(),
+            ghz7.as_pred(),
+            ghz8.as_pred()]
 
 #
 # W3 state
 #
 w3_vect = np.array([0,1,1,0,1,0,0,0])
-w3 = State(1/3 * np.outer(w3_vect, w3_vect), Dom([2,2,2]))
+w3 = State(1/3 * np.outer(w3_vect, w3_vect), [2,2,2])
            
 def phase_shift_matrix(angle):
     return np.array([[1, 0],
@@ -1266,15 +1290,14 @@ def phase_shift_matrix(angle):
 # Phase shift channel 2 -> 2, for angle between 0 and 2 pi
 #
 def phase_shift(angle):
-    return channel_from_unitary(phase_shift_matrix(angle), 
-                                Dom([2]), Dom([2]))
+    return channel_from_unitary(phase_shift_matrix(angle), [2], [2])
 
 #
 # Controlled phase shift channel 2 @ 2 -> 2 @ 2, for angle between 0 and 2 pi
 #
 def cphase_shift(angle):
     return channel_from_unitary(lower_right_one(phase_shift_matrix(angle)),
-                                Dom([2, 2]), Dom([2, 2]))
+                                [2, 2], [2, 2])
 
 
 
@@ -1289,7 +1312,7 @@ toffoli = channel_from_unitary(np.array([ [1, 0, 0, 0, 0, 0, 0, 0],
                                           [0, 0, 0, 0, 0, 1, 0, 0],
                                           [0, 0, 0, 0, 0, 0, 0, 1],
                                           [0, 0, 0, 0, 0, 0, 1, 0] ]),
-                               Dom([2, 2, 2]), Dom([2, 2, 2]))
+                               [2, 2, 2], [2, 2, 2])
 
 
 
@@ -1335,7 +1358,7 @@ def channel_from_states(*ls):
         for j2 in range(cod.size):
             for i in range(n):
                 mat[j1][j2][i][i] = ls[i].array[j1][j2]
-    return Channel(mat, Dom([n]), cod)
+    return Channel(mat, [n], cod)
 
 
 #
@@ -1355,7 +1378,7 @@ def ccpt(*ls):
     for i in range(n):
         mat[0][0][i][i] = ls[i]
         mat[1][1][i][i] = 1-ls[i]
-    return Channel(mat, Dom([2] * log), Dom([2]))
+    return Channel(mat, [2] * log, [2])
 
 
 
@@ -1383,10 +1406,10 @@ def meas_pred(p):
     mat = np.zeros((2,2,n,n)) + 0j
     mat[0][0] = p.array
     mat[1][1] = (~p).array
-    return Channel(mat, p.dom, Dom([2]))
+    return Channel(mat, p.dom, [2])
 
-meas0 = meas_pred(ket(0))
-meas1 = meas_pred(ket(1))
+meas0 = meas_pred(unit_pred(2,0))
+meas1 = meas_pred(unit_pred(2,1))
 
 #
 # Measurement generalised from a predicate to a test, that is to a
@@ -1411,7 +1434,7 @@ def meas_test(ts):
     mat = np.zeros((l,l,dom.size,dom.size)) + 0j
     for i in range(l):
         mat[i][i] = ts[i].array
-    return Channel(mat, dom, Dom([l]))
+    return Channel(mat, dom, [l])
 
 #
 # Measurements in some standard bases.
@@ -1431,6 +1454,8 @@ meas_ghz = meas_test(ghz_test)
 #                                                 (s >= ~p, s/~p) )
 #
 #   instr(p) << truth(2) @ q  =  (p & q) + (~p & q) 
+#   instr(p) << unit_pred(2,0) @ q  =  p & q
+#   instr(p) << unit_pred(2,1) @ q  =  ~p & q 
 #
 def instr(p):
     n = p.dom.size
@@ -1609,10 +1634,10 @@ def transition_from_unitary(u):
     return mat
 
 
-def operator_from_unitary(u, dims):
+def operator_from_unitary(u, dom):
      if not is_unitary(u):
          raise Exception('Unitary matrix required for channel construction')
-     return Operator(transition_from_unitary(u), dims, dims)
+     return Operator(transition_from_unitary(u), dom, dom)
 
 
 #
@@ -1777,7 +1802,9 @@ def instrument():
     print( (instr(p) >> s) % [1,0] == meas_pred(p) >> s,
            (instr(p) >> s) % [0,1] == convex_state_sum( (s >= p, s/p), 
                                                         (s >= ~p, s/~p) ),
-           instr(p) << truth(2) @ q == (p & q) + (~p & q) )
+           instr(p) << truth(2) @ q == (p & q) + (~p & q),
+           instr(p) << unit_pred(2,0) @ q == (p & q),
+           instr(p) << unit_pred(2,1) @ q == (~p & q) )
     print("channel equalities")
     print( (idn(2) @ discard(2)) * instr(p) == meas_pred(p) )
 
@@ -1836,9 +1863,6 @@ def channel():
     # the next two states are also equal
     print( dc >> ket(1) )
     print( (chadamard >> (ket(1) @ w2)) % [0,1] )
-    print("* next")
-    print( dc >> v )
-    print( (w / (v @ truth(2))) % [0,1] )
 
 def bayesian_probability():
     print("\nBayesian probability")
@@ -1991,15 +2015,15 @@ def experiment():
 
 
 def main():
-    #validity()
-    #marginals()
-    #measurement()
-    #instrument()
-    #conditioning()
-    #channel()
-    #bayesian_probability()
-    #kappa_copy()
-    #graphs()
+    validity()
+    marginals()
+    measurement()
+    instrument()
+    conditioning()
+    channel()
+    bayesian_probability()
+    kappa_copy()
+    graphs()
     transition()
     #experiment()
 

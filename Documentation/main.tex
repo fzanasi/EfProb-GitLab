@@ -2761,9 +2761,9 @@ states \pythoninline{ket(0)} and \pythoninline{ket(1)} could
 be defined as:
 \begin{python}
 ket(0) = State(np.array([1,0], 
-                        [0,0]]), Dom([2]))
+                        [0,0]]), [2])
 ket(1) = State(np.array([0,0], 
-                        [0,1]]), Dom([2]))
+                        [0,1]]), [2])
 \end{python}
 
 \noindent The Bell states\index{Bell!states} are pre-defined via outer
@@ -2774,10 +2774,10 @@ bell01_vect = np.array([0,1,1,0])
 bell10_vect = np.array([1,0,0,-1])
 bell11_vect = np.array([0,1,-1,0])
 
-bell00 = State(0.5 * np.outer(bell00_vect, bell00_vect), Dom([2,2]))
-bell01 = State(0.5 * np.outer(bell01_vect, bell01_vect), Dom([2,2]))
-bell10 = State(0.5 * np.outer(bell10_vect, bell10_vect), Dom([2,2]))
-bell11 = State(0.5 * np.outer(bell11_vect, bell11_vect), Dom([2,2]))
+bell00 = State(0.5 * np.outer(bell00_vect, bell00_vect), [2,2])
+bell01 = State(0.5 * np.outer(bell01_vect, bell01_vect), [2,2])
+bell10 = State(0.5 * np.outer(bell10_vect, bell10_vect), [2,2])
+bell11 = State(0.5 * np.outer(bell11_vect, bell11_vect), [2,2])
 \end{python}
 
 \noindent Later in Subsection~\ref{subsec:qchannel:structural} we
@@ -2794,14 +2794,14 @@ ghz_vect6 = np.array([0,0,1,0,0,-1,0,0])
 ghz_vect7 = np.array([0,1,0,0,0,0,1,0])
 ghz_vect8 = np.array([0,1,0,0,0,0,-1,0])
 
-ghz1 = State(0.5 * np.outer(ghz_vect1, ghz_vect1), Dom([2,2,2]))
-ghz2 = State(0.5 * np.outer(ghz_vect2, ghz_vect2), Dom([2,2,2]))
-ghz3 = State(0.5 * np.outer(ghz_vect3, ghz_vect3), Dom([2,2,2]))
-ghz4 = State(0.5 * np.outer(ghz_vect4, ghz_vect4), Dom([2,2,2]))
-ghz5 = State(0.5 * np.outer(ghz_vect5, ghz_vect5), Dom([2,2,2]))
-ghz6 = State(0.5 * np.outer(ghz_vect6, ghz_vect6), Dom([2,2,2]))
-ghz7 = State(0.5 * np.outer(ghz_vect7, ghz_vect7), Dom([2,2,2]))
-ghz8 = State(0.5 * np.outer(ghz_vect8, ghz_vect8), Dom([2,2,2]))
+ghz1 = State(0.5 * np.outer(ghz_vect1, ghz_vect1), [2,2,2])
+ghz2 = State(0.5 * np.outer(ghz_vect2, ghz_vect2), [2,2,2])
+ghz3 = State(0.5 * np.outer(ghz_vect3, ghz_vect3), [2,2,2])
+ghz4 = State(0.5 * np.outer(ghz_vect4, ghz_vect4), [2,2,2])
+ghz5 = State(0.5 * np.outer(ghz_vect5, ghz_vect5), [2,2,2])
+ghz6 = State(0.5 * np.outer(ghz_vect6, ghz_vect6), [2,2,2])
+ghz7 = State(0.5 * np.outer(ghz_vect7, ghz_vect7), [2,2,2])
+ghz8 = State(0.5 * np.outer(ghz_vect8, ghz_vect8), [2,2,2])
 \end{python}
 
 
@@ -3286,13 +3286,17 @@ vectors mentiond at the end of Section~\ref{sec:qstate} give rise to
 the following Bell\index{Bell!test} and GHZ\index{GHZ!test} tests,
 in which these states are used as predicates.
 \begin{python}
-bell_test = [bell00, bell01, bell10, bell11]
-ghz_test = [ghz1, ghz2, ghz3, ghz4, ghz5, ghz6, ghz7, ghz8]
+>>> bell_test = [bell00.as_pred(), bell01.as_pred(), 
+...              bell10.as_pred(), bell11.as_pred()]
+>>> ghz_test = [ghz1.as_pred(), ghz2.as_pred(), 
+...             ghz3.as_pred(), ghz4.as_pred(), 
+...             ghz5.as_pred(), ghz6.as_pred(), 
+...             ghz7.as_pred(), ghz8.as_pred()]
 \end{python}
 
 \noindent Indeed, the Bell predicates form a test:
 \begin{python}
->>> bell00 + bell01 + bell10 + bell11
+>>> bell00.as_pred() + bell01.as_pred() + bell10.as_pred() + bell11.as_pred()
 [[ 1.  0.  0.  0.]
  [ 0.  1.  0.  0.]
  [ 0.  0.  1.  0.]
@@ -3385,7 +3389,7 @@ trace $\tr(\omega\cdot p)$ of the product. It can be understood as the
 Hilbert-Schmidt inner product $\tuple{\omega\mid p}$, using that $p^*
 = p$.
 \begin{python}
->>> v = vector_state(0.5 * sqrt(3), complex(0, 0.5))
+>>> v = vector_pred(0.5 * sqrt(3), complex(0, 0.5))
 >>> v
 [[ 0.75+0.j         0.00-0.4330127j]
  [ 0.00+0.4330127j  0.25+0.j       ]]
@@ -3440,7 +3444,7 @@ random states and predicates, as in:
 conjunction $\andthen$ is \emph{not commutative}:
 \begin{python}
 >>> p = unit_pred(2,0)
->>> q = plus
+>>> q = plus.as_pred()
 >>> ket(0) >= p & q
 0.5
 >>> ket(0) >= q & p
@@ -3449,15 +3453,17 @@ conjunction $\andthen$ is \emph{not commutative}:
 
 \noindent See Example~\ref{ex:polarisation} for more such examples.
 
-Since a state is also a predicate, we can write states on both sides
-of the validity operator \pythoninline{>=}. The resulting validity
-does not depend on which of the two states is used as predicate.
+Since a state can be turned into a predicate, we can write states on
+both sides of the validity operator \pythoninline{>=}, where we do need
+to turn the state on the right hand side into a predicate. The resulting
+validity does not depend on which of the two states is used as
+predicate.
 \begin{python}
 >>> s = random_state(8)
 >>> t = random_state(8)
->>> s >= t
+>>> s >= t.as_pred()
 0.116791838672 
->>> t >= s
+>>> t >= s.as_pred()
 0.116791838672
 \end{python}
 
@@ -3471,7 +3477,7 @@ of the underlying states, as tested in:
 >>> w2 = w1/np.linalg.norm(w1)
 >>> s = vector_state(*v2)
 >>> t = vector_state(*w2)
->>> s >= t
+>>> s >= t.as_pred()
 0.659104940735
 >>> np.inner(v2, w2) ** 2 
 0.659104940735
@@ -3496,7 +3502,7 @@ discrimination and social justice, and also participated in
 anti-nuclear demonstrations.
 \end{quote}
 
-\noindent What is the likelihood of the following events. Linda is:
+\noindent What is the likelihood of the following events? Linda is:
 \begin{enumerate}
 \item \label{ex:linda:fem} active in the feminist movement;
 \item \label{ex:linda:bank} a bank teller;
@@ -3517,7 +3523,7 @@ following state from\cite{BusemeyerB12}.
 \begin{python}
 >>> s = vector_state(0.987, -0.1564)
 >>> feminist = unit_pred(2,0)
->>> bankteller = vector_state(cos(0.4 * pi), sin(0.4 * pi))
+>>> bankteller = vector_pred(cos(0.4 * pi), sin(0.4 * pi))
 >>> s >= feminist 
 0.97550548153
 >>> s >= bankteller 
@@ -3554,9 +3560,9 @@ the end of Section~\ref{sec:qstate}. Of these four states be use the
 one named \pythoninline{bell00}. We additionally use the following
 predicates, obtained from states.
 \begin{python}
->>> A1 = vector_state(1/sqrt(2), 1/sqrt(2))
+>>> A1 = vector_pred(1/sqrt(2), 1/sqrt(2))
 >>> B1 = A1
->>> A2 = vector_state(1/sqrt(2), 0.5/sqrt(2) * complex(1, sqrt(3)))
+>>> A2 = vector_pred(1/sqrt(2), 0.5/sqrt(2) * complex(1, sqrt(3)))
 >>> B2 = A2
 >>> A1
 [[ 0.5  0.5]
@@ -4391,7 +4397,7 @@ where the channel \pythoninline{ch} is determined by a unitary matrix
 >>> U = np.array([[1/sqrt(2), 1/2, -1/2], 
 ...               [1/sqrt(2), -1/2, 1/2], 
 ...               [0, 1/sqrt(2), 1/sqrt(2)]])
->>> ch = channel_from_unitary(U, Dom([3]), Dom([3]))
+>>> ch = channel_from_unitary(U, [3], [3])
 >>> W = ch >> M
 >>> W >= B
 0.0
@@ -4786,9 +4792,9 @@ It turns out to be convenient to have channels that translate between
 \pythoninline{[n,m]} and \pythoninline{n*m}. This is done by what we
 call Kronecker\index{Kronecker!channel} channels, written as
 $$\begin{array}{ccc}
-\mbox{\pythoninline{kron : Dom([n,m]) -> Dom([n*m])}}
+\mbox{\pythoninline{kron : [n,m] -> [n*m]}}
 & \quad\mbox{and}\quad &
-\mbox{\pythoninline{kron_inv : Dom([n*m]) -> Dom([n,m])}}
+\mbox{\pythoninline{kron_inv : [n*m] -> [n,m]}}
 \end{array}$$
 
 \noindent Internally these channels do nothing --- they are just
@@ -4877,7 +4883,7 @@ and superdense coding, both using shared Bell and GHZ states.
 \paragraph{Measurement}
 For each predicate \pythoninline{p} of type \pythoninline{dom} there
 is a channel \pythoninline{meas\_pred(p) : dom ->
-  Dom([2])}.\index{measurement!wrt.~a~predicate} It is such that for
+  [2]}.\index{measurement!wrt.~a~predicate} It is such that for
 an arbitrary state \pythoninline{s},
 $$\begin{array}{rclcrcl}
 \mbox{\pythoninline{meas\_pred(p) >> s}}
@@ -4962,7 +4968,7 @@ measurement\index{Bell!measurement} illustration, using a measurement
 channel \pythoninline{meas\_test} that uses a test as
 input.\index{measurement!wrt.~a~test}
 \begin{python}
->>> bell_test = [bell00, bell01, bell10, bell11]
+>>> bell_test = [bell00.as_pred(), bell01.as_pred(), bell10.as_pred(), bell11.as_pred()]
 >>> meas_bell = meas_test(bell_test)
 >>> w = cnot >> (random_state(2) @ random_state(2))
 >>> meas_bell >> w 
@@ -4981,7 +4987,7 @@ input.\index{measurement!wrt.~a~test}
 \end{python}
 
 \noindent We see that measurement of an (arbitrary) state
-\pythoninline{w : Dom([2,2])} in the Bell basis, turned into a test of
+\pythoninline{w : [2,2]} in the Bell basis, turned into a test of
 predicates, yields a probabilistic state. These probabilities on the
 diagonal can be obtained by separately as validities of the separate
 predicates in the state \pythoninline{w}.
@@ -5392,7 +5398,7 @@ quantum circuits.  Therefore we shall be more explicit about the types
 
 On Alice's side we use the following set-up.
 \begin{python}
->>> bell_test = [bell00, bell01, bell10, bell11]
+>>> bell_test = [bell00.as_pred(), bell01.as_pred(), bell10.as_pred(), bell11.as_pred()]
 >>> meas_bell = meas_test(bell_test)
 >>> meas_bell.dom
 [2,2]
@@ -5462,7 +5468,7 @@ It is defined first.
 \begin{python}
 >>> iy_matrix = np.array([[0,1],
 ...                       [-1,0]])
->>> iy_chan = channel_from_unitary(iy_matrix, Dom([2]))
+>>> iy_chan = channel_from_unitary(iy_matrix, [2])
 >>> alice = (discard(8) @ idn(2,2)) * ccase(idn(2) @ idn(2), 
 ...                                         idn(2) @ x_chan, 
 ...                                         x_chan @ idn(2), 
@@ -5607,9 +5613,9 @@ matrix-exponent:
 ...               [1, 0, 0, 1],
 ...               [0, 1, 1, 0]])
 >>> Ujp = scipy.linalg.expm(1.2393 * complex(0,-1) * H)
->>> chjp = channel_from_unitary(Ujp, Dom([4]), Dom([4]))
+>>> chjp = channel_from_unitary(Ujp, [4], [4])
 >>> Ujd = scipy.linalg.expm(-3.8324 * complex(0,-1) * H)
->>> chjd = channel_from_unitary(Ujd, Dom([4]), Dom([4]))
+>>> chjd = channel_from_unitary(Ujd, [4], [4])
 \end{python}
 
 \noindent With this infrastructure in place, we can define the three
@@ -5689,31 +5695,6 @@ convinced by the one who speaks last. This is a very human
 characteristic.
 \end{example}
 
-%% 4.2.4.2 Naive perspective
-
-%% Matrix H is Hermitian:  True 
-
-%% Guilt for the first judgement, without evidence:  0.459
-
-%% 4.2.4.3 Prosecution perspective
-
-%% Matrix Upn is unitary:  True
-%% State p can also be obtained from state transformation:  True
-
-%% Squared magnitudes of vector p:  [0.74132503408138983, 0.092613287693186941, 0.11049440600551746, 0.055567272219905588]
-
-%% This is the same as the validities of the 4 basic predicates:  0.741325034081 0.0926132876932 0.110494406006 0.0555672722199
-
-%% Judged probability of guilt for the second judgement, after the first piece of (positive) evidence:  0.870284240057
-
-%% 4.2.4.4 Defense perspective
-
-%% Matrices Udn and Udp are unitary:  True True
-%% State d can also be obtained from state transformations:  True True
-
-%% Validities of the 4 basic predicates in state d+:  0.500219890137 0.212420696339 0.0964238928938 0.190935520631
-
-%% Judged probability of guilt for the second judgement, after both pieces of evidence:  0.526633004283
 
 
 

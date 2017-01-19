@@ -145,7 +145,8 @@ def operations_on_predicates():
     print("\n===\n")
 
     print("* bell states form a test")
-    print( bell00 + bell01 + bell10 + bell11 )
+    print( bell00.as_pred() + bell01.as_pred() + 
+           bell10.as_pred() + bell11.as_pred() )
 
     print("\n===\n")
 
@@ -164,7 +165,7 @@ def validity():
     print("\nSubsection: Validity\n")
 
     print("* Validity example")
-    v = vector_state(0.5 * sqrt(3), complex(0, 0.5)) 
+    v = vector_pred(0.5 * sqrt(3), complex(0, 0.5)) 
     print( v )
     print( ket(0) >= v )
     print( ket(1) >= v )
@@ -172,16 +173,16 @@ def validity():
     print("\n===\n")
 
     print("* Validity preserves scaling example")
-    s = random_state(100)
-    p = random_pred(100)
-    print( s >= 0.3 * p )
-    print( 0.3 * (s >= p) )
+    # s = random_state(100)
+    # p = random_pred(100)
+    # print( s >= 0.3 * p )
+    # print( 0.3 * (s >= p) )
 
     print("\n===\n")
 
     print("* Commutativity of sequential conjunction")
     p = unit_pred(2,0)
-    q = plus
+    q = plus.as_pred()
     print( ket(0) >= p & q )
     print( ket(0) >= q & p )
 
@@ -190,8 +191,8 @@ def validity():
     print("* Validity of states")
     s = random_state(8)
     t = random_state(8)
-    print( s >= t )
-    print( t >= s )
+    print( s >= t.as_pred() )
+    print( t >= s.as_pred() )
 
     print("\n===\n")
 
@@ -202,7 +203,7 @@ def validity():
     w2 = w1/np.linalg.norm(w1)
     s = vector_state(*v2)
     t = vector_state(*w2)
-    print( s >= t )
+    print( s >= t.as_pred() )
     print( np.inner(v2, w2) ** 2 )
 
     print("\n===\n")
@@ -210,7 +211,7 @@ def validity():
     print("* Linda example")
     s = vector_state(0.987, -0.1564)
     feminist = unit_pred(2,0)
-    bankteller = vector_state(cos(0.4 * pi), sin(0.4 * pi))
+    bankteller = vector_pred(cos(0.4 * pi), sin(0.4 * pi))
     print( s >= feminist )
     print( s >= bankteller )
     print( s >= feminist & bankteller )
@@ -219,10 +220,10 @@ def validity():
     print("\n===\n")
 
     print("* Bell table")
-    v1 = vector_state(1/sqrt(2), 1/sqrt(2))
+    v1 = vector_pred(1/sqrt(2), 1/sqrt(2))
     A1 = v1
     B1 = v1
-    v2 = vector_state(1/sqrt(2), 0.5/sqrt(2) * complex(1, sqrt(3)))
+    v2 = vector_pred(1/sqrt(2), 0.5/sqrt(2) * complex(1, sqrt(3)))
     A2 = v2
     B2 = v2
     print( A1 )
@@ -255,7 +256,7 @@ def conditioning():
     s = random_state(2)
     vert = unit_pred(2,0)
     hor = unit_pred(2,1)
-    diag = plus
+    diag = plus.as_pred()
     print( s >= vert )
 
     print("\n===\n")
@@ -377,7 +378,7 @@ def predicate_transformation():
     U = np.array([[1/sqrt(2), 1/2, -1/2], 
                   [1/sqrt(2), -1/2, 1/2], 
                   [0, 1/sqrt(2), 1/sqrt(2)]])
-    ch = channel_from_unitary(U, Dom([3]), Dom([3]))
+    ch = channel_from_unitary(U, [3], [3])
     W = ch >> M
     print( W >= B )
     print( W >= A )
@@ -414,8 +415,8 @@ def random_variables():
 
     print("* Types of scalar multiplications")
     print( type( ket(0) ) )
-    print( type( 0.5 * ket(0) ) )
-    print( type( 5 * ket(0) ) )
+    print( type( 0.5 * ket(0).as_pred() ) )
+    print( type( 5 * ket(0).as_pred() ) )
 
     print("\n===\n")
 
@@ -493,15 +494,15 @@ def measurement():
     print("\n===\n")
 
     print("* Measurement in the Bell basis")
-    bell_test = [bell00, bell01, bell10, bell11]
+    bell_test = [bell00.as_pred(), bell01.as_pred(), bell10.as_pred(), bell11.as_pred()]
     meas_bell = meas_test(bell_test)
     w = cnot >> (random_state(2) @ random_state(2))
     print( w )
     print( meas_bell >> w )
-    print( w >= bell00 )
-    print( w >= bell01 )
-    print( w >= bell10 )
-    print( w >= bell11 )
+    print( w >= bell00.as_pred() )
+    print( w >= bell01.as_pred() )
+    print( w >= bell10.as_pred() )
+    print( w >= bell11.as_pred() )
 
     print("\n===\n")
 
@@ -608,7 +609,7 @@ def teleportation_and_superdensecoding():
     print("\n===\n")
 
     print("* Teleportation, with the GHZ state")
-    bell_test = [bell00, bell01, bell10, bell11]
+    bell_test = [bell00.as_pred(), bell01.as_pred(), bell10.as_pred(), bell11.as_pred()]
     meas_bell = meas_test(bell_test)
     print( meas_bell.dom, meas_bell.cod )
     alice = (meas_bell @ idn(2,2)) * (idn(2) @ ghz.as_chan())
@@ -617,7 +618,7 @@ def teleportation_and_superdensecoding():
     print("\n===\n")
 
     print("* GHZ-teleportation, Bob's side")
-    hadamard_test = [plus, minus]
+    hadamard_test = [plus.as_pred(), minus.as_pred()]
     meas_hadamard = meas_test(hadamard_test)
     bob = ( discard(8) @ idn(2) ) \
           * ccase(idn(2), z_chan, x_chan, x_chan * z_chan, \
@@ -640,7 +641,7 @@ def teleportation_and_superdensecoding():
     print("* GHZ-superdense coding")
     iy_matrix = np.array([[0,1],
                           [-1,0]])
-    iy_chan = channel_from_unitary(iy_matrix, Dom([2]), Dom([2]))
+    iy_chan = channel_from_unitary(iy_matrix, [2], [2])
     alice = (discard(8) @ idn(2,2)) * ccase(idn(2) @ idn(2), 
                                             idn(2) @ x_chan, 
                                             x_chan @ idn(2), 
@@ -697,17 +698,17 @@ def order_inference():
     Udp = np.dot(Ujp, conjugate_transpose(Ujd))
     print("Self-adjoint and unitaries: ",
           is_hermitian(H), is_unitary(Ujp), is_unitary(Ujd), is_unitary(Upd) )
-    chjp = channel_from_unitary(Ujp, Dom([4]), Dom([4]))
-    chjd = channel_from_unitary(Ujd, Dom([4]), Dom([4]))
-    chpd = channel_from_unitary(Upd, Dom([4]), Dom([4]))
-    chdp = channel_from_unitary(Udp, Dom([4]), Dom([4]))
+    chjp = channel_from_unitary(Ujp, [4], [4])
+    chjd = channel_from_unitary(Ujd, [4], [4])
+    chpd = channel_from_unitary(Upd, [4], [4])
+    chdp = channel_from_unitary(Udp, [4], [4])
     J = vector_state(sqrt(0.459/2),sqrt(0.459/2),sqrt(0.541/2),sqrt(0.541/2))
     P = chjp >> J
     D = chjd >> J
     print("Equality of states: ", D == chpd >> P, P == chdp >> D )
     print("Alternative descriptions via evolution: ",
-          P == RandVar(H, Dom([4])).evolution(J)(1.2393),
-          D == RandVar(H, Dom([4])).evolution(J)(-3.8324) )
+          P == RandVar(H, [4]).evolution(J)(1.2393),
+          D == RandVar(H, [4]).evolution(J)(-3.8324) )
 
     print("\n===\n")
 
@@ -751,20 +752,20 @@ def order_inference():
 
 
 def main():
-    # states()
-    # operations_on_states()
-    # basic_states()
-    # predicates()
-    # operations_on_predicates()
-    # validity()
-    # conditioning()
-    # weakening()
-    # state_transformation()
-    # predicate_transformation()
-    # random_variables()
-    # structural_channels()
-    # measurement()
-    # teleportation_and_superdensecoding()
+    states()
+    operations_on_states()
+    basic_states()
+    predicates()
+    operations_on_predicates()
+    validity()
+    conditioning()
+    weakening()
+    state_transformation()
+    predicate_transformation()
+    random_variables()
+    structural_channels()
+    measurement()
+    teleportation_and_superdensecoding()
     order_inference()
 
 if __name__ == "__main__":
