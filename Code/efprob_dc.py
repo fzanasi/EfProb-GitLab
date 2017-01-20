@@ -1090,9 +1090,30 @@ def copy(dom):
         array[n, n, n] = 1.0
     return Channel(array, dom, dom+dom)
 
+
 def graph(c):
     return (idn(c.dom) @ c) * copy(c.dom)
 
+
+def case_channel(*channels, case_dom=None):
+    if not channels:
+        raise ValueError("Number of channels must be > 0")
+    n = len(channels)
+    if case_dom is None:
+        case_dom = range(n)
+    case_dom = asdom(case_dom)
+    dom = channels[0].dom
+    cod = channels[0].cod
+    for c in channels[1:]:
+        if c.dom != dom or c.cod != cod:
+            raise ValueError("Domains and codomains must be the same")
+    dom_shape = tuple(len(s) for s in dom.disc)
+    cod_shape = tuple(len(s) for s in cod.disc)
+    array = np.empty(cod_shape + (n,) + dom_shape)
+    for i, c in enumerate(channels):
+        array[(slice(None),)*len(cod_shape)
+              + (i,) + (...,)] = c.array
+    return Channel(array, case_dom + dom, cod)
 
 
 class DetChan:
