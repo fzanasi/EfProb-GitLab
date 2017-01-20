@@ -365,6 +365,11 @@ class Fun:
         if block:
             input("Press [enter] to continue.")
 
+    def asfun1(self):
+        return Fun2(lambda xs, _: self(*xs), self.supp, [])
+
+    u_asfun1 = np.frompyfunc(lambda f: f.asfun1(), 1, 1)
+
     def asfun2(self):
         return Fun2(lambda _, ys: self(*ys), [], self.supp)
 
@@ -628,7 +633,7 @@ class State(StateOrPredicate):
         """
         return Predicate(self.array, self.dom)
 
-    def aschan(self):
+    def as_chan(self):
         if self.dom.iscont:
             array = Fun.u_asfun2(self.array)
         else:
@@ -669,6 +674,19 @@ class Predicate(StateOrPredicate):
 
     def __invert__(self):
         return self.ortho()
+
+    def as_chan(self, cod=[True, False]):
+        cod = asdom(cod)
+        if self.dom.iscont:
+            array = np.empty((2,)+self.array.shape, dtype=object)
+            array[0, ...] = Fun.u_asfun1(self.array)
+            array[1, ...] = Fun.u_asfun1(
+                Fun.u_ortho(self.array, _wrap(self.dom.cont)))
+        else:
+            array = np.empty((2,)+self.array.shape, dtype=float)
+            array[0, ...] = self.array
+            array[1, ...] = 1.0 - self.array
+        return Channel(array, self.dom, cod)
 
 
 class Fun2:
