@@ -1429,6 +1429,32 @@ def unit_pred(n, i):
 #
 ##############################################################
 
+#
+# Total variation distance between discrete states
+#
+def tvdist(s, t):
+    if s.dom.iscont or t.dom.iscont:
+        raise Exception('Total variation distance is defined only for discrete states')
+    if s.dom != t.dom:
+        raise Exception('Total variation discrete is define only for states with the same domain')
+    return 0.5 * sum(abs(s.array - t.array))
+
+#
+# Direct influence of a predicate on a state
+#
+def dir_infl(pred, state):
+    return tvdist(state, state/pred)
+
+#
+# Crossover influence
+#
+def cross_infl(pred, joint_state):
+    marg2 = joint_state % [0,1]
+    dom2 = marg2.dom
+    return tvdist(marg2, (joint_state / (pred @ truth(dom2))) % [0,1])
+
+
+
 def factorial(n):
     if n == 0:
         return 1

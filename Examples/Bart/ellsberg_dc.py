@@ -24,6 +24,7 @@
 #
 from efprob_dc import *
 from math import *
+import random
 
 print("\nEllsberg Paradox")
 print("================\n")
@@ -160,16 +161,33 @@ prize_domain = ['G', 'C']
 #
 # Number of doors to choose from
 #
-N=100
+N=10
+doors = range(N)
 
 #
 # You pick door 0; all other options are combined
 #
 
-opendoors = chan_fromklmap(lambda x: flip(1) if x==0 else flip(0),
-                           range(N),
-                           [True, False])
+def opendoors(car_pos):
+    ls = np.zeros(N)
+    def f_nohit(x): 
+        ls[car_pos] = (N-1)/N
+        ls[x] = 1/N
+        return ls
+    def f_hit(x):
+        r = random.randint(0,N-1)
+        print("random", r)
+        if r >= x:
+            r += 1
+        ls[x] = 1/N
+        ls[r] = (N-1)/N
+    return chan_fromklmap(lambda door_choice: 
+                          State(f_hit(door_choice), doors)
+                          if door_choice == car_pos else 
+                          State(f_nohit(door_choice), doors),
+                          doors,
+                          doors)
 
-print( opendoors >> uniform_disc_state(100) )
+print( opendoors(3) >> unit_disc_state(N,5) )
 
 #print( prior / (pick << Predicate([1,1,0], [1,2,3])) )
