@@ -1493,6 +1493,15 @@ def bn_prior(r):
     return State([r, 1-r], bnd)
 
 #
+# Function for a predicat on a state, in a Bayesian network
+#
+def bn_pred(r,s):
+    return Predicate([r,s], bnd)
+
+bn_pos_pred = bn_pred(1,0)
+bn_neg_pred = bn_pred(0,1)
+
+#
 # Conditional probability table converted into a channel. The input is
 # a list of probabilities, of length 2^n, where n is the number of
 # predecessor nodes.

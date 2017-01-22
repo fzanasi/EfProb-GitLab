@@ -40,17 +40,15 @@ healt_care = cpt(4/5, 1/10)
 print("\n* Initial disease probability")
 print( disease >> (genetic_heredity @ environmental_factors) )
 
-positive_pred = Predicate([1,0], bnd)
-
 print("\n* Positive test probability")
 print( (disease >> (genetic_heredity @ environmental_factors)) 
-       >= (test << positive_pred) )
+       >= (test << bn_pos_pred) )
 
 print("\n* Disease probability after positive test")
 print( (disease >> (genetic_heredity @ environmental_factors)) 
-       / (test << positive_pred) )
+       / (test << bn_pos_pred) )
 
-transition_pred = Predicate([0.88, 0.1], bnd)
+transition_pred = bn_pred(0.88, 0.1)
 
 print("\nTO BE CHECKED: the next three points do not coincide with the outcomes in the paper")
 
@@ -67,7 +65,7 @@ print( (test * disease) >> ((genetic_heredity @ environmental_factors)
 
 
 print("\n* Conditioning creates entwinedness")
-p_create = Predicate([0.85, 0.2], bnd) 
+p_create = bn_pred(0.85, 0.2)
 w = (genetic_heredity @ environmental_factors) / (disease << p_create)
 print("conditioned joint state: ", w )
 print("first marginal: ", w % [1,0] )
@@ -78,44 +76,46 @@ print("product of marginals: ", (w % [1,0]) @ (w % [0,1]) )
 print("\n* Influence between marginals of joint states")
 sigma = State([1/3, 1/4, 1/6, 1/4], bnd + bnd)
 print(sigma)
-q = Predicate([1,0], bnd)
-print("second marginal of sigma: ", sigma % [0,1] )
-print("sigma updated with q: ", sigma / (q @ truth(bnd)) )
-print("second marginal of updated sigma: ", (sigma / (q @ truth(bnd))) % [0,1] )
+print("second marginal of sigma: ", 
+      sigma % [0,1] )
+print("sigma updated with q: ", 
+      sigma / (bn_pos_pred @ truth(bnd)) )
+print("second marginal of updated sigma: ", 
+      (sigma / (bn_pos_pred @ truth(bnd))) % [0,1] )
 
 print("\n* Direct influences")
-omega = State([4/5, 1/5], bnd)
-rho = State([1/2, 1/2], bnd)
-sigma = State([1/5, 4/5], bnd)
-print("influence on omega: ", dir_infl(test << positive_pred, omega) )
-print("influence on rho: ", dir_infl(test << positive_pred, rho) )
-print("influence on sigma: ", dir_infl(test << positive_pred, sigma) )
+omega = bn_prior(4/5)
+rho = bn_prior(1/2)
+sigma = bn_prior(1/5)
+print("influence on omega: ", dir_infl(test << bn_pos_pred, omega) )
+print("influence on rho: ", dir_infl(test << bn_pos_pred, rho) )
+print("influence on sigma: ", dir_infl(test << bn_pos_pred, sigma) )
 
 print("\n* Serial connections")
-omega = State([1/100, 99/100], bnd)
+omega = bn_prior(1/100)
 #
 # Exact outcome: 18/117 = 0.15384615384615385
 #
-print("omega updated with positive test: ", omega / (test << positive_pred) )
+print("omega updated with positive test: ", omega / (test << bn_pos_pred) )
 r = random.uniform(0,1)
-q = Predicate([r, 1-r], bnd)
+q = bn_pred(r, 1-r)
 print("with arbitrary predicate added: ",
-      omega / (test << (positive_pred & (healt_care << q))) )
+      omega / (test << (bn_pos_pred & (healt_care << q))) )
 
 print("\n* Non-blocking with non-sharp predicates")
-p = Predicate([1/3, 1/4], bnd)
-q = Predicate([1/5, 1], bnd)
+p = bn_pred(1/3, 1/4)
+q = bn_pred(1/5, 1)
 print( omega / (test << p) )
 print( omega / (test << (p & (healt_care << q))) )
 
 print("\n* Collider connection, with crossover influences:")
-print( cross_infl(~positive_pred, 
+print( cross_infl(bn_neg_pred, 
                   genetic_heredity @ environmental_factors) )
-print( cross_infl(~positive_pred, 
+print( cross_infl(bn_neg_pred, 
                   (genetic_heredity @ environmental_factors) 
                   / (disease << p_create)) )
-print( cross_infl(~positive_pred, 
+print( cross_infl(bn_neg_pred, 
                   (genetic_heredity @ environmental_factors) 
-                  / (disease << positive_pred)) )
+                  / (disease << bn_pos_pred)) )
 
 
