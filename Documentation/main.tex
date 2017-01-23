@@ -1801,10 +1801,11 @@ it is a fair weather day (s)he can lose \euro{20} per day. What is the
 expected return if the probability of rain is 0.3?
 \end{quote}
 
-\noindent The state in this example is obviously
-\pythoninline{flip(0.3)}, with domain \pythoninline{[True,False]}. We
-would like to map the domain element \pythoninline{True} to
-\pythoninline{100} and the domain element \pythoninline{False} to
+\noindent In an example like this it is important first to look for
+the state. Here model it as \pythoninline{flip(0.3)}, with domain
+\pythoninline{[True,False]}, describing whether or not it is
+raining. We would like to map the domain element \pythoninline{True}
+to \pythoninline{100} and the domain element \pythoninline{False} to
 \pythoninline{-20}. This is achieved in \EfProb via:
 \begin{python}
 >>> rain_state = flip(0.3)
@@ -1815,8 +1816,8 @@ would like to map the domain element \pythoninline{True} to
 
 \noindent We see that a random variable is defined by a function and a
 domain. The function acts on the elements of the domain and produces a
-real number. More generally, the function may produce a sequence of
-real numbers. A random variable has an
+real number. (More generally, the function may produce a sequence of
+real numbers, see below.) A random variable has an
 expectation\index{expectation!discrete~--} method \pythoninline{exp},
 which takes a state as argument. This state must have the same domain
 as the random variable. In a similar way one obtains the
@@ -1902,6 +1903,9 @@ sum, product, scalar multiplication on random variable by applying
 these operations point-wise. Such operations on random variables are
 pre-defined in \EfProb.
 
+\marginpar{Todo: relation between predicates and random variables}
+
+
 
 \section{Channels}\label{sec:dchannel}
 
@@ -1946,7 +1950,10 @@ and \pythoninline{c.cod}.
 Let \pythoninline{c} be a channel, with domain \pythoninline{c.dom}.
 Each state \pythoninline{s} whose domain \pythoninline{s.dom} is the
 same as \pythoninline{c.dom} can be transformed into a state
-\pythoninline{c >> s} with domain \pythoninline{c.cod}.
+\pythoninline{c >> s} with domain \pythoninline{c.cod}. We first
+describe how such state transformation works. Subsequently we discuss
+predicate transformation \pythoninline{c << p}, which works against
+the direction of the channel.
 
 For the time being we shall define channels as in
 Example~\ref{ex:diseasetest}: a channel from a domain with $n$
@@ -1971,9 +1978,10 @@ predicate \pythoninline{p} involves probabilities $p_j$, then the
 pulled back predicate \pythoninline{c << p} has probabilities
 $(p^{T}\cdot M)_{i} = \sum_{j} p_{j}\cdot M_{ij}$.
 
-An instance of the following general result was already observed in
-Example~\ref{ex:diseasetest}. It shows how state- and
-predicate-transformation behave appropriately wrt.\ validity.
+The following general result will be illustrated in
+Example~\ref{ex:diseasetest} below. It shows how state- and
+predicate-transformation behave appropriately wrt.\ validity, as
+expressed by the following transformations validity equation.
 \begin{equation}
 \label{eqn:dvaliditytransformation}
 \begin{array}{rcl}
@@ -1987,7 +1995,7 @@ s \models c \ll p.
 \begin{example}
 \label{ex:diseasetest}
 We start with an illustration of the use of channels, which is typical
-for Bayesian reasoning, taken from~\cite{JacobsZ16}.  For explanatary
+for Bayesian reasoning, taken from\cite{JacobsZ16}.  For explanatary
 reasons we shall be very explicit about the domains involved. The
 setting is given by some disease with a priori probability of
 $1\%$. There is a test for the disease with the following
@@ -1996,16 +2004,15 @@ positive; but if someone does not have the disease, there is stil a
 $5\%$ chance that the test is positive.
 \begin{python}
 >>> disease_domain = ['D', '~D']
->>> prior_disease_state = State([1/100, 99/100], disease_domain)
+>>> prior = State([1/100, 99/100], disease_domain)
 >>> disease_pred = Predicate([1,0], disease_domain)
->>> prior_disease_state
+>>> prior
 0.01|D> + 0.99|~D>
->>> prior_disease_state >= disease_pred
+>>> prior >= disease_pred
 0.01
 >>> test_domain = ['T', '~T']
 >>> test_pred = Predicate([1,0], test_domain)
->>> sensitivity = Channel([[9/10, 1/20], 
-... [1/10, 19/20]], disease_domain, test_domain)
+>>> sensitivity = Channel([[9/10, 1/20], [1/10, 19/20]], disease_domain, test_domain)
 >>> sensitivity.dom
 ['D', '~D']
 >>> sensitivity.cod
@@ -2018,7 +2025,7 @@ compute the probability that a test for an arbitrary person is
 positive. This is done via \emph{state transformation}, using the
 operator \pythoninline{>>}, as in:
 \begin{python}
->>> sensitivity >> prior_disease_state
+>>> sensitivity >> prior
 0.0585|T> + 0.942|~T>
 \end{python}
 
@@ -2026,58 +2033,58 @@ operator \pythoninline{>>}, as in:
 
 \noindent This probability \pythoninline{0.0585} is the fraction
 \pythoninline{117/2000}. Notice that via state transformation
-\pythoninline{sensitivity >> prior\_disease\_state} the state
-\pythoninline{prior\_disease\_state} on the disease domain
-\pythoninline{['D', '~D']} is transformed into a state on the test
-domain \pythoninline{['T', '~T']}. State transformation
-\pythoninline{>>} happens via a `push forward' in the direction of the
-channel.
+\pythoninline{sensitivity >> prior} the state \pythoninline{prior} on
+the disease domain \pythoninline{['D', '~D']} is transformed into a
+state on the test domain \pythoninline{['T', '~T']}. State
+transformation \pythoninline{>>} happens via a `push forward' in the
+direction of the channel.
 
 The a-priori-positive-test probability \pythoninline{117/2000} can
 also be obtained via validity \pythoninline{>=} of predicates, in two
 different ways:
 \begin{python}
->>> sensitivity >> prior_disease_state >= disease_pred
+>>> sensitivity >> prior >= disease_pred
 0.0585
->>> prior_disease_state >= sensitivity << test_pred
+>>> prior >= sensitivity << test_pred
 0.0585
 \end{python}
 
 \noindent First we ask for the validity of the disease predicate in
 the transformed state \pythoninline{sensitivity >>
-  prior\_disease\_state}. Next we use \emph{predicate transformation}
+  prior}. Next we use \emph{predicate transformation}
 \pythoninline{<<} to transform the test predicate on domain
 \pythoninline{['T', '~T']} into a predicate \pythoninline{sensitivity
   << test\_pred} on the disease domain \pythoninline{['D',
     '~D']}. Thus, in predicate transformation a predicate is `pulled
 back', in the opposite direction of the channel. The validity of this
 pulled-back predicate is then computed in the prior state. It yields
-the same outcome, via a general rule described below
+the same outcome, via the general rule described
 in~\eqref{eqn:dvaliditytransformation}.
 
 Once we have this pulled back predicate \pythoninline{sensitivity
   << test\_pred} we can use it to condition the prior state into
 a posterior state. A bit pedantically:
 \begin{python}
->>> posterior_disease_state = prior_disease_state / (sensitivity << test_pred)
->>> posterior_disease_state
+>>> posterior = prior / (sensitivity << test_pred)
+>>> posterior
 0.154|D> + 0.846|~D>
 \end{python}
 
 \noindent This value \pythoninline{0.154} is the truncated fraction
-\pythoninline{18/117}. It gives the probability of having the disease
+\pythoninline{18/117}. It gives the probability of having the disease,
 given a positive test.
 \end{example}
 
 
 Later on, in Example~\ref{ex:paperacceptance} we shall see more
-examples of Bayesian networks, also with support for defining the
-relevant channels from conditional probability
+examples of Bayesian networks, also with \EfProb support for defining
+the relevant channels from conditional probability
 tables\index{conditional!probability~table} (CPTs).
 
 We include another example illustrating how to incorporate hidden
 Markov models\index{hidden~Markov~model} as channels.  This example is
-adapted from the BLOG\index{BLOG} reference manual.
+adapted from the reference manual of the probabilistic language
+BLOG\cite{MilchMRSOK07}.\index{BLOG}
 
 
 \begin{example}
@@ -2139,6 +2146,11 @@ using both predicate transformation and state transformation:
 
 \noindent Of course, one may handle such a sequence of observations
 automatically by iteration.
+
+The above probabilities are the same as the ones in the BLOG reference
+manual. An important difference is that they are obtained here in an
+`exact' manner, via actual computations, where in BLOG they are
+obtained via iterated sampling.
 \end{example}
 
 
@@ -2147,7 +2159,7 @@ automatically by iteration.
 
 Channels can be composed both sequentially and in parallel. For
 sequential composition \pythoninline{d * c}, read as
-``\pythoninline{d} after \pythoninline{c}'' it is required that the
+`\pythoninline{d} after \pythoninline{c}', it is required that the
 codomain of \pythoninline{c} is equal to the domain of
 \pythoninline{d}, as in:
 $$\xymatrix{
@@ -2158,7 +2170,8 @@ $$\xymatrix{
 
 \noindent The resulting channel \pythoninline{d * c : c.dom -> d.cod}
 is obtained by matrix multiplication. As a result, \pythoninline{*}
-is an associative operation. 
+is an associative operation, with the identity channel (given by
+the identity matrix) as unit element.
 
 Sequential composition of channels interacts with state- and
 predicate- transformation in the `obvious' way: the left- and right
@@ -2171,7 +2184,7 @@ hand side below are the same:
 \\
 \mbox{\pythoninline{(d * c) << p}}
 & \qquad\mbox{is}\qquad\quad &
-\mbox{\pythoninline{d << (c << p)}}
+\mbox{\pythoninline{c << (d << p)}}
 \end{tabular}
 \end{center}
 
@@ -2223,7 +2236,7 @@ predicates, in the sense that:
 %% from Example~\ref{ex:diseasetest}. There we used a prior disease state:
 %% \begin{python}
 %% >>> disease_domain = ['D', '~D']
-%% >>> prior_disease_state = State([1/100, 99/100], disease_domain)
+%% >>> prior = State([1/100, 99/100], disease_domain)
 %% \end{python}
 
 %% \noindent Now we add a second domain for mood, and use joint
@@ -2269,9 +2282,117 @@ predicates, in the sense that:
 There are several channels which we call `structural' because their
 main purpose is to provide structure to a network of channels. These
 structural channels include identity, discard (and projection), copy,
-swap, but also `ancilla'. 
+swap, but also `ancilla' and measure.
 
-\marginpar{Complete}
+
+\paragraph{Identity channels}
+For each domain \pythoninline{dom} there is an identity
+channel\index{identity~channel!discrete~---}\index{channel!discrete~identity~--}
+\pythoninline{idn(dom) : dom -> dom}. It is given by the identity
+matrix. For an arbitrary channel \pythoninline{c : dom -> cod} the
+following three channels are the same.
+$$\mbox{\pythoninline{idn(cod) * c}}
+\qquad\qquad
+\mbox{\pythoninline{c}}
+\qquad\qquad
+\mbox{\pythoninline{c * idn(dom)}}$$
+
+\noindent This says that identity channels are units (`skip') for
+sequential composition \pythoninline{*}.
+
+These identity channels seem rather useless, but they turn out to be
+handy in parallel compositions like \pythoninline{c @ idn(dom)}.  Two
+identity channels in parallel forms itself an identity channel.
+
+
+\paragraph{Discard channel} For each domain \pythoninline{dom}
+there is discard
+channel\index{discard~channel!discrete~---}\index{channel!discrete~discard~--}
+\pythoninline{discard(dom) : dom -> []}.  It throws away its
+input. Again this looks silly. But discard channels, in parallel with
+identity channels, give us projection channels. This is illustrated
+below, via the projections \pythoninline{proj1} and
+\pythoninline{proj2} which can do both marginalisation of states and
+weakening of predicates.
+\begin{python}
+>>> s = State([1/12, 1/8, 1/4, 1/4, 1/6, 1/8], [[True,False], range(3)])
+>>> s
+0.0833|True,0> + 0.125|True,1> + 0.25|True,2> + 0.25|False,0> + 0.167|False,1> + 0.125|False,2>
+>>> s % [1,0]
+0.458|True> + 0.542|False>
+>>> s % [0,1]
+0.333|0> + 0.292|1> + 0.375|2>
+>>> proj1 = idn([True,False]) @ discard(range(3))
+>>> proj2 = discard([True,False]) @ idn(range(3))
+>>> proj1 >> s
+0.458|True> + 0.542|False>
+>>> proj2 >> s
+0.333|0> + 0.292|1> + 0.375|2>
+\end{python}
+
+\noindent We continue the same example, now illustrating weakening
+of predicates via these same projection channels \pythoninline{proj1} and
+\pythoninline{proj2}.
+\begin{python}
+>>> p1 = Predicate([1/4, 5/8], [True,False])
+>>> p2 = Predicate([1/2, 1, 1/12], range(3))
+>>> p1 @ truth(range(3))
+True,0: 0.25 | True,1: 0.25 | True,2: 0.25 | False,0: 0.625 | False,1: 0.625 | False,2: 0.625
+>>> truth([True,False]) @ p2
+True,0: 0.5 | True,1: 1 | True,2: 0.0833 | False,0: 0.5 | False,1: 1 | False,2: 0.0833
+>>> proj1 << p1
+True,0: 0.25 | True,1: 0.25 | True,2: 0.25 | False,0: 0.625 | False,1: 0.625 | False,2: 0.625
+>>> proj2 << p2
+True,0: 0.5 | True,1: 1 | True,2: 0.0833 | False,0: 0.5 | False,1: 1 | False,2: 0.0833
+\end{python}
+
+\noindent Now that we know that marginalisation and weakening are
+intimately related via state/predicate transformation, we observe that
+we can also apply the transformations validity
+equation~\eqref{eqn:dvaliditytransformation} and obtain the
+following informal equation:
+$$\begin{array}{rcl}
+\textsf{marginalisation}(\omega) \models p
+& \;=\; &
+\omega \models \textsf{weakening}(p).
+\end{array}$$
+
+\noindent This requires that marginalisation and weakening are
+done in the same coordinates. The following illustration continues
+the previous example.
+\begin{python}
+>>> proj1 >> s >= p1
+0.453125
+>>> s >= proj1 << p1
+0.453125
+\end{python}
+
+
+\paragraph{Copy and swap channels} For each domain \pythoninline{dom}
+there is a copy
+channel\index{copy~channel!discrete~---}\index{channel!discrete~copy~--}
+\pythoninline{copy(dom) : dom -> dom + dom}. It duplicates its input.
+Such copying exists in classical (discrete and continuous)
+probability, but not in quantum probability, because of the so-called
+no-cloning result. This copy channels is usef for instance to define
+the `graph'\index{graph~of~a~channel} of a channel \pythoninline{c :
+  dom -> cod} as a new channel \pythoninline{graph(c) : dom -> dom +
+  cod}, in the following way.
+\begin{python}
+def graph(c):
+    return (idn(c.dom) @ c) * copy(c.dom)
+\end{python}
+
+\noindent This turns out to be a useful construction.
+
+For each pair of domains \pythoninline{dom1}
+and \pythoninline{dom2} there is a swap
+channel:\index{swap~channel!discrete~---}\index{channel!discrete~swap~--}
+$$\mbox{\pythoninline{swap(dom1,dom2) : dom1 + dom2 -> dom2 + dom1}}$$
+
+\noindent It behaves in the obvious manner.
+
+
 
 
 \section{Bayesian networks}\label{sec:bayesiannetwork}
@@ -4704,12 +4825,13 @@ visually explain what these channels do.\sidenote{Wires in quantum
 
 \paragraph{Identity channels}
 For each list of dimensions \pythoninline{dims} there is an identity
-channel \pythoninline{dims -> dims} written as
-\pythoninline{idn(dims)}. It does nothing. It is useless in sequential
-composition \pythoninline{*} of channels, but it is extremely useful
-in parallel composition \pythoninline{@}, for instance in defining
-the Bell states from the end of Section~\ref{sec:qstate} more
-systematically via the Bell channel\index{Bell!channel} as:
+channel\index{identity~channel!quantum~---}\index{channel!quantum~identity~--}
+\pythoninline{dims -> dims} written as \pythoninline{idn(dims)}. It
+does nothing. It is useless in sequential composition \pythoninline{*}
+of channels, but it is extremely useful in parallel composition
+\pythoninline{@}, for instance in defining the Bell states from the
+end of Section~\ref{sec:qstate} more systematically via the Bell
+channel\index{Bell!channel} as:
 \begin{python}
 bell_chan = cnot * (hadamard @ idn(2))
 bell00 = bell_chan >> ket(0,0)
@@ -4784,7 +4906,8 @@ $$\mbox{\pythoninline{idn(2,2,2)}}
 \mbox{\pythoninline{idn(2) @ idn(2) @ idn(2)}}$$
 
 \paragraph{Discard channels} Recall that in quantum theory we can
-discard --- but not copy --- resources. That's why we can marginalise
+discard\index{discard~channel!quantum~---}\index{channel!quantum~discard~--}
+--- but not copy --- resources. That's why we can marginalise
 states. For these same reasons we have channels for discarding, and
 for projection, see below.
 
@@ -4866,8 +4989,10 @@ with projection.
 
 
 \paragraph{Swapping} Sometimes it is convenient when wires
-can cross. There is a \pythoninline{swap} channel that can do this,
-but only for qubits. Its type is \pythoninline{[2,2] -> [2,2]}.
+can cross. There is a \pythoninline{swap}
+channel\index{swap~channel!quantum~---}\index{channel!quantum~swap~--}
+that can do this, but only for qubits. Its type is \pythoninline{[2,2]
+  -> [2,2]}.
 
 Here is where swapping is useful. In the \EfProb library
 the control bit in the \pythoninline{cnot} channel is the

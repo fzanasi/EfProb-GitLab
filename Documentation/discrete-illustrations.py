@@ -300,52 +300,6 @@ def random_variables():
 
     print("\n===\n")
 
-#     print("* Conditional expectation")
-#     # https://www.ma.utexas.edu/users/gordanz/notes/conditional_expectation.pdf
-#     domain = ['a', 'b', 'c', 'd', 'e', 'f']
-#     unif = uniform_state(domain)
-#     X = RandVar(lambda x: 1 if x == 'a' else 
-#                 3 if x == 'b' or x == 'c' else
-#                 5 if x == 'd' or x == 'e' else
-#                 7,
-#                 domain)
-#     Y = RandVar([1,3,3,5,5,7], domain)
-#     print( X.exp(unif) )
-#     print( Y.exp(unif) )
-#     Y = RandVar(lambda x: 2 if x == 'a' or x == 'b' else 
-#                 1 if x == 'c' or x == 'd' else
-#                 7,
-#                 domain)
-#     Z = RandVar([3,3,3,3,2,2], domain)
-#     X = RandVar([1,3,3,5,5,7], domain)
-#     Y = RandVar([2,2,1,1,7,7], domain)
-#     #print("Expected values of X,Y: ", X.exp(unif), Y.exp(unif) )
-#     #print( Y.funs[0]('f') )
-#     print( Y.funs[5] )
-#     print( Predicate([1 if Y.funs[x]==Y.funs[3] else 0 for x in range(len(domain))], 
-#                          domain) )
-#     for i in range(len(domain)):
-#         print(domain[i], 
-# #              X.exp(unif / Predicate([1 if Y.funs[0](x)==Y.funs[0](domain[i]) else 0 for x in domain], 
-#               X.exp(unif / Predicate([1 if Y.funs[x]==Y.funs[i] else 0 for x in range(len(domain))], 
-#                          domain)) )
-
-
-
-
-
-
-def channels():
-
-    print("\nSection: Channels\n")
-
-    c = cpt(0.2, 0.5)
-    s = bn_prior(random.uniform(0,1))
-    print( s )
-    print( (graph(c) >> s) % [1,0] )
-    print( c >> s )
-    print( (graph(c) >> s) % [0,1] )
-
 
 
 def state_pred_transformation():
@@ -354,7 +308,7 @@ def state_pred_transformation():
 
     print("* Disease-test")
     disease_domain = ['D', '~D']
-    prior_disease_state = State([1/100, 99/100], disease_domain)
+    prior = State([1/100, 99/100], disease_domain)
     disease_pred = Predicate([1,0], disease_domain)
 
     test_domain = ['T', '~T']
@@ -365,9 +319,9 @@ def state_pred_transformation():
     print( sensitivity.cod )
     print( sensitivity.array )
     print( sensitivity << test_pred )
-    print( prior_disease_state >= sensitivity << test_pred )
-    print( sensitivity >> prior_disease_state >= test_pred )
-    print( prior_disease_state / (sensitivity << test_pred) )
+    print( prior >= sensitivity << test_pred )
+    print( sensitivity >> prior >= test_pred )
+    print( prior / (sensitivity << test_pred) )
 
     print("\n===\n")
 
@@ -427,6 +381,41 @@ def seq_par_composition():
     # print("\n===\n")
 
     # print("* Updated disease-mood state, via channel")
+
+
+def structural_channels():
+
+    print("\nSubsection: Structural channels")
+
+    print("* Marginalisation via projection")
+    s = State([1/12, 1/8, 1/4, 1/4, 1/6, 1/8], [[True,False], range(3)])
+    print( s )
+    print("marginals")
+    print( s % [1,0] )
+    print( s % [0,1] )
+    proj1 = idn([True,False]) @ discard(range(3))
+    proj2 = discard([True,False]) @ idn(range(3))
+    print("marginalisation via projections")
+    print( proj1 >> s )
+    print( proj2 >> s )
+
+    print("\n===\n")
+
+    print("* Weakening via projection")
+    p1 = Predicate([1/4, 5/8], [True,False])
+    p2 = Predicate([1/2, 1, 1/12], range(3))
+    print("weakenings")
+    print( p1 @ truth(range(3)) )
+    print( truth([True,False]) @ p2 )
+    print("weakenings via projections")
+    print( proj1 << p1 )
+    print( proj2 << p2 )
+
+    print("\n===\n")
+
+    print("* Marginalisation and weakening validity")
+    print( proj1 >> s >= p1 )
+    print( s >= proj1 << p1 )
 
 
 def bayesian_networks():
@@ -500,11 +489,11 @@ def main():
     #operations_on_states()
     #excursion()
     #validity()
-    conditioning()
+    #conditioning()
     #random_variables()
-    #channels()
     #state_pred_transformation()
     #seq_par_composition()
+    structural_channels()
     #bayesian_networks()
 
 if __name__ == "__main__":
