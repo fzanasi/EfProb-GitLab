@@ -56,6 +56,17 @@
 \documentclass[leqno]{tufte-book} % Use the tufte-book class which in
                                   % turn uses the tufte-common class
 
+\newif\ifignore % when set to true, additional text appears containing
+                % further explanations or proofs (see \auxproof below)
+%\ignoretrue 
+\ignorefalse
+\newcommand{\auxproof}[1]{
+\ifignore\mbox{}\newline
+\textbf{PROOF:} \dotfill\newline
+{\it #1}\mbox{}\newline
+\textbf{ENDPROOF}\dotfill
+\fi}
+
 \hypersetup{colorlinks} % Comment this line if you don't wish to have
                         % colored links
 
@@ -110,10 +121,7 @@
   \IfNoValueF{#1}{\textbf{#1:} }#2}%
 }
 
-
 \input prooftree
-
-
 
 \renewcommand{\arraystretch}{1.3}
 \setlength{\arraycolsep}{2pt}
@@ -184,6 +192,7 @@
 \newcommand{\ie}{\textit{i.\hairsp{}e.}\xspace} % Command to print i.e.
 
 \newcommand{\eg}{\textit{e.\hairsp{}g.}\xspace} % Command to print e.g.
+\newcommand{\etc}{\textit{etc.}\xspace} % Command to print e.g.
 
 \newcommand{\na}{\quad--} % Used in tables for N/A cells
 
@@ -337,6 +346,7 @@
 \definecolor{deepblue}{rgb}{0,0,0.5}
 \definecolor{deepred}{rgb}{0.6,0,0}
 \definecolor{deepgreen}{rgb}{0,0.5,0}
+
 \newcommand\pythonstyle{\lstset{
 language=Python,
 basicstyle=\ttm,
@@ -356,7 +366,7 @@ showstringspaces=false            %
 %\begin{fullwidth}
 %\begin{minipage}{\textwidth}
 \pythonstyle
-\lstset{basicstyle=\ttfamily\small#1}
+\lstset{basicstyle=\normalfont\ttfamily\small#1}
 %\end{fullwidth}
 %\end{minipage}
 }
@@ -445,18 +455,22 @@ showstringspaces=false            %
 
 This text gives a hands-on introduction to the \EfProb library.  The
 latter is an embbeded language in \Python, for probability.  The
-`\textit{Ef}' in \EfProb stands for `Effectus'. An
-effectus\index{effectus} is an abstract (categorical) model that
-captures the essentials of discrete, continuous and quantum
-probability and logic\cite{Jacobs15,ChoJWW15}. The \EfProb library is
-based on this model, providing a uniform approach to discrete,
-continuous, and quantum probability.
+`\textit{Ef}' in \EfProb stands for `Effectus', and `\textit{Prob}
+stand for `Probability'. An effectus\index{effectus} is an abstract
+(categorical) model that captures the essentials of discrete,
+continuous and quantum probability and
+logic\cite{Jacobs15,ChoJWW15}. The \EfProb library is based on this
+categorical model, providing a uniform approach to discrete,
+continuous, and quantum probability. However, in order to be able to
+use and understand the basic of the \EfProb library it is not required
+to understand the underlying categorical semantics.
 
 The \EfProb library makes it easy to model various problems in
 probability theory and to compute outcomes: probabilities of events
-and predicates, product and conditional states, expectations and
-variances. These computations can be done for \eg~Bayesian networks,
-hidden Markov models, stochastic kernels, and quantum protocols.
+and of predicates can be computed, product and conditional states can
+be formed, expectations and variances can be calculated, \etc These
+computations can be done for \eg~Bayesian networks, hidden Markov
+models, stochastic kernels, and quantum protocols.
 
 The library consists of two \Python files:
 \begin{enumerate}
@@ -468,44 +482,129 @@ The library consists of two \Python files:
   Chapter~\ref{ch:qp}.
 \end{enumerate}
 
-\noindent The reader is encouraged to load these files before studying
-the relevant chapters, and to try out the examples and make variations
-on them while progressing through the text.
+\noindent There is some overlap in the explanations in the three
+chapters. This is intentional, so that these chapters can be read
+largely independently.  The reader is encouraged to load these files
+before studying the relevant chapters, and to try out the examples and
+make variations on them while progressing through the text.
 
+In the text below many examples are shown using \Python in interactive
+mode, from the command line, as in:
+\begin{python}
+>>> from efprob_dc import *
+>>> s = flip(0.2)
+>>> s
+0.2|True> + 0.8|False>
+\end{python}
 
-\bigskip
+\noindent The lines starting with \pythoninline{>>>} describe user
+input, and the other lines describe the output given by the system.
+The first line imports the relevant library. It will be omitted in the
+sequel. 
 
-Further things to discuss include:
+All the examples used in this manual are also collected in three
+separate files, with minimal explanations. These files have
+self-explanatory names:
 \begin{itemize}
-\item Usefulness: teaching, research (ask for acknowledgements)
+\item \pythoninline{discrete-illustrations.py}
+\item \pythoninline{continuous-illustrations.py}
+\item \pythoninline{quantum-illustrations.py}
+\end{itemize}
 
-\item Conditions of use, guarantees (none!), request to include an
-  acknowledgement in research papers
+\noindent These files can be excuted, modified, and studied more
+closely.
 
-\item Installation, pre-requisites (like \Python $\geq$ 3.5).
-  Libraries \pythoninline{math} and \pythoninline{numpy} (as
-  \pythoninline{np}) are assumed.
+The basics of the \EfProb library exist and are reasonably stable.
+This basis is already being used in several research papers. This
+usage is the reason for publicly releasing the library at this early
+stage, so that results can be reconstructed and checked by
+others. Further research on extensions and adaptations of the basic
+library are still going on. Therefore new versions will appear from
+time to time.
 
-\item Precision, and equality of floats (and arrays of floats)
+For the same reason, this manual is still evolving, and is incomplete
+as it stands. Still we hope that it is useful, because it already
+explains many basic aspects of the library and contains several
+examples of how it can be used.
 
-\item The language is extremely unsafe: non-distributions can be used
-  and type safety is checked only superficially. See the QWire paper
-  that addresses ``the tension between expressive embedded languages
-  and denotationally-sound type-safe languages''.
+We conclude this introduction with several loosely related remarks
+about the \EfProb library.
+\begin{itemize}
+\item We envision that the library could be useful in \emph{teaching}
+  the basics of probability theory from a unified perspective. The
+  \EfProb library is especially useful in quickly calculating
+  probabilities, and experimenting with various formulations.
 
-\item \Python error messages and exceptions
+\item At the same time the library could be useful in scientific
+  \emph{research} as well, in order to quickly model new examples and
+  compute outcomes. We request that usage of the \EfProb library, if
+  any, is mentioned in the acknowledgements of research papers.
 
-\item Effectus theory background
+\item The focus of the development of the library is on providing a
+  new language and logic for probability, based on states and
+  predicates. The library is not meant for large scale computation,
+  for instance like in data analytics. In our development of the
+  library we prefer semantical clarity to execution speed. Also, the
+  \EfProb library does not come with any guarantees with respect to
+  the correctness of the outcomes, see also the discussion about
+  precision and side-conditions below.
 
-\item Comparison to Quipper,\cite{GreenLRSV13} Qwire,\cite{PaykinRZ??}
-  LIQ$Ui\ket{}$,\cite{WeckerS14} and also to QuTiP.
+\item The \EfProb library requires \Python, version $\geq$ 3.5.
+  \EfProb heavily relies on existing libraries in \Python, in
+  particular \pythoninline{math} and \pythoninline{numpy} (used as
+  \pythoninline{np}) for linear algebra and matrices.
 
-\item There is some overlap in the explanations in the three
-  chapters. This is intentional, so that these chapters can be read
-  largely independently.
+\item It is important to keep in mind that the main functionality of
+  the library is \emph{computing} numerical outcomes, and not, for
+  instance, logical reasoning. Often, these numerical outcomes are
+  approximations, arising from the inherent limitations of using a
+  computer for real number arithmetic. Sometimes we do use random
+  states and/or random predicates to \emph{test} certain
+  properties. But these numerical tests should never be taken as a
+  logical \emph{proof}.
 
-\item Feedback to the authors
+\item Despite the fact that numerical approximations are used in the
+  \EfProb calculations, the underlying semantics is called
+  \emph{exact}, because it does not rely on sampling, like
+  BLOG\cite{MilchMRSOK07} or Church\cite{GoodmanMRBT08}. Instead the
+  \EfProb library computes probabilities using the standard
+  mathematical formulas, including, for instance, integration.
 
+\item Many mathematical structures used in probability theory are
+  required to satisfy certain properties. For instance: the
+  probabilities occurring in a distribution must add up to one; or:
+  the integral over the domain of definition of a probability density
+  function (pdf) must be one; or: a quantum state is a matrix that
+  must be positive and have a trace that is equal to one.
+
+A fundamental question that exists in the current setting is: should
+such properties be checked by \EfProb or should it be left as a
+responsability of the user that these properties are satisfied --- for
+instance when defining distributions / pdf's / quantum states?
+
+Here it is relevant that in the presence of computational
+approximations equations --- such as: a trace equals one --- can never
+be checked reliable. Hence, necessarily, the responsability for
+side-conditions lies with the user.
+
+That being said, the \EfProb does perform a few basic checks,
+sometimes using margins of error. In our experience, these checks can
+be useful to detect and prevent mistakes. Some check functions only
+print warnings, explaining the margins, when side-conditions fail. The
+checking of side-conditions is thus handled pragmatically. It is one
+of the least stable parts of the library.
+
+\item Because side-conditions are not checked systematically, the
+  \EfProb language is unsafe. What we have is the familiar tension
+  between expressive embedded languages and denotationally-sound
+  type-safe languages.
+% Quoted from Qwire paper.
+
+But again, the \EfProb library does perform some basic checks. For
+instance, states, predicates and channels use `domains' as types, as
+will be explained below. It is checked that types match, for instance
+when the validity of a predicate in a state is computed, or when
+state/predicate transformation is applied.
 \end{itemize}
 
 
@@ -533,9 +632,9 @@ $$0.3\ket{R} + 0.2\ket{G} + 0.5\ket{B}.$$
 \noindent This formal sum describes a particular weighted combination
 of red, green, and blue. The `ket' notation $\ket{-}$ is borrowed from
 the quantum world. It has no mathematical meaning, but is convenient
-to separate the weights from the unit interval $[0,1]$ from the
-`things' that are weighed. A graphical representation (`plot') of the
-above convex combination can be seen in the
+to separate the weights in the unit interval $[0,1]$ from the `things'
+that are weighed. A graphical representation (`plot') of the above
+convex combination can be seen in the
 margin.\marginnote[-5\baselineskip]{\includegraphics{Pictures/RGB.png}}
 
 This chapter describes how to form such distributions, and how to
@@ -559,7 +658,8 @@ state for a fair (balanced) coin as:
 \end{python}
 
 \noindent We see that the `things' that we weigh in this distribution
-are in the second list. The set of these `things' is what we call the
+are in the second list argument of the class constructor
+\pythoninline{State}. The set of these `things' is what we call the
 \emph{domain} of the distribution. The elements of the domain of a
 distribution are printed using the ket-notation $\ket{-}$, as
 explained in the beginning of this
@@ -584,7 +684,6 @@ can define \Python itself to define a parametrised coin as:
 \begin{python}
 >>> def flip(r):
 ...     return State([r, 1-r], [True,False])
-... 
 >>> flip(0.2)
 0.2|True> + 0.8|False>
 \end{python}
@@ -594,28 +693,29 @@ can define \Python itself to define a parametrised coin as:
 
 In a similar way we can now define a fair dice as:\marginnote{The
   \EfProb library does not check or enforce that the probabilities in
-  user-defined states add up to one. The main reason is that such
-  checks have limited value because of small precision errors in
-  calculations in \Python. In addition, it gives some more
-  flexibility, for instance to use \emph{subdistribution}, where the
-  sum of probabilities is below one. The disadvantage of not having
-  these checks is that non-probabilistic and even false results can be
-  obtained.}
+  user-defined states add up to one. As explained in the introduction,
+  the main reason is that such checks have limited value because of
+  small precision errors in calculations in \Python. In addition, it
+  gives some more flexibility, for instance to use
+  \emph{subdistribution}, where the sum of probabilities is below
+  one. The disadvantage of not having these checks is that
+  non-probabilistic and even false results can be obtained.}
 \begin{python}
 >>> fdice = State([1/6,1/6,1/6,1/6,1/6,1/6], [1,2,3,4,5,6])
 >>> fdice
-0.166666666667|1> + 0.166666666667|2> + 0.166666666667|3> + 
-   0.166666666667|4> + 0.166666666667|5> + 0.166666666667|6>
+0.167|1> + 0.167|2> + 0.167|3> + 0.167|4> + 0.167|5> + 0.167|6>
 \end{python}
 
-\noindent There is a predefined function for uniform distributions,
+\noindent The probabilities are pretty-printed with only three
+decimals. This can be adjusted in the library itself.
+
+There is a predefined function for uniform distributions,
 for which we only have to give the domain. Hence it is easier to
 define:
 \begin{python}
 >>> fdice = uniform_state([1,2,3,4,5,6])
 >>> fdice
-0.166666666667|1> + 0.166666666667|2> + 0.166666666667|3> + 
-   0.166666666667|4> + 0.166666666667|5> + 0.166666666667|6>
+0.167|1> + 0.167|2> + 0.167|3> + 0.167|4> + 0.167|5> + 0.167|6>
 \end{python}
 
 \noindent If you like, you can also use a sequence of points as
@@ -623,8 +723,7 @@ domain:
 \begin{python}
 >>> fdice = uniform_state(['*','**','***','****','*****','******'])
 >>> fdice
-0.166666666667|*> + 0.166666666667|**> + 0.166666666667|***> + 
-   0.166666666667|****> + 0.166666666667|*****> + 0.166666666667|******>
+0.167|*> + 0.167|**> + 0.167|***> + 0.167|****> + 0.167|*****> + 0.167|******>
 \end{python}
 
 \noindent When you are happy with natural numbers as domain you
@@ -664,11 +763,9 @@ below, internally using \Python's random number generator. Each time
 it gives a different answer.
 \begin{python}
 >>> random_disc_state(5)
-0.124464854673|0> + 0.344017169356|1> + 0.30205148636|2> + 
-   0.195711974459|3> + 0.0337545151517|4>
+0.133|0> + 0.273|1> + 0.175|2> + 0.119|3> + 0.3|4>
 >>> random_disc_state(5)
-0.159807231959|0> + 0.0459964112307|1> + 0.419388087455|2> + 
-   0.0924161301978|3> + 0.282392139158|4>
+0.252|0> + 0.25|1> + 0.452|2> + 0.035|3> + 0.0103|4>
 \end{python}
 
 
@@ -706,8 +803,7 @@ def poisson(lam, ub):
 probability is already really small:
 \begin{python}
 >>> poisson(3,20)
-0.049787068372|0> + 0.149361205116|1> + 0.224041807674|2> +  ...
-   ... + 4.75691917958e-10|19>
+0.0498|0> + 0.149|1> + 0.224|2> + 0.224|3> + ... + 3.01e-09|18> + 4.76e-10|19>
 \end{python}
 \end{remark}
 
@@ -715,7 +811,7 @@ probability is already really small:
 \subsection{Operations on states}\label{subsec:dstate:operations}
 
 The three standard operations on states are: product, convex sum, and
-marginal. We discuss one by one below.
+marginal. We discuss them one by one below.
 
 \paragraph{Product states}
 A `joint' or `product'
@@ -728,7 +824,7 @@ bias \pythoninline{0.7} is written as:
 0.2|True> + 0.8|False>
 >>> flip(0.7)
 0.7|True> + 0.3|False>
->>> flip(0.2) @ flip(0.4)
+>>> flip(0.2) @ flip(0.7)
 0.14|True,True> + 0.06|True,False> + 0.56|False,True> + 0.24|False,False>
 \end{python}
 
@@ -786,8 +882,10 @@ themselves. For instance in:
 0.76|True> + 0.24|False>
 \end{python}
 
-\noindent In such a convex sum it is required that the weights add up
-to one and that all the states have the same domain.
+\noindent In such a convex sum of states it is required that the
+weights (here: \pythoninline{0.2}, \pythoninline{0.5} and
+\pythoninline{0.3}) add up to one and that all the states have the
+same domain.
 
 
 
@@ -795,24 +893,23 @@ to one and that all the states have the same domain.
 
 The product operation \pythoninline{@} \emph{constructs} a new, joint
 state from `component' states. Marginalisation \emph{destructs} a
-joint state. When a applied to a state built with \pythoninline{@}
-marginalisation returns the components returns the components. In
-order to give a bit more generality to a demonstration like the one
-below, we use randomly generated states.
+joint state. When applied to a state built with \pythoninline{@},
+marginalisation returns the original components. In order to give a
+bit more generality to a demonstration like the one below, we use
+randomly generated states.
 \begin{python}
 >>> s = random_disc_state(3)
 >>> t = random_disc_state(2)
 >>> s
-0.24214823471|0> + 0.380427042906|1> + 0.377424722385|2>
+0.255|0> + 0.465|1> + 0.28|2>
 >>> t
-0.453511129541|0> + 0.546488870459|1>
+0.507|0> + 0.493|1>
 >>> s @ t
-0.109816919439|0,0> + 0.13233131527|0,1> + 0.172527897936|1,0> + 
-   0.20789914497|1,1> + 0.171166312165|2,0> + 0.206258410219|2,1>
+0.13|0,0> + 0.126|0,1> + 0.236|1,0> + 0.229|1,1> + 0.142|2,0> + 0.138|2,1>
 >>> (s @ t) % [1,0]
-0.24214823471|0> + 0.380427042906|1> + 0.377424722385|2>
+0.255|0> + 0.465|1> + 0.28|2>
 >>> (s @ t) % [0,1]
-0.453511129541|0> + 0.546488870459|1>
+0.507|0> + 0.493|1>
 \end{python}
 
 \noindent We use the post-fix operation \pythoninline{\% [1,0]} for
@@ -833,13 +930,15 @@ that are projected out, \ie~that are discarded in a certain dimension,
 as indicated by a \pythoninline{0} in a marginalisation selector
 \pythoninline{\% [...]}. 
 
-In general, a joint state \pythoninline{s} is called \emph{independent}
-or \emph{non-entwined} if it is the product of its marginals, that is,
-if it is equal to \pythoninline{(s \% [1,0]) @ (s \% [0,1])}. If
-\pythoninline{s} is defined as \pythoninline{s1 @ s2} it is
-non-entwined.
+In general, a joint state \pythoninline{s} is called
+\emph{independent} or \emph{non-entwined} if it is the product of its
+marginals, that is, if it is equal to \pythoninline{(s \% [1,0]) @ (s
+  \% [0,1])}. If the state \pythoninline{s} is defined as product
+\pythoninline{s1 @ s2}, then it is always non-entwined. We shall see
+an illustration of an entwined state (via conditioning) in
+Example~\ref{ex:entwinednessviaconditioning}.
 
-We add the following observation about entwinedness of joint states.
+We add the following general observation about entwinedness of joint states.
 \begin{equation}
 \label{eqn:entwined}
 \begin{array}{rcl}
@@ -854,11 +953,13 @@ r_{1}\cdot r_{4} = r_{2}\cdot r_{3}
 \end{equation}
 
 
+
 \subsection{Plotting states}\label{subsec:dplot}
 
 So far we have described states as finite formal convex sums
-$r_{1}\ket{x_1} + \cdots + r_{n}\ket{x_n}$. But states can also be
-plotted, as bar charts. The command below generates the picture in the
+$r_{1}\ket{x_1} + \cdots + r_{n}\ket{x_n}$. The \EfProb library also
+supports, to some extend, plotting states, as bar charts. The command
+below generates the picture in the
 margin.\marginnote[-3\baselineskip]{\includegraphics{Pictures/flip_02.png}}
 \begin{python}
 >>> flip(0.2).plot()
@@ -907,7 +1008,7 @@ made visible via the \pythoninline{dom} attribute of a state:
 \end{python}
 
 \noindent If we ask for the domain of a product state we get the
-combination of their domains, printed as:
+combination of their domains, printed via \pythoninline{*} as:
 \begin{python}
 >>> (flip(0.8) @ uniform_disc_state(5)).dom
 [True, False] * range(0, 5)
@@ -938,45 +1039,49 @@ a non-entwined state.
 
 \section{Predicates}\label{sec:dpred}
 
-Predicates in predicate logic are standardly interpreted as
-\emph{subsets} of $S\subseteq X$ a given space $X$.  In the present
-context we call such predicates
+Predicates in logic are statements about some space/domain of
+elements, such as $x \geq 5$, where $x$ is a variable that ranges for
+instance over the domain of natural or real numbers. In predicate
+logic are standardly interpreted as \emph{subsets} of $S\subseteq X$
+of a given space $X$.  In the present context we call such predicates
 \emph{sharp}.\index{sharp~predicate!discrete~--}\index{predicate!sharp~discrete~--}
 They can be identified with their `characteristic' function $\indic{S}
-\colon X \rightarrow \{0,1\}$ given by $\indic{S} = 1$ iff $x\in S$.
-Here, in probabilistic logic, we shall use a more general notion of
-predicate,\index{predicate!discrete~--} given by a function $p\colon X
-\rightarrow [0,1]$, where $[0,1] \subseteq \RN$ is the unit
+\colon X \rightarrow \{0,1\}$ given by $\indic{S}(x) = 1$ iff $x\in
+S$.  Here, in probabilistic logic, we shall use a more general notion
+of predicate,\index{predicate!discrete~--} given by a function
+$p\colon X \rightarrow [0,1]$, where $[0,1] \subseteq \RN$ is the unit
 interval. Sharp predicate are obviously included in this more general
 `fuzzy' notion of predicate.  In a probabilistic setting a sharp
 predicate is often called an \emph{event}.\index{event}
 
-The collection of sharp predicates on a set $X$ certain
+The collection of sharp predicates on a set $X$ has a certain
 algebraic/logical structure, captured by the notion of a Boolean
 algebra. There are truth and falsity predicate $\one, \zero, X
 \rightarrow \{0,1\}$ given by the functions which are always $1$, or
 always $0$. Also there is negation, written as $\ortho p$, and defined
 by $(\ortho p)(x) = 1 - p(x)$. Clearly, $\ortho\ortho p = p$,
 $\ortho\one = \zero$ and $\ortho\zero = \one$. In addition, there is
-conjuction of predicates $p\andthen q$ given by pointwise
-multiplication: $(p \andthen q)(x) = p(x) \cdot q(x)$.
+conjuction of predicates $p\wedge q$ given by pointwise
+multiplication: $(p \wedge q)(x) = p(x) \cdot q(x)$.
 
 These logical operations do not only work for sharp predicate $X
 \rightarrow \{0,1\}$ but for non-sharp $X \rightarrow [0,1]$ as well.
 But in that case we do not get a Boolean algebra, but what is called
-an \emph{effect module}~\cite{Jacobs15}.\index{effect!module} Here it
+an \emph{effect module}\cite{Jacobs15}.\index{effect!module} Here it
 does not directly matter what the general laws of an effect module
 are; it suffices to know the relevant operations on predicates $X
-\rightarrow [0,1]$.  There are two more operation in an effect module
-that we have not yet mentioned, namely:
+\rightarrow [0,1]$.  Besides negation $\ortho{}$, truth and falsity,
+there are two more operation in an effect module that we have not yet
+mentioned, namely:
 \begin{itemize}
-\item partial sum $p+q$; it is defined if $p(x) + q(x) \leq 1$, for
-  all $x\in [0,1]$, and in that case it is defined as $(p+q)(x) = p(x)
-  + q(x)$;
+\item partial sum $p+q$ of predicates $p,q$; it is defined if $p(x) +
+  q(x) \leq 1$, for all $x\in [0,1]$, and in that case it is determined
+  as pointwise addition: $(p+q)(x) = p(x) + q(x)$;
 
 \item scalar multiplication $r\cdot p$, where $r\in [0,1]$ is a
-`probabilistic scalar'. The resulting predicate $r\cdot p \colon
-X \rightarrow [0,1]$ is defined by $(r\cdot p)(x) = r\cdot p(x)$.
+  `probabilistic scalar' and $p$ is a predicate. The resulting
+  predicate $r\cdot p \colon X \rightarrow [0,1]$ is defined by
+  $(r\cdot p)(x) = r\cdot p(x)$.
 \end{itemize}
 
 Recall that a distribution on a (finite) set $X$ can be identified
@@ -989,7 +1094,7 @@ similar, it is important to keep states and predicates apart.
 Predicates are closed under certain operations, like scalar
 multiplication, which do not exist for states.
 
-In the sequel we shall use to important operations combining a state
+In the sequel we shall use two important operations combining a state
 $\omega$ and a predicate $p$, namely \emph{validity} $\omega\models
 p$, and conditioning $\omega|_{p}$. But first we describe the basic
 `effect module' operations on predicates in the \EfProb library.
@@ -1077,9 +1182,9 @@ method on states, called \pythoninline{as\_pred}.
 True: 0.75 | False: 0.25
 \end{python}
 
-\noindent There is no clear usage for this \pythoninline{as\_pred}
-method. In our experience it works well to define predicates directly,
-instead of via states.
+\noindent We shall make only limited use of this
+\pythoninline{as\_pred} method. In our experience it works well to
+define predicates directly, instead of via states.
 
 In the remainder of this section we describe operations on predicates.
 
@@ -1129,7 +1234,8 @@ In this way we can define a `uniform' predicate, says with domain
 
 \paragraph{Partial sum} Pointwise addition of predicates $p,q$ is
 only possible when $p(x) + q(x) \leq 1$ for each element $x$ of the
-domain. In that case we can safely add predicates $p,q$ to form a
+domain.\sidenote{This condition is not checked in the \EfProb
+  library.} In that case we can safely add predicates $p,q$ to form a
 partial sum\index{partial~sum!of~discrete~predicates} predicate $p+q$,
 as in:
 \begin{python}
@@ -1137,12 +1243,9 @@ as in:
 0: 1 | 1: 0 | 2: 0 | 3: 1
 \end{python}
 
-\marginpar{Emphasise that the library does not exclude ``undefined''
-  sums? Or will we still include such checks, at least in the discrete
-  case?}
-
-\noindent The sum of predicates \pythoninline{p} and \pythoninline{\~p}
-always exists and yields the (constant 1) truth predicate.
+\noindent The sum of predicates \pythoninline{p} and
+\pythoninline{\~p} always exists and yields the (constant 1) truth
+predicate.
 
 It is not hard to see that predicates, like states are closed under
 convex combinations. With the sum operator \pythoninline{+} we can
@@ -1216,12 +1319,13 @@ and has truth has neutral element. It preserves sums \pythoninline{+}
 in each argument separately.\marginnote[-2\baselineskip]{In quantum
   logic, this operator \pythoninline{\&} is \emph{not} commutative and
   corresponds to `and-then'; there it really makes sense to call
-  \pythoninline{\&} \emph{sequential} conjunction. In the current
-  setting of discrete (and continuous) probability we use the same
-  name for consistency. An additional advantage of calling
-  \pythoninline{\&} `sequential conjunction' --- instead of just
-  `conjunction' --- is that this name is clearly different from
-  `parallel conjunction' \pythoninline{@}.}
+  \pythoninline{\&} \emph{sequential} conjunction, see
+  Subsection~\ref{subsec:qpred:operations}. In the current setting of
+  discrete (and continuous) probability we use the same name for
+  consistency. An additional advantage of calling \pythoninline{\&}
+  `sequential conjunction' --- instead of just `conjunction' --- is
+  that this name is clearly different from `parallel conjunction'
+  \pythoninline{@}.}
 
 Using sequential conjunction \pythoninline{\&} we can define
 disjunction\index{disjunction} \pythoninline{|} as its 
@@ -1252,13 +1356,13 @@ a number in the unit interval $[0,1]$ defined as:
 
 \noindent This number describes the expected value of $p$ in $\omega$.
 
-In \Python there is no operator of the form $\models$. We shall use
-instead \pythoninline{>=} for validity, since it looks reasonably
-similar to $\models$. Let a state \pythoninline{s} have a domain with
-$n$ elements, with corresponding probabilities $s_{i}$, for $0\leq i <
-n$, where $\sum_{i}s_{i} = 1$. Similarly, let a predicate
-\pythoninline{p} have the same domain with $n$ elements, with
-probabilities $p_{i}$. The validity \pythoninline{s >= p} is then
+In \Python the operator \pythoninline{|=} already has a fixed
+meaning. We shall use instead \pythoninline{>=} for validity, since it
+looks reasonably similar to $\models$. Let a state \pythoninline{s}
+have a domain with $n$ elements, with corresponding probabilities
+$s_{i}$, for $0\leq i < n$, where $\sum_{i}s_{i} = 1$. Similarly, let
+a predicate \pythoninline{p} have the same domain with $n$ elements,
+with probabilities $p_{i}$. The validity \pythoninline{s >= p} is then
 given by the formula $\sum_{i} s_{i}\cdot p_{i}$. More abstractly, it
 is the matrix product $p^{T}\cdot s$, where $p^T$ is the transpose of
 $p$.
@@ -1275,11 +1379,11 @@ Here is an example, using the (fair) dice state
 >>> fdice >= odd
 0.5
 >>> fdice >= even + odd
-0.99999999999999989
+1.0
 >>> fdice >= even & odd
 0.0
 >>> fdice >= even | odd
-0.99999999999999989
+1.0
 \end{python}
 
 \noindent We see that sum \pythoninline{+} and disjunction
@@ -1288,9 +1392,9 @@ Here is an example, using the (fair) dice state
 a difference, see \eg:
 \begin{python}
 >>> fdice >= (0.5 * even + 0.2 * odd) + even
-0.84999999999999998
+0.85
 >>> fdice >= (0.5 * even + 0.2 * odd) | even
-0.59999999999999998
+0.6
 \end{python}
 
 \noindent The message is that one should be careful in reading the
@@ -1340,8 +1444,8 @@ random states and predicates, as in:
 
 The validity \pythoninline{s >= p} is defined only when the state
 \pythoninline{s} and the predicate \pythoninline{p} have the same
-domain. Often it happens that the domain of the state is `bigger' than
-the domain of the predicate. In that case we need to `extend' the
+domain. Often it happens that the domain of the state is `broader'
+than the domain of the predicate. In that case we need to `widen' the
 predicate. This is called
 \emph{weakening}.\index{weakening!of~discrete~predicates} Weakening is
 a structural rule in logic that makes it possible to ``extend the
@@ -1364,12 +1468,13 @@ Here is an example.
 \end{python}
 
 \noindent The predicate \pythoninline{even} can be used as a predicate
-on the state \pythoninline{fdice}, but not on \pythoninline{fdice @
-  flip(0.3)} or on \pythoninline{flip(0.3) @ fdice}. But the predicate
-\pythoninline{even} can be extended to these product states, via
-parallel conjunction \pythoninline{@} with \pythoninline{truth}, on
-the right or on the left. Notice that we do have to provide the
-\pythoninline{truth} predicate with the right domain.
+on the state \pythoninline{fdice}, but not on the `broader' states
+\pythoninline{fdice @ flip(0.3)} or on \pythoninline{flip(0.3) @
+  fdice}. However, the predicate \pythoninline{even} can be widened to
+these product states, via parallel conjunction \pythoninline{@} with
+\pythoninline{truth}, on the right or on the left. Notice that we do
+have to provide the \pythoninline{truth} predicate with the right
+domain.
 
 Weakening involves some bookkeeping, see for instance
 Example~\ref{ex:churchmedical} below. It is not difficult, but one has
@@ -1379,8 +1484,10 @@ to be aware of it, in order to avoid error messages.
 
 \subsection{Conditioning}\label{subsec:dpred:conditioning}
 
-Conditional probability deals with probabilities ``given some
-event''. We start with an illustration, using the familiar fair dice:
+Conditional probability deals with probabilities `given some
+event'. In effectus theory and in the \EfProb library one can
+condition a state with a predicate. We start with an illustration,
+using the familiar fair dice:
 \begin{python}
 >>> fdice = uniform_state([1,2,3,4,5,6])
 >>> even = Predicate([0,1,0,1,0,1], [1,2,3,4,5,6])
@@ -1388,7 +1495,7 @@ event''. We start with an illustration, using the familiar fair dice:
 >>> fdice >= even
 0.5
 >>> fdice >= atmost4
-0.66666666666666663
+0.66666666666666667
 \end{python}
 
 \noindent Now suppose that we wish to know the probability of
@@ -1423,10 +1530,10 @@ Similarly:
 >>> fdice / even
 0|1> + 0.333|2> + 0|3> + 0.333|4> + 0|5> + 0.333|6>
 >>> fdice / even >= atmost4
-0.66666666666666663
+0.66666666666666667
 \end{python}
 
-Here is the mathematical account, see~\cite{Jacobs16} for details. Let
+Here is the mathematical account, see\cite{Jacobs17a} for details. Let
 $\omega$ be a state and $p$ a predicate, both with domain $X$. If the
 validity $\omega\models p$ is non-zero, one can form the
 conditional\index{conditional!state!discrete~--} state $\omega|_{p}$,
@@ -1471,14 +1578,14 @@ rule:
 \label{eqn:dbayes}
 \begin{array}{rcl}
 \omega|_{p} \models q
-& = &
+& \;=\; &
 \displaystyle\frac{\omega\models p\andthen q}{\omega\models q}.
 \end{array}
 \end{equation}
 
 \noindent Further, for a predicates \pythoninline{p} on state
 \pythoninline{s} and \pythoninline{q} on \pythoninline{t} one
-can do conditioning component-wise via weakening~\cite{JacobsZ17}:
+can do conditioning component-wise via weakening:
 $$\begin{array}{rcl}
 \mbox{\pythoninline{(s @ t) / (p @ truth(t.dom))}}
 & \qquad\mbox{is}\qquad &
@@ -1506,8 +1613,9 @@ $$\begin{array}{rcl}
 The following example\sidenote{\label{note:churchmedical}See
   \url{https://probmods.org/conditioning.html\#example-causal-inference-in-medical-diagnosis}
   for the original description.} is copied from the probabilistic
-programming language Church~\cite{GoodmanMRBT08} and translated to the
-current context. The example involves a number of diseases:
+programming language Church\cite{GoodmanMRBT08}\index{Church} and
+translated to the current context. The example involves a number of
+diseases:
 \begin{itemize}
 \item \pythoninline{LC} = lung-cancer, with a priori probability $0.01$;
 \item \pythoninline{TB} = tuberculosis, with a priori $0.005$;
@@ -1516,23 +1624,24 @@ current context. The example involves a number of diseases:
 \item \pythoninline{OT} = other, also with $0.1$ a priori probability.
 \end{itemize}
 
-\noindent We incorporate these a priori probabilities in a state:
+\noindent We incorporate these five a priori probabilities in a single
+product state:
 \begin{python}
-prior = flip(0.01) @ flip(0.005) @ flip(0.2) @ flip(0.1) @ flip(0.1)
+>>> prior = flip(0.01) @ flip(0.005) @ flip(0.2) @ flip(0.1) @ flip(0.1)
 \end{python}
 
-\noindent The above 5 diseases are translated into five predicates on
+\noindent The above five diseases are translated into five predicates on
 this state, each addressing the appropriate component of the above
 state, via weakening:
 \begin{python}
-up = Predicate([1,0], [True,False])
-W = truth([True,False])
+>>> up = Predicate([1,0], [True,False])
+>>> W = truth([True,False])
 
-LC = up @ W @ W @ W @ W
-TB = W @ up @ W @ W @ W
-CO = W @ W @ up @ W @ W
-SF = W @ W @ W @ up @ W
-OT = W @ W @ W @ W @ up
+>>> LC = up @ W @ W @ W @ W
+>>> TB = W @ up @ W @ W @ W
+>>> CO = W @ W @ up @ W @ W
+>>> SF = W @ W @ W @ up @ W
+>>> OT = W @ W @ W @ W @ up
 \end{python}
 
 \noindent By construction, the validity \pythoninline{prior >= LC} is
@@ -1543,10 +1652,10 @@ diseases.\marginnote{A discussion about the `logical' description that is
 used here, in contrast to a `channel' description may be found later
 on, in Example~\ref{ex:bayesianmodeling}.}
 \begin{python}
-cough = 0.5 * CO | 0.3 * LC | 0.7 * TB |  0.01 * OT
-fever = 0.3 * CO | 0.5 * SF | 0.2 * TB | 0.01 * TB
-chest_pain = 0.4 * LC | 0.5 * TB | 0.01 * OT
-short_breath = 0.4 * LC | 0.5 * TB | 0.01 * OT
+>>> cough = 0.5 * CO | 0.3 * LC | 0.7 * TB |  0.01 * OT
+>>> fever = 0.3 * CO | 0.5 * SF | 0.2 * TB | 0.01 * TB
+>>> chest_pain = 0.4 * LC | 0.5 * TB | 0.01 * OT
+>>> short_breath = 0.4 * LC | 0.5 * TB | 0.01 * OT
 \end{python}
 
 \noindent The scalar multiplications in these formulas serve as
@@ -1556,7 +1665,7 @@ disease''.
 Suppose we observe all these sympotoms. Then we can update
 the state to:
 \begin{python}
-post = prior / (cough & fever & chest_pain & short_breath)
+>>> post = prior / (cough & fever & chest_pain & short_breath)
 \end{python}
 
 \noindent The question that is asked (the `query') in the original
@@ -1587,7 +1696,7 @@ sampling but on the probabilistic computation.
 Instead of using the above marginal distribution, we could also
 have asked for the validity of the two relevant attributes, as in:
 \begin{python}
-print( post >= LC & TB )
+>>> post >= LC & TB
 0.0161267427839
 \end{python}
 
@@ -1651,8 +1760,8 @@ and the associated validity:
 0.326073622519
 \end{python}
 
-\noindent Next we wish to obtain this probability via the law of total
-probability. This requires a test,\index{test} that is, a set of
+\noindent Next we wish to obtain this same probability via the law of
+total probability. This requires a test,\index{test} that is, a set of
 predicates that add up to one. We choose a test of length 3. We create
 it in the following way, where the scalar \pythoninline{0.5} is used
 to ensure that the scaled predicates \pythoninline{0.5 * q1} and
@@ -1674,9 +1783,9 @@ rule~\eqref{eqn:dbayes}, to:
 0.326073622519
 \end{python}
 
-\noindent In discrete and continuous probability such tests can
-be be factored out. But this is not the case in quantum probability,
-see~\ref{??}.
+\noindent In discrete and continuous probability such tests can be be
+factored out. But this is not the case in quantum probability, see at
+the end of Example~\ref{ex:polarisation}.
 \end{example}
 
 
@@ -1968,7 +2077,7 @@ tables\index{conditional!probability~table} (CPTs).
 
 We include another example illustrating how to incorporate hidden
 Markov models\index{hidden~Markov~model} as channels.  This example is
-adapted from the BLOG reference manual.
+adapted from the BLOG\index{BLOG} reference manual.
 
 
 \begin{example}
@@ -2003,9 +2112,9 @@ gives the probability of each predicate in a particular state.
 ...                [0.05, 0.05, 0.05, 0.85]], ACGT, ACGT)
 \end{python}
 
-\noindent The question that is addressed in the BLOG example is the
-following. Suppose we have consecutive observations: C, A, A, A, G;
-what is the resulting state/distribution?
+\noindent The question that is addressed in the BLOG\index{BLOG}
+example is the following. Suppose we have consecutive observations: C,
+A, A, A, G; what is the resulting state/distribution?
 
 The dynamics of hidden Markov models is given by (1)~update with
 observation, (2)~make a transition. This is done consecutively by
@@ -2416,7 +2525,8 @@ is:
 
 \noindent The \emph{logical} represation of this network --- as shown
 earlier in Example~\ref{ex:churchmedical} in an illustration from the
-language Church --- uses the following formulas.
+language Church\cite{GoodmanMRBT08}\index{Church} --- uses the
+following formulas.
 \begin{python}
 >>> A_form = tt
 >>> B_form = 0.4 * A_form | 0.1 * ~A_form
@@ -2670,11 +2780,15 @@ their domains. Only 1-dimensional continuous states can be plotted.
 The reader is assumed to be familiar with the basics of quantum
 theory, see for instance\cite{NielsenC00}. Expand...
 
+To do: comparison with other quantum languages like
+Quipper,\cite{GreenLRSV13} Qwire,\cite{PaykinRZ??}
+LIQ$Ui\ket{}$,\cite{WeckerS14} and also to QuTiP.
+
 The code fragments shown in this chapter can be obtained after
 starting \pythoninline{python3} on the command line and loading
 the relevant library via:
 \begin{python}
->>> from quantprob import *
+>>> from efprob_qu import *
 >>>
 \end{python}
 

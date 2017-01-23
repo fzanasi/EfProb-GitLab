@@ -130,10 +130,44 @@ def excursion():
     print( s )
 
 
-def predicates():
+def validity():
 
-    print("\nSection: Predicates\n")
+    print("\nSubection: Validity\n")
 
+    print("* Dice even/odd validity")
+    fdice = uniform_state([1,2,3,4,5,6])
+    even = Predicate([0,1,0,1,0,1], [1,2,3,4,5,6])
+    odd = ~even
+    print( fdice >= even )
+    print( fdice >= odd )
+    print( fdice >= even + odd )
+    print( fdice >= even & odd )
+    print( fdice >= even | odd )
+
+    print("\n===\n")
+
+    print("* Even/odd scalar validity")
+    print( fdice >= (0.5 * even + 0.2 * odd) + even )
+    print( fdice >= (0.5 * even + 0.2 * odd) | even )
+
+    print("\n===\n")
+
+    print("* Parallel conjunction validity")
+    s1 = random_disc_state(100)
+    s2 = random_disc_state(50)
+    p1 = random_disc_pred(100)
+    p2 = random_disc_pred(50)
+    print( (s1 @ s2) >= (p1 @ p2) )
+    print( (s1 >= p1) * (s2 >= p2) )
+
+    print("\n===\n")
+
+    print("* Weakening")
+    fdice = uniform_state([1,2,3,4,5,6])
+    even = Predicate([0,1,0,1,0,1], [1,2,3,4,5,6])
+    print( fdice >= even )
+    print( fdice @ flip(0.3) >= even @ truth([True,False]) )
+    print( flip(0.3) @ fdice >= truth([True,False]) @ even )
 
 def conditioning():
 
@@ -465,12 +499,10 @@ def main():
     #states()
     #operations_on_states()
     #excursion()
-    #predicates()
-    #operations_on_predicates()
     #validity()
-    #conditioning()
+    conditioning()
     #random_variables()
-    channels()
+    #channels()
     #state_pred_transformation()
     #seq_par_composition()
     #bayesian_networks()
