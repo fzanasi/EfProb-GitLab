@@ -972,7 +972,7 @@ class Channel:
     def __lshift__(self, pred):
         return self.pred_trans(pred)
 
-    def getstate(self, *args, disc_args=None, cont_args=None):
+    def get_state(self, *args, disc_args=None, cont_args=None):
         if disc_args is None or cont_args is None:
             disc_args, cont_args = self.dom.split(args)
         indices = self.dom.get_disc_indices(disc_args)

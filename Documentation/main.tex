@@ -374,7 +374,7 @@ showstringspaces=false            %
 \newcommand\pythonexternal[2][]{{ % Python for external files
 \pythonstyle
 \lstinputlisting[#1]{#2}}}
-\newcommand\pythoninline[1]{\pythonstyle\lstinline[basicstyle=\ttfamily\small]{#1}} % Python for inline
+\newcommand\pythoninline[1]{\pythonstyle\lstinline[basicstyle=\normalfont\ttfamily\small]{#1}} % Python for inline
 
 %----------------------------------------------------------------------------------------
 %	BOOK META-INFORMATION
@@ -604,7 +604,8 @@ But again, the \EfProb library does perform some basic checks. For
 instance, states, predicates and channels use `domains' as types, as
 will be explained below. It is checked that types match, for instance
 when the validity of a predicate in a state is computed, or when
-state/predicate transformation is applied.
+state/predicate transformation is applied. In case of a non-match, an
+exception is thrown.
 \end{itemize}
 
 
@@ -1533,6 +1534,37 @@ Similarly:
 0.66666666666666667
 \end{python}
 
+
+\begin{remark}
+\label{rem:conditionalnotation}
+We make the difference explicit between the traditional notation used
+in conditional probability (on the left below), and the one that we
+use (on the right).
+$$\Prob{\mbox{\pythoninline{even | atmost4}}}
+\qquad\mbox{and}\qquad
+\mbox{\pythoninline{fdice / atmost4 >= even}}$$
+
+\noindent We note the following.
+\begin{enumerate}
+\item In our notation the underlying state (\pythoninline{fdice}) is
+  written explicitly, whereas it is left implicit in the traditional
+  notation.
+
+\item Our notation explicitly writes the modification of this state.
+  The conditioned state \pythoninline{fdice / atmost4} is useful in
+  itself, for instance in conditional expectation, see
+  Section~\ref{sec:drandvar}.
+
+\item The traditional notation uses the probability expression
+  $\Prob{-}$ which is applied to events. Hence it suggests that its
+  argument \pythoninline{even | atmost4} is an event, and thus that
+  \pythoninline{|} is an operation on events. This suggestion is
+  misleading. Conditioning is an operation between states and
+  predicates (events, if you like), and not between two events.
+\end{enumerate}
+\end{remark}
+
+
 Here is the mathematical account, see\cite{Jacobs17a} for details. Let
 $\omega$ be a state and $p$ a predicate, both with domain $X$. If the
 validity $\omega\models p$ is non-zero, one can form the
@@ -1940,7 +1972,44 @@ codomain \pythoninline{cod}. These domain and codomain of a channel
 \pythoninline{c} can be obtained via attributes \pythoninline{c.dom}
 and \pythoninline{c.cod}.
 
+We shall see several ways to define channels.
+\begin{itemize}
+\item Channels can be defined via (stochastic) matrix, provided with a
+  domain and codomain; this is illustrated in
+  Examples~\ref{ex:diseasetest} and~\ref{ex:genetic} below.
 
+\item There are also special `conditional probability table' functions
+  which are convenient to define channels associated with a Bayesian
+  Network, see Examples~\ref{ex:paperacceptance}
+  and~\ref{ex:bayesianmodeling}.
+
+\item A channel can also be obtained from a list of states, all with
+  the same domain. This is done via a static method
+  \pythoninline{from\_states}, as in:
+\begin{python}
+>>> c = Channel.from_states([flip(0.2), flip(0.3), flip(0.5)])
+>>> c
+Channel of type: range(0, 3) --> [True, False]
+>>> c.get_state(1)
+0.3|True> + 0.7|False>
+\end{python}
+
+\noindent We see that when printed, only the domain and codomain of a
+channel are shown. This channel maps an element $0 \leq i < 3$ in
+\pythoninline{range(0,3)} to the $i$-th state in the list, used as
+argument to the function \pythoninline{from\_states}. These states
+can be extracted via the \pythoninline{get\_state} method.
+
+\item Such a mapping from elements of a domain to states is a `Kleisli
+  map' for the distribution monad $\Dst$, in categorical terminology.
+  Given such a mapping, one can form an associated channel. For
+  instance, the previous example can also be obtained via the function
+  \pythoninline{chan\_fromklmap}.
+\begin{python}
+>>> d = chan_fromklmap(lambda i: flip(0.2) if i == 0 else
+...                    flip(0.3) if i == 1 else flip(0.5), range(3), [True,False])
+\end{python}
+\end{itemize}
 
 
 
@@ -2230,50 +2299,6 @@ predicates, in the sense that:
 \end{center}
 
 
-%% \begin{example}
-%% \label{ex:twodiseases}
-%% This examples introduces a variation on the disease-test illustration
-%% from Example~\ref{ex:diseasetest}. There we used a prior disease state:
-%% \begin{python}
-%% >>> disease_domain = ['D', '~D']
-%% >>> prior = State([1/100, 99/100], disease_domain)
-%% \end{python}
-
-%% \noindent Now we add a second domain for mood, and use joint
-%% state for disease and mood, simply called \pythoninline{prior}.
-%% \begin{python}
-%% >>> mood_domain = ['M', '~M']
-%% >>> prior = State([0.05, 0.5, 0.4, 0.05], [disease_domain, mood_domain])
-%% >>> prior
-%% 0.05|D,M> + 0.5|D,~M> + 0.4|~D,M> + 0.05|~D,~M>
-%% \end{python}
-
-%% \noindent This state describes a low probability for having the
-%% disease and a good mood, and also for not having the disease and a bad
-%% mood. The combination disease and bad mood, and no disease and good
-%% mood is more likely.
-
-%% We recall from Example~\ref{ex:diseasetest} that there is a test for
-%% the disease, described via a channel \pythoninline{sensitivity}. We
-%% now ask ourselves the question: what are the mood probabilities before
-%% and after a positive test?
-
-%% The mood before the test is simply the second marginal of the
-%% state \pythoninline{prior}.
-%% \begin{python}
-%% >>> prior % [0,1]
-%% 0.45|M> + 0.55|~M>
-%% \end{python}
-
-%% \noindent The mood after a positive test can be computed in two ways,
-%% with our without channel.
-
-%% The first way is to adapt the approach of
-%% Example~\ref{ex:diseasetest}: we pullback the predicate
-%% \pythoninline{test\_pred} via the channel, weaken it to become
-%% a predicate on \pythoninline{prior}, and take the second marginal.
-%% This is done via the following formula.
-%% \end{example}
 
 
 
@@ -2390,8 +2415,104 @@ and \pythoninline{dom2} there is a swap
 channel:\index{swap~channel!discrete~---}\index{channel!discrete~swap~--}
 $$\mbox{\pythoninline{swap(dom1,dom2) : dom1 + dom2 -> dom2 + dom1}}$$
 
-\noindent It behaves in the obvious manner.
+\noindent It behaves in the obvious manner. These copy and swap
+channels play an important role in the channel that models a Bayesian
+network in Example~\ref{ex:paperacceptance}.
 
+
+\marginpar{To do: channels from states/predicates, case channels}
+
+
+We conclude this section with an example that illustrates
+the use of structural channels. At the same time it illustrates
+how entwinedness of states.
+
+\begin{example}
+\label{ex:twodiseases}
+This examples introduces a variation on the disease-test illustration
+from Example~\ref{ex:diseasetest}. There we used a prior disease state:
+\begin{python}
+>>> disease_domain = ['D', '~D']
+>>> prior = State([1/100, 99/100], disease_domain)
+\end{python}
+
+\noindent Now we add a second domain for mood, and use joint
+state for disease and mood, simply called \pythoninline{prior}.
+\begin{python}
+>>> mood_domain = ['M', '~M']
+>>> joint_prior = State([0.05, 0.5, 0.4, 0.05], [disease_domain, mood_domain])
+>>> joint_prior
+0.05|D,M> + 0.5|D,~M> + 0.4|~D,M> + 0.05|~D,~M>
+\end{python}
+
+\noindent This state describes a low probability for having the
+disease and a good mood, and also for not having the disease and a bad
+mood. The combination disease and bad mood, and no disease and good
+mood is more likely.
+
+We recall from Example~\ref{ex:diseasetest} that there is a test for
+the disease, described via a channel \pythoninline{sensitivity}. We
+now ask ourselves the question: what are the mood probabilities before
+and after a positive test?
+
+The mood before the test is simply the second marginal of the
+joint state \pythoninline{joint\_prior}.
+\begin{python}
+>>> joint_prior % [0,1]
+0.45|M> + 0.55|~M>
+\end{python}
+
+\noindent We first look at the probability of a positive test in
+the joint prior state. There are several equivalent ways to compute
+this. The first one takes the first marginal, applies the sensitivity
+state transformer and asks for the validity in the resulting state:
+\begin{python}
+>>> sensitivity >> (joint_prior % [1,0]) >= test_pred
+0.5175
+\end{python}
+
+\noindent One can also extend the sensitivity channel in parallel
+with the identity channel, apply it to the whole joint state, and
+look at the validity of the weakened predicate:
+\begin{python}
+>>> (sensitivity @ idn(mood_domain)) >> joint_prior >= (test_pred @ truth(mood_domain))
+0.5175
+\end{python}
+
+\noindent But, remembering the transformations validity
+equation~\eqref{eqn:dvaliditytransformation}, we note that we can get
+this same validity via predicate transformation:
+\begin{python}
+>>> joint_prior >= (sensitivity @ idn(mood_domain)) << (test_pred @ truth(mood_domain))
+0.5175
+\end{python}
+
+\noindent The latter can even be simplied to:
+\begin{python}
+>>> joint_prior >= ((sensitivity << test_pred) @ truth(mood_domain))
+0.5175
+\end{python}
+
+
+\noindent Recall that we are interested in the mood after a positive
+test. First we update the prior with the information of a positive
+test, and then we compute the first and second marginal:
+\begin{python}
+>>> joint_post = joint_prior / ((sensitivity << test_pred) @ truth(mood_domain))
+>>> joint_post % [1,0]
+0.957|D> + 0.0435|~D>
+>>> joint_post % [0,1]
+0.126|M> + 0.874|~M>
+\end{python}
+
+\noindent We thus see that, as a result of a positive test, the mood
+drops from a prior value of \pythoninline{0.45} to a posterior value
+of \pythoninline{0.126}. In itself this is remarkable, since the
+sensitivity channel only acts on the first `disease' part of the joint
+state, and not on the `mood' part. The influence between these parts
+happens because `disease' and `mood' are entwined: the rise in disease
+probability leads to a lower mood.
+\end{example}
 
 
 
@@ -2510,20 +2631,21 @@ $f$ & $f$ & $\frac{1}{10}$ \\
 \end{gather*}
 
 In \EfProb this Bayesian network can be modeled as follows. There
-are the following pre-defined functions.
+are the following pre-defined functions for states and predicates.
 \begin{python}
 bnd = Dom(['t', 'f'])
-tt = Predicate([1,0], bnd)
-ff = ~tt
-def bn_prior(r): return State([r, 1-r], bnd)
+def bn_prior(r): return State([r,1-r], bnd)
+def bn_pred(r,s): return Predicate([r,s], bnd)
+bn_pos_pred = bn_pred(1,0)
+bn_neg_pred = bn_pred(0,1)
 \end{python}
 
 \noindent The abbreviation \pythoninline{bnd} stands for `Bayesian
-network domain'. It comes with two sharp predicates \pythoninline{tt}
-and \pythoninline{ff} that cover the true and false cases. The function
-\pythoninline{bn\_prior} is used to define the initial/prior states.
-They are used to describe the initial nodes of the above network
-as follows.
+network domain'. It comes with two sharp predicates
+\pythoninline{bn\_pos\_pred} and \pythoninline{bn\_neg\_pred} that
+cover the true and false cases. The function \pythoninline{bn\_prior}
+is used to define the initial/prior states.  For the above Bayesian
+network example we put:
 \begin{python}
 >>> time = bn_prior(0.4)
 >>> skill = bn_prior(0.7)
@@ -2558,7 +2680,8 @@ we present it in slightly different form, namely as:
 $$\cgr[width=10cm]{Pictures/AcceptanceNetwork.pdf}$$
 
 \noindent This picture clearly shows where we have to copy and where
-to swap wires. It helps to define the whole network as:
+to swap wires. It helps to define the whole network, except the
+initial nodes, as a single channel:
 \begin{python}
 >>> bn = acceptance \
 ...      * (positive_reviews @ member_champion) \
@@ -2571,32 +2694,32 @@ to swap wires. It helps to define the whole network as:
 \noindent The probability that a paper gets accepted is now
 computed as:
 \begin{python}
->>> prior >= (bn << tt)
+>>> bn >> prior >= bn_pos_pred
 0.47924
 \end{python}
 
-\noindent This same value is reported in~\citep{JacobsZ16}. There, the
-predicate \pythoninline{E} is used on the state \pythoninline{prior}
-with a additional weights for the various domain elements in
-\pythoninline{prior}. Given this predicate \pythoninline{E}, the
-probability of acceptance is different, and is computed in two
-(equivalent) ways.
+\noindent This same value is reported in\cite{JacobsZ16}, where it was
+computed in a more direct manner. There, a predicate \pythoninline{E}
+is used on the state \pythoninline{prior} with a additional weights
+for the various domain elements in \pythoninline{prior}. Given this
+predicate \pythoninline{E}, the probability of acceptance is
+different, and is computed in two (equivalent) ways.
 \begin{python}
 >>> E = Predicate([0.2, 0.4, 0.3, 0.6], prior.dom)
 >>> bn >> prior/E
 0.436|t> + 0.564|f>
->>> bn >> prior/E >= tt
+>>> bn >> prior/E >= bn_pos_pred
 0.435836923077
->>> prior/E >= bn << tt 
+>>> prior/E >= bn << bn_pos_pred 
 0.435836923077
 \end{python}
 \end{example}
 
 
-We proceed with another example with a different aim. It illustrates
-the difference between modeling a Bayesian network as a graph of
-channels, like in the previous example, and as set of logical
-formulas, like in Example~\ref{ex:churchmedical}.
+We proceed with another Bayesian network example with a different
+aim. It illustrates the difference between modeling a Bayesian network
+as a graph of channels, like in the previous example, and as set of
+logical formulas, like in Example~\ref{ex:churchmedical}.
 
 
 \begin{example}
@@ -2636,8 +2759,8 @@ $f$ & $0.3$ \\
 \end{tabular}}
 \end{gather*}
 
-\noindent The \emph{channel} representation of this network in \EfProb
-is:
+\noindent The state and channel representation of this network in
+\EfProb is:
 \begin{python}
 >>> prior = bn_prior(0.25)
 >>> B_chan = cpt(0.4, 0.1)
@@ -2649,7 +2772,7 @@ earlier in Example~\ref{ex:churchmedical} in an illustration from the
 language Church\cite{GoodmanMRBT08}\index{Church} --- uses the
 following formulas.
 \begin{python}
->>> A_form = tt
+>>> A_form = bn_pos_pred
 >>> B_form = 0.4 * A_form | 0.1 * ~A_form
 >>> C_form = 0.2 * B_form | 0.3 * ~B_form
 \end{python}
@@ -2659,7 +2782,7 @@ Let's follow this interpretation and look at various validities.
 First in the initial (prior) state the probability of `event $A$' can
 be expressed in two different ways:
 \begin{python}
->>> prior >= tt
+>>> prior >= bn_pos_pred
 0.25
 >>> prior >= A_form
 0.25
@@ -2669,7 +2792,7 @@ be expressed in two different ways:
 the probability of `event $B$'? We first describe the channel version
 and then the logical version:
 \begin{python}
->>> prior >= B_chan << tt
+>>> prior >= B_chan << bn_pos_pred
 0.175
 >>> prior >= B_form
 0.175
@@ -2678,7 +2801,7 @@ and then the logical version:
 \noindent Again there is no difference. We move on to `event $C$'. We
 now get:
 \begin{python}
->>> prior >= B_chan << (C_chan << tt)
+>>> prior >= B_chan << (C_chan << bn_pos_pred)
 0.2825
 >>> prior >= C_form 
 0.27485
@@ -2735,9 +2858,9 @@ $$\begin{array}{rcccccl}
 \noindent In terms of channels there are two closely related
 formulations for `$B$ and $C$', namely:
 \begin{python}
->>> prior >= B_chan << (tt & C_chan << tt)
+>>> prior >= B_chan << (bn_pos_pred & C_chan << bn_pos_pred)
 0.035
->>> prior >= (B_chan << tt) & (B_chan << (C_chan << tt))
+>>> prior >= (B_chan << bn_pos_pred) & (B_chan << (C_chan << bn_pos_pred))
 0.04775
 \end{python}
 
@@ -2755,7 +2878,7 @@ not the right way to capture these probabilities we include:
 
 
 
-\section{Disintegration}\label{sec:disintegration}
+%\section{Disintegration}\label{sec:disintegration}
 
 
 
@@ -2769,10 +2892,11 @@ for some number $n$. Moreover, the probability measures $\omega$
 defined on (the $\sigma$-algebra associated with) the subset $D$ are
 typically given a \emph{probability density function} $f\colon D
 \rightarrow \RN$, so that $\omega(U) = \int_{U} f \intd \mu$, where
-$\mu$ is the standard measure on the real numbers and $U\subseteq D$.
+$\mu$ is the standard measure on the real numbers and $U$ is a
+measurable subset $U\subseteq D$.
 
-Given this situation, the \EfProb library uses probility
-measures given by:
+Given this situation, the \EfProb library uses a restricted class of
+probability measures. Such a measure consists of:
 \begin{enumerate}
 \item a \emph{domain} $D \subseteq \RN^{n}$, given by an
   $n$-dimensional rectangle of intervals:
@@ -2789,17 +2913,19 @@ D
 bounds. This subset $D$ is thus a compact metric space.
 
 \item A continuous probability density function $f\colon D \rightarrow
-  \RN$, which by compactness, is necessarily bounded. We will deal
-  with unbounded functions and unbounded domains by approximation,
-  like for the poisson distribution in Remark~\ref{rem:poisson}.
+  \RN$, which, by compactness of $D$, is necessarily bounded. We will
+  deal with unbounded functions and unbounded domains by
+  approximation, like for the Poisson distribution in
+  Remark~\ref{rem:poisson}.
 \end{enumerate}
 
-\noindent In the \EfProb library there is no separate class of
-discrete distributions and of continuous distributions. Instead, they
-are integrated in one class. This has the advantage that we can deal
-with discrete and continuous distributions simultaneously, for
-instance in a product. It has the disadvantage the the structure of
-these distributions is a bit more complicated.
+\noindent In the \EfProb library there are no separate (\Python)
+classes of discrete distributions and of continuous
+distributions. Instead, they are integrated in one class. This has the
+advantage that we can deal with discrete and continuous distributions
+simultaneously, for instance in a product state. It has the
+disadvantage the the structure of these distributions/states is a bit
+more complicated.
 
 In the remainder of this chapter we will use `state' as a synonym for
 `distribution', either discrete or continuous. If we wish to emphasise
@@ -2818,7 +2944,7 @@ given on an interval, say $[0,5] \subseteq \RN$. It is defined as:
 \begin{python}
 >>> u = uniform_state(R(0,5))
 >>> u
-State on R
+State on R(0, 5)
 \end{python}
 
 \noindent In the discrete case we could just give a domain as a list
@@ -2829,23 +2955,25 @@ subset of the real numbers: it is the interval $[0,5]$, given by its
 lower and upper bound in \pythoninline{R(0,5)}.
 
 We also see in the above code snipped that printing the continous
-state \pythoninline{u} does not yield mucht information. We only
-learn that it is a \pythoninline{State on R}. But there is
-a cool feature that we can \emph{plot} the state, via:
+state \pythoninline{u} does not yield much information. We only learn
+that it is a \pythoninline{State on R(0,5)}. But we can \emph{plot}
+the state, via:
 \begin{python}
 >>> u.plot()
 \end{python}
 
 \marginnote[-3\baselineskip]{\includegraphics[width=\marginparwidth]{Pictures/uniform_0_5.png}}
 
-\noindent This produces the picture in the margin. It described the
+\noindent This produces the picture in the margin. It describes the
 probability density function (pdf) $f \colon [0,5] \rightarrow \RNpos$
-with constant value, such that the integral $\int_{0}^{5}f(x) \intd x$
-equals $1$. The latter property is essential for a probability
-distribution.\sidenote{A pdf $f\colon D \rightarrow \RNpos$ determines
-  the probability that an element $d\in D$ of the domain is in a
-  subset $U\subseteq D$ as the integral $\int_{U} f(x) \intd x$. It is
-  the size of the surface under $f$ bounded by $U$.}
+with constant value $f(x) = \frac{1}{5}$, such that the integral
+$\int_{0}^{5}f(x) \intd x$ equals $1$. The latter property is
+essential for a probability distribution.\sidenote{A pdf $f\colon D
+  \rightarrow \RNpos$ determines the probability of an event
+  $U\subseteq D$ as the integral $\int_{U} f(x) \intd x$, with outcome
+  in the unit interval $[0,1]$. It is the size of the surface under
+  $f$ bounded by $U$. We shall describe this in probability in terms
+  of validity later on.}
 
 With the \EfProb libarary one can form joint distributions via
 products \pythoninline{@}, also of discrete and continous
@@ -2853,10 +2981,10 @@ probabilities.
 \begin{python}
 >>> s = uniform_state(R(-1,1)) @ uniform_state(R(5,10))
 >>> s
-State on R * R
+State on R(-1, 1) * R(5, 10)
 >>> t = flip(0.3) @ s
 >>> t
-State on [True, False] * R * R
+State on [True, False] * R(-1, 1) * R(5, 10)
 \end{python}
 
 \noindent We see that printing such states gives information about
@@ -2902,7 +3030,7 @@ The reader is assumed to be familiar with the basics of quantum
 theory, see for instance\cite{NielsenC00}. Expand...
 
 To do: comparison with other quantum languages like
-Quipper,\cite{GreenLRSV13} Qwire,\cite{PaykinRZ??}
+Quipper,\cite{GreenLRSV13} Qwire,\cite{PaykinRZ17}
 LIQ$Ui\ket{}$,\cite{WeckerS14} and also to QuTiP.
 
 The code fragments shown in this chapter can be obtained after

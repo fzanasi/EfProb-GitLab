@@ -301,6 +301,40 @@ def random_variables():
     print("\n===\n")
 
 
+def channels():
+
+    print("\nSection: Channels")
+
+    def chan_denot(c, s):
+        if c.dom.iscont or c.cod.iscont:
+            return Exception('Channel semantics defined only for discrete channels')
+        if len(c.dom.disc) > 1 or len(c.cod.disc) > 1:
+            return Exception('Channel semantics requires one-dimensional domain and codomain')
+        test_dom = c.dom.disc[0]
+        test_cod = c.cod.disc[0]
+        test = []
+        for j in test_cod:
+            probs = [ c.get_state(i).array[j] for i in test_dom ]
+            test = [ Predicate(probs, test_dom) ] + test
+        states = [ [s >= p, s/p] for p in test ]
+        return states
+
+    print("* Channel from states")
+    c = Channel.from_states([flip(0.2), flip(0.3), flip(0.5)])
+    print( c )
+    print( c >> uniform_disc_state(3) )
+    print("tests")
+    cd = chan_denot(c, uniform_disc_state(3))
+    print( convex_state_sum(*cd) )
+
+    print("\n===\n")
+
+    print("* Channel from Kleisli map")
+    d = chan_fromklmap(lambda i: flip(0.2) if i == 0 else
+                       flip(0.3) if i == 1 else flip(0.5), range(3), [True,False])
+    print( d )
+    print( d >> uniform_disc_state(3) )
+
 
 def state_pred_transformation():
 
@@ -355,34 +389,6 @@ def state_pred_transformation():
     print( s5 )
 
 
-def seq_par_composition():
-
-    print("\nSubsection: Sequential and parallel composition\n")
-
-    # print("* Disease-mood state")
-    # disease_domain = ['D', '~D']
-    # mood_domain = ['M', '~M']
-    # prior = State([0.05, 0.5, 0.4, 0.05], [disease_domain, mood_domain])
-    # print( prior )
-    # print( prior % [0,1] )
-
-    # print("\n===\n")
-
-    # print("* Updated disease-mood state")
-    # test_domain = ['T', '~T']
-    # test_pred = Predicate([1,0], test_domain)
-    # sensitivity = Channel([[9/10, 1/20], 
-    #                        [1/10, 19/20]],
-    #                       disease_domain, 
-    #                       test_domain)
-    # post = prior / ((sensitivity << test_pred) @ truth(mood_domain))
-    # print( post % [0,1] )
-
-    # print("\n===\n")
-
-    # print("* Updated disease-mood state, via channel")
-
-
 def structural_channels():
 
     print("\nSubsection: Structural channels")
@@ -417,6 +423,37 @@ def structural_channels():
     print( proj1 >> s >= p1 )
     print( s >= proj1 << p1 )
 
+    print("\n===\n")
+
+    print("* Disease-mood state")
+    disease_domain = ['D', '~D']
+    mood_domain = ['M', '~M']
+    joint_prior = State([0.05, 0.5, 0.4, 0.05], [disease_domain, mood_domain])
+    print( joint_prior )
+    print( joint_prior % [0,1] )
+
+    print("\n===\n")
+
+    print("* Transformed disease-mood state")
+    test_domain = ['T', '~T']
+    test_pred = Predicate([1,0], test_domain)
+    sensitivity = Channel([[9/10, 1/20], 
+                           [1/10, 19/20]],
+                          disease_domain, 
+                          test_domain)
+    print( sensitivity >> (joint_prior % [1,0]) >= test_pred )
+    print( (sensitivity @ idn(mood_domain)) >> joint_prior 
+           >= (test_pred @ truth(mood_domain)) )
+    print( joint_prior >= (sensitivity @ idn(mood_domain)) << (test_pred @ truth(mood_domain)) )
+    print( joint_prior >= ((sensitivity << test_pred) @ truth(mood_domain)) )
+
+    print("\n===\n")
+
+    print("* Updated disease-mood state")
+    joint_post = joint_prior / ((sensitivity << test_pred) @ truth(mood_domain))
+    print( joint_post % [1,0] )
+    print( joint_post % [0,1] )
+
 
 def bayesian_networks():
 
@@ -440,11 +477,11 @@ def bayesian_networks():
          * (copy(bnd) @ copy(bnd)) \
          * (well_written @ strong_results) \
          * (copy(bnd) @ idn(bnd))
-    print( prior >= (bn << tt) )
+    print( bn >> prior >= bn_pos_pred )
     E = Predicate([0.2, 0.4, 0.3, 0.6], prior.dom)
     print( bn >> prior/E )
-    print( bn >> prior/E >= tt )
-    print( prior/E >= bn << tt )
+    print( bn >> prior/E >= bn_pos_pred )
+    print( prior/E >= bn << bn_pos_pred )
 
     print("\n===\n")
 
@@ -454,30 +491,30 @@ def bayesian_networks():
     B_chan = cpt(0.4, 0.1)
     C_chan = cpt(0.2, 0.3)
 
-    A_form = tt
+    A_form = bn_pos_pred
     B_form = 0.4 * A_form | 0.1 * ~A_form
     C_form = 0.2 * B_form | 0.3 * ~B_form
 
-    print( prior >= tt )
+    print( prior >= bn_pos_pred )
     print( prior >= A_form )
 
     print("\n===\n")
 
     print("* Event B")
-    print( prior >= B_chan << tt )
+    print( prior >= B_chan << bn_pos_pred )
     print( prior >= B_form )
 
     print("\n===\n")
 
     print("* Event C")
-    print( prior >= B_chan << (C_chan << tt) )
+    print( prior >= B_chan << (C_chan << bn_pos_pred) )
     print( prior >= C_form )
 
     print("\n===\n")
 
     print("* B and C example")
-    print( prior >= B_chan << (tt & C_chan << tt) )
-    print( prior >= (B_chan << tt) & (B_chan << (C_chan << tt)) )
+    print( prior >= B_chan << (bn_pos_pred & C_chan << bn_pos_pred) )
+    print( prior >= (B_chan << bn_pos_pred) & (B_chan << (C_chan << bn_pos_pred)) )
     print( prior >= B_form & C_form )
 
 
@@ -491,9 +528,9 @@ def main():
     #validity()
     #conditioning()
     #random_variables()
+    channels()
     #state_pred_transformation()
-    #seq_par_composition()
-    structural_channels()
+    #structural_channels()
     #bayesian_networks()
 
 if __name__ == "__main__":
