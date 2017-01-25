@@ -144,9 +144,16 @@ def operations_on_predicates():
 
     print("\n===\n")
 
-    print("* bell states form a test")
+    print("* Bell states form a test")
     print( bell00.as_pred() + bell01.as_pred() + 
            bell10.as_pred() + bell11.as_pred() )
+
+    print("\n===\n")
+
+    print("* Also GHZ states form a test")
+    print( ghz1.as_pred() + ghz2.as_pred() + ghz3.as_pred() + ghz4.as_pred() +
+           ghz5.as_pred() + ghz6.as_pred() + ghz7.as_pred() + ghz8.as_pred() )
+
 
     print("\n===\n")
 
@@ -752,21 +759,21 @@ def order_inference():
 
 
 def main():
-    states()
-    operations_on_states()
-    basic_states()
-    predicates()
-    operations_on_predicates()
+    # states()
+    # operations_on_states()
+    # basic_states()
+    # predicates()
+    # operations_on_predicates()
     validity()
-    conditioning()
-    weakening()
-    state_transformation()
-    predicate_transformation()
-    random_variables()
-    structural_channels()
-    measurement()
-    teleportation_and_superdensecoding()
-    order_inference()
+    # conditioning()
+    # weakening()
+    # state_transformation()
+    # predicate_transformation()
+    # random_variables()
+    # structural_channels()
+    # measurement()
+    # teleportation_and_superdensecoding()
+    # order_inference()
 
 if __name__ == "__main__":
     main()

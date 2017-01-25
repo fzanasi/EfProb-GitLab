@@ -312,19 +312,18 @@ def channels():
             return Exception('Channel semantics requires one-dimensional domain and codomain')
         test_dom = c.dom.disc[0]
         test_cod = c.cod.disc[0]
-        test = []
-        for j in test_cod:
-            probs = [ c.get_state(i).array[j] for i in test_dom ]
-            test = [ Predicate(probs, test_dom) ] + test
-        states = [ [s >= p, s/p] for p in test ]
-        return states
+        test = [ Predicate([c.get_state(i).array[j] for i in test_dom], test_dom) 
+                 for j in range(len(test_cod)) ]
+        return [ [s >= p, s/p] for p in test ]
 
     print("* Channel from states")
     c = Channel.from_states([flip(0.2), flip(0.3), flip(0.5)])
     print( c )
     print( c >> uniform_disc_state(3) )
     print("tests")
-    cd = chan_denot(c, uniform_disc_state(3))
+    s = random_disc_state(3)
+    print( s )
+    cd = chan_denot(c, s)
     print( convex_state_sum(*cd) )
 
     print("\n===\n")

@@ -384,7 +384,7 @@ showstringspaces=false            %
 %\thanks{Thanks to Edward R.~Tufte for his inspiration.}
 } 
 
-\author[Cho \& Jacobs]{Kenta Cho and Bart Jacobs} % Author
+\author[Jacobs \& Cho]{Bart Jacobs and Kenta Cho} % Author
 
 %\publisher{Publisher of This Book} % Publisher
 
@@ -530,6 +530,15 @@ examples of how it can be used.
 We conclude this introduction with several loosely related remarks
 about the \EfProb library.
 \begin{itemize}
+\item The focus of the development of the library is on providing a
+  new language and logic for probability, based on states and
+  predicates. The library is not meant for large scale computation,
+  for instance like in data analytics. In our development of the
+  library we prefer semantical clarity to execution speed. Also, the
+  \EfProb library does not come with any guarantees with respect to
+  the correctness of the outcomes, see also the discussion about
+  precision and side-conditions below.
+
 \item We envision that the library could be useful in \emph{teaching}
   the basics of probability theory from a unified perspective. The
   \EfProb library is especially useful in quickly calculating
@@ -539,15 +548,6 @@ about the \EfProb library.
   \emph{research} as well, in order to quickly model new examples and
   compute outcomes. We request that usage of the \EfProb library, if
   any, is mentioned in the acknowledgements of research papers.
-
-\item The focus of the development of the library is on providing a
-  new language and logic for probability, based on states and
-  predicates. The library is not meant for large scale computation,
-  for instance like in data analytics. In our development of the
-  library we prefer semantical clarity to execution speed. Also, the
-  \EfProb library does not come with any guarantees with respect to
-  the correctness of the outcomes, see also the discussion about
-  precision and side-conditions below.
 
 \item The \EfProb library requires \Python, version $\geq$ 3.5.
   \EfProb heavily relies on existing libraries in \Python, in
@@ -564,11 +564,11 @@ about the \EfProb library.
   logical \emph{proof}.
 
 \item Despite the fact that numerical approximations are used in the
-  \EfProb calculations, the underlying semantics is called
-  \emph{exact}, because it does not rely on sampling, like
-  BLOG\cite{MilchMRSOK07} or Church\cite{GoodmanMRBT08}. Instead the
-  \EfProb library computes probabilities using the standard
-  mathematical formulas, including, for instance, integration.
+  EfProb calculations, the underlying semantics is \emph{exact}, and
+  the library computes probabilities using the standard mathematical
+  formulas, including, for instance, integration. This is in contrast
+  to languages based on sampling, such as BLOG\cite{MilchMRSOK07} and
+  Church\cite{GoodmanMRBT08}.
 
 \item Many mathematical structures used in probability theory are
   required to satisfy certain properties. For instance: the
@@ -584,8 +584,11 @@ instance when defining distributions / pdf's / quantum states?
 
 Here it is relevant that in the presence of computational
 approximations equations --- such as: a trace equals one --- can never
-be checked reliable. Hence, necessarily, the responsability for
-side-conditions lies with the user.
+be checked reliable. In the continuous case the problem is more
+serious, since it must be checked that a certain property
+(\eg~positivity of a function) holds for infinitely many points, and
+it's not effectively possible to do so. Hence, necessarily, the
+responsability for side-conditions lies with the user.
 
 That being said, the \EfProb does perform a few basic checks,
 sometimes using margins of error. In our experience, these checks can
@@ -2428,7 +2431,7 @@ the use of structural channels. At the same time it illustrates
 how entwinedness of states.
 
 \begin{example}
-\label{ex:twodiseases}
+\label{ex:diseasemood}
 This examples introduces a variation on the disease-test illustration
 from Example~\ref{ex:diseasetest}. There we used a prior disease state:
 \begin{python}
@@ -3027,26 +3030,33 @@ their domains. Only 1-dimensional continuous states can be plotted.
 \chapter{Quantum Probability}\label{ch:qp}
 
 The reader is assumed to be familiar with the basics of quantum
-theory, see for instance\cite{NielsenC00}. Expand...
+theory, see for instance\cite{NielsenC00} or\cite{YanofskyM08}.
 
-To do: comparison with other quantum languages like
+\marginnote{To do: comparison with other quantum languages like
 Quipper,\cite{GreenLRSV13} Qwire,\cite{PaykinRZ17}
-LIQ$Ui\ket{}$,\cite{WeckerS14} and also to QuTiP.
+LIQ$Ui\ket{}$,\cite{WeckerS14} and also to QuTiP.}
 
-The code fragments shown in this chapter can be obtained after
-starting \pythoninline{python3} on the command line and loading
-the relevant library via:
-\begin{python}
->>> from efprob_qu import *
->>>
-\end{python}
+The code fragments shown in this chapter require the
+\pythoninline{efprob_qu} library. It should be imported either on the
+command line at the beginning of a session, or in the beginning of a
+\Python file.
 
-\noindent This assumes that the \pythoninline{quantprob.py} file is in
-the same directory, or in an appropriate other directory that is
-mentioned in the \Python path.\sidenote{Alternatively, one can type
-  the code in a separate file, say \pythoninline{exs.py}, and execute the
-  code by invoking \pythoninline{python3 exs.py}.}
+This chapter follows the same pattern as the previous two, discussing
+states and predicates, random variables and channels, together with
+many illustrations and some basic explanations of the underlying
+mathematical structures. The quantum part of \EfProb is separate from
+the (combined) discrete and continuous part. But discrete probability
+does exist as special case within the \EfProb quantum world, as the
+`diagonal' case in density matrices, see below. The operations on
+states and predicates and channels are in general the same in quantum
+probability as in the `classical' non-quantum probability, with
+as notable exceptions:
+\begin{itemize}
+\item non-commutativity of certain operations, like sequential
+conjunction $\andthen$ and conditioning of states;
 
+\item non-copyability of states, because of the no-cloning property.
+\end{itemize}
 
 
 \section{States}\label{sec:qstate}
@@ -3071,7 +3081,8 @@ states.
 
 Let's see some examples, starting with dimension 2. States of this
 dimension are called \emph{qubits}\index{qubit}. The two most familar
-ones are written as:
+ones are written as \pythoninline{ket(0)}, \pythoninline{ket(1)},
+\pythoninline{plus}, \pythoninline{minus} in:
 \begin{python}
 >>> ket(0)
 [[ 1.  0.]
@@ -3087,9 +3098,15 @@ ones are written as:
  [-0.5+0.j  0.5+0.j]]
 \end{python}
 
-\noindent Please note that we deviate to some extend from standard
-quantum notation where the ket notation $\ket{0}$ is used for the unit
-vector $\left(\begin{smallmatrix} 1 \\ 0
+\noindent The notation \pythoninline{0.j} is part of python's notation
+for the imaginary part of complex numbers. In all of the above
+examples the imaginary part is zero.\marginnote{The matrix of a state
+  \pythoninline{s} can be accessed as \pythoninline{s.array}. It is
+  what is (pretty) printed if you print a state.}
+
+Please note that we deviate to some extend from standard quantum
+notation where the ket notation $\ket{0}$ is used for the unit vector
+$\left(\begin{smallmatrix} 1 \\ 0
 \end{smallmatrix}\right) \in \CN^2$, and $\ket{1}$ for 
 $\left(\begin{smallmatrix} 0 \\ 1 \end{smallmatrix}\right) \in \CN^2$.
 Here \pythoninline{ket(0)} means the corresponding density matrix,
@@ -3110,12 +3127,6 @@ $$\ket{+}\bra{+}
 & = &
 \frac{1}{\sqrt{2}}(\ket{0} - \ket{1})
 \end{array}\right.$$
-
-\noindent The notation \pythoninline{0.j} is part of python's notation
-for the imaginary part of complex numbers. In all of the above
-examples the imaginary part is zero.\marginnote{The matrix of a state
-  \pythoninline{s} can be accessed as \pythoninline{s.array}. It is
-  what is (pretty) printed if you print a state.}
 
 States can be defined `manually' as objects of the class
 \pythoninline{State}. The constructor of this class takes an
@@ -3311,15 +3322,19 @@ traces.\sidenote{We have described in
 
 Marginalisation exists in a quantum setting because quantum
 bits/information can be discarded. But since there is no
-\emph{cloning} in a quantum world, there is no copy operation.
-This is a crucial difference with the world of classical
-(discrete and continuous) probability.
+\emph{cloning} in a quantum world, there is no copy operation.  As
+already mentioned in the beginning of this chapter, this is a crucial
+difference with the world of classical (discrete and continuous)
+probability.
 
-In general, a joint state \pythoninline{s} is called
-\emph{non-entangled} if it is the product of its marginals, that is,
-if it is equal to \pythoninline{(s \% [1,0]) @ (s \% [0,1])}. If
-\pythoninline{s} is defined as \pythoninline{s1 @ s2} it is
-non-entangled.
+In general, a joint state \pythoninline{s} is different from the
+product of its marginals, that is, \pythoninline{s} is not equal to
+\pythoninline{(s \% [1,0]) @ (s \% [0,1])}. This is due to possible
+\emph{entanglement}\index{entanglement} within \pythoninline{s}.  Via
+such entanglement one part of the state can influence the other part,
+as we have also seen in classical probability theory, see
+Example~\ref{ex:diseasemood}. But quantum entanglement is stronger
+than probabilistic entwinedness.
 
 
 
@@ -3368,10 +3383,9 @@ normalises them, and turns them into a probabilistic state:
 yields the same outcome as \pythoninline{probabilistic_state(0.3,
   0.7)} and as \pythoninline{probabilistic_state(3, 7)}. There are
 further abbreviations \pythoninline{cfflip} for
-\pythoninline{cflip(0.5)}, giving a classical `fair' flip. Further,
-\pythoninline{true} is \pythoninline{cflip(1)} and
-\pythoninline{false} is \pythoninline{cflip(0)}. These are just
-different names for \pythoninline{ket(0)} and \pythoninline{ket(1)}.
+\pythoninline{cflip(0.5)}, giving a classical `fair' flip. These are
+just different names for \pythoninline{ket(0)} and
+\pythoninline{ket(1)}.
 
 The product and convex sum of probabilistic states is again
 probabilistic. For instance:
@@ -3388,8 +3402,9 @@ probabilistic. For instance:
 
 \paragraph{Vector states} Each vector $\ket{v}$ of norm $1$ yields
 a state / density matrix $\ket{v}\bra{v}$, which is often called a
-vector state. Thus, by provinding an $n$-tuple of complex numbers
-whose we can get a state. Implicitly, the numbers are normalised:
+vector state.\index{state!vector~--}\index{vector~state} Thus, by
+provinding an $n$-tuple of complex numbers we can get a
+state. Implicitly, the numbers are normalised:
 \begin{python}
 >>> vector_state(1, complex(1, 2), -2)
 [[ 0.1+0.j   0.1-0.2j -0.2-0.j ]
@@ -3418,17 +3433,19 @@ $$\left(\begin{array}{ccc}
 There is a general result saying that each (finite-dimensional)
 density matrix can be written as a convex combination (a `mixture') of
 `pure' vector states, via spectral decomposition, see
-\eg~Thm.~2.5 of~\cite{NielsenC00}.
+\eg~Thm.~2.5 of\cite{NielsenC00}.
 
-A \emph{unit state} is a special case of a vector state --- and also
-of a probabilistic state. It puts a single \pythoninline{1} at the
-indicated position of the diagonal:
+A \emph{unit state}\index{state!quantum~unit~--} is a special case of
+a vector state --- and also of a probabilistic state. It puts a single
+\pythoninline{1} at the indicated position of the diagonal:
 \begin{python}
 >>> unit_state(3,2)
 [[ 0.  0.  0.]
  [ 0.  0.  0.]
  [ 0.  0.  1.]]
 \end{python}
+
+\noindent This is the same as \pythoninline{vector\_state(0,0,1)}.
 
 
 \paragraph{Random states} For testing purposes it is very useful
@@ -3451,22 +3468,25 @@ as in:
  [ 0.          0.40020631]]
 \end{python}
 
-\noindent Later on we shall see more basic states, such as the Bell
-states, once we have introduced the relevant functions that produce
-these states.
+\noindent Earlier, in the beginning of Section~\ref{sec:qstate}, we
+already described the Bell and GHZ states, essentially as vector
+states.
 
 
 
 \section{Predicates}\label{sec:qpred}
 
-The second fundamental category after `state' is
-`predicate'.\index{predicate!quantum~--} In combination with states we
-can obtain the \emph{validity} of a predicate in a state, and also the
-state \emph{conditioned} by a predicate. As we shall see there are
-several ways to combine predicates into new ones.
+The distinction between states and predicates is fundamental in our
+approach to probability theory, both in the classical and in the
+quantum case. Having seen quantum states, we now introduce quantum
+predicates. In combination with states we can obtain the
+\emph{validity} of a predicate in a state, and also the state
+\emph{conditioned} by a predicate. But first we shall describe
+predicates on their own, with several ways to combine them into new
+predicates.
 
 Mathematically, a predicate $p$ of dimension $n$ is an $n\times n$
-matrix $p\in\Mat_n$ over the complex numbers which is positive and
+matrix $p\in\Mat_n$ over the complex numbers, which is positive and
 below the identity: $0 \leq p \leq 1$, there $0, 1 \in \Mat_{n}$ are
 the zero matrix and the identity matrix respectively. These quantum
 predicates are often called \emph{effects}.\index{effect} A predicate
@@ -3514,7 +3534,10 @@ The most basic predicates are truth and falsity:
 dimensions. These domains describe the type of a state, see
 sidenote~\getrefnumber{note:qstate:type}, and make it possible to
 define truth and falsity on an entire product state at once, by using
-the appropriate domain of the product state as input.
+the appropriate domain of the product state as input. Thus, the
+predicate \pythoninline{truth(2,3)} used above is the same
+as the parallel product \pythoninline{truth(2) @ truth(3)} that
+will be described below.
 
 A \emph{probabilistic} predicate has, like a probabilistic state, only
 real entries from $[0,1]$ on its diagonal, but these entries need not
@@ -3545,15 +3568,20 @@ For testing purposes one can use
 arbitrary (probabilist) predicates of dimension \pythoninline{n}.
 
 Each state of dimension $n$ is also a predicate of dimension $n$, but
-not the around --- take \pythoninline{falsity} for instance. The
-conversion is of states to predicates happens automatically
-in the \EfProb library, see Section~\ref{sec:qrandvar} for the
-bigger picture.
+not the around --- take \pythoninline{falsity} for instance. There is
+a way in \EfProb to turn a state into a predicate, via the method
+\pythoninline{as\_pred()}, but it will not be used frequently.  Since
+the distinction between predicates and states is so fundamental, we
+prefer to define predicates immediately as predicates, and not first
+as states. For this reason there is a function
+\pythoninline{vector\_pred}, in analogy with
+\pythoninline{state\_pred}.  It turns a vector $\ket{v}$ into the
+outer product $\ket{v}\bra{v}$, considered as a predicate.
 
-It is important not to confuse states and predicates.  They are very
-different. As we shall see next, there are several logical operations
-on predicates which do not exists for states, in the sense that states
-are not closed under these operations.
+Again, it is important not to confuse states and predicates.  They are
+very different. As we shall see next, there are several logical
+operations on predicates which do not exists for states, in the sense
+that states are not closed under these operations.
 
 
 
@@ -3573,7 +3601,9 @@ We shall discuss the following operations on predicates.
 \end{itemize}
 
 \noindent The first three points capture the \emph{effect module}
-structure of predicates. 
+structure of quantum predicates. This effect module structure is
+common for predicates in discrete, continuous, and quantum
+probability.
 
 There is another operation on predicates namely weakening; it is a
 so-called `structural' operation that will be discussed separatedly in
@@ -3583,10 +3613,10 @@ Subsection~\ref{subsec:qpred:weakening}.
 \paragraph{Orthocomplement} Negation in a probabilistic or quantum
 setting is called orthocomplement.\index{orthocomplement!quantum~--}
 Here it is written as $\ortho p$, but in the literature one often sees
-$p^{\bot}$. On the unit interval $[0,1]$ it is given by $\ortho r = 1
-- r$. In a quantum setting the orthocomplement of a predicate is given
-similarly, by subtracting the predicate from the identity (diagonal)
-matrix.
+$p^{\bot}$ instead. On the unit interval $[0,1]$ orthocomplement is
+given by $\ortho r = 1 - r$. In a quantum setting the orthocomplement
+of a predicate is given similarly, by subtracting the predicate from
+the identity (diagonal) matrix. Thus, $\ortho p = 1 - p$, see:
 \begin{python}
 >>> p = random_pred(2)
 >>> p
@@ -3602,7 +3632,7 @@ is probabilistic again. Obviously, taking the orthocomplement twice
 returns the original predicate. Hence the `double negation' rule of
 classical (Boolean) logic holds. But the logic of
 quantum/probabilistic predicate is not Boolean. Its structure is
-captures algebraically in terms of effect modules.
+captured algebraically in terms of effect modules.
 
 
 \paragraph{Scalar multiplication} Predicates are closed under
@@ -3657,7 +3687,8 @@ in which these states are used as predicates.
 ...             ghz7.as_pred(), ghz8.as_pred()]
 \end{python}
 
-\noindent Indeed, the Bell predicates form a test:
+\noindent Indeed, the Bell predicates form a test (and the GHZ
+predicates too):
 \begin{python}
 >>> bell00.as_pred() + bell01.as_pred() + bell10.as_pred() + bell11.as_pred()
 [[ 1.  0.  0.  0.]
@@ -3665,6 +3696,12 @@ in which these states are used as predicates.
  [ 0.  0.  1.  0.]
  [ 0.  0.  0.  1.]]
 \end{python}
+
+\noindent When the matrix sum $p+q$ of two predicates $p,q$ is not
+below the identity, their sum still exists in \EfProb, but it no
+longer a predicate. It has become a random variable, see
+Section~\ref{sec:qrandvar} for details.
+
 
 
 \paragraph{Parallel conjunction} If \pythoninline{p1} is a predicate
@@ -3687,8 +3724,8 @@ two matrices, just like for states. The predicate \pythoninline{p1 @
 \end{python}
 
 \noindent In this way the underlying matrices grow considerable in
-size.  \sidenote{\label{note:qpred:type}When we take the sum
-  \pythoninline{p+q} of two predicates, these predicates
+size.\sidenote[][-3\baselineskip]{\label{note:qpred:type}When we take
+  the sum \pythoninline{p+q} of two predicates, these predicates
   \pythoninline{p} and \pythoninline{q} have to have \emph{the same
     domain}. This domain of a predicate is the same as the domain of a
   state, as sketched in sidenote~\ref{note:qstate:type}: it is given
@@ -3702,12 +3739,12 @@ size.  \sidenote{\label{note:qpred:type}When we take the sum
 
 
 \paragraph{Sequential conjunction} For two predicates \pythoninline{p},
-\pythoninline{q} of the same time, there a predicate \pythoninline{p
-  \& q} for sequential
+\pythoninline{q} of the same type, there is a predicate
+\pythoninline{p \& q} for sequential
 conjunction.\index{sequential~conjunction!of~quantum~predicates} It is
-pronounced as ``\pythoninline{p} and-then \pythoninline{q}''. The
-order is relevant, since this conjunction \pythoninline{\&} is
-\emph{not} commutative in the quantum case --- unlike in probability.
+pronounced as `\pythoninline{p} and-then \pythoninline{q}'. The order
+is relevant, since this conjunction \pythoninline{\&} is \emph{not}
+commutative in the quantum case --- unlike in classical probability.
 
 The mathematical interpretation of `and-then' is given by:
 \begin{equation}
@@ -3739,6 +3776,10 @@ is simply pointwise multiplication --- and thus commutative.
  [ 0.    0.48]]
 \end{python}
 
+\noindent We shall see illustrations of non-commutativity of $\andthen$
+later on, for instance in Example~\ref{ex:polarisation}.
+
+
 
 \subsection{Validity}\label{subsec:qpred:validity}
 
@@ -3757,13 +3798,10 @@ Hilbert-Schmidt inner product $\tuple{\omega\mid p}$, using that $p^*
 [[ 0.75+0.j         0.00-0.4330127j]
  [ 0.00+0.4330127j  0.25+0.j       ]]
 >>> ket(0) >= v
-0.75000000000000033
+0.75
 >>> ket(1) >= v
-0.25000000000000011
+0.25
 \end{python}
-
-\noindent We see that certain small errors may occur in the \Python
-computations.
 
 Validity $\models$ satisfies some basic mathematical properties:
 $$\begin{array}{rcl}
@@ -3847,6 +3885,7 @@ of the underlying states, as tested in:
 \end{python}
 
 
+\auxproof{
 \begin{example}
 \label{ex:linda}
 We illustrate sequential conjunction \pythoninline{\&} and disjunction
@@ -3914,6 +3953,7 @@ low-level calculations via inner products in the Hilbert space
 $\CN^2$. All that complexity is hidden here.  Similar illustrations
 are given in Examples~\ref{ex:carpreference} and~\ref{??}.
 \end{example}
+}
 
 
 \begin{example}
@@ -3935,16 +3975,14 @@ predicates, obtained from states.
  [ 0.25+0.4330127j  0.50+0.j       ]]
 \end{python}
 
-\noindent These states \pythoninline{A1}, \pythoninline{A2},
-\pythoninline{B1}, \pythoninline{B2} will be used as predicates. They
-may look a bit \emph{ad hoc} at this
-stage,\sidenote[][-3\baselineskip]{\label{sidenote:abramskycalculations}Detailed
+\noindent These predicates may look a bit \emph{ad hoc} at this
+stage,\sidenote[][-1\baselineskip]{\label{sidenote:abramskycalculations}Detailed
   calculations and explanations of the coice of these predicates can
   be found at \url{https://arxiv.org/abs/1406.7386}.} but later in
 Subsection~\ref{subsec:qchannel:predtransform} we show how they can be
 described in a more systematic manner via predicate transformation.
 
-The valdities of the various combinations of the predicates
+The valdities of the parallel conjunctions of the predicates
 \pythoninline{A1}, \pythoninline{A2}, \pythoninline{B1},
 \pythoninline{B2} and their orthocomplements yield the famous
 Bell-tables\index{Bell!table} that play an important role in
@@ -6412,7 +6450,6 @@ w.
 
 \noindent Of course, this works under the assumption that the relevant
 inverse matrix exists.
-
 
 
 
