@@ -650,6 +650,11 @@ class State(StateOrPredicate):
         return Channel(array, [], self.dom)
 
 
+class RandVar(StateOrPredicate):
+    """Random Variables."""
+    ...
+
+
 class Predicate(StateOrPredicate):
     """Predicates."""
     def __init__(self, *args, **kwargs):
@@ -1171,13 +1176,13 @@ class DetChan:
         return reduce(lambda s1, s2: s1 @ s2, [self] * n)
 
 
-class RandVar(DetChan):
+class DCRandVar(DetChan):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def __mul__(self, other):
         if isinstance(other, DetChan):
-            if not isinstance(other, RandVar):
+            if not isinstance(other, DCRandVar):
                 raise TypeError("Multiplicand must be a random variable")
             funs = [lambda *args: sf(*args) * of(*args)
                     for sf, of in zip(self.funs, other.funs)]
@@ -1188,14 +1193,14 @@ class RandVar(DetChan):
             else:
                 funs = [lambda *args: sf(*args) * other
                         for sf in self.funs]
-        return RandVar(funs, self.dom)
+        return DCRandVar(funs, self.dom)
 
     def __rmul__(self, other):
         return self * other
 
     def __add__(self, other):
         if isinstance(other, DetChan):
-            if not isinstance(other, RandVar):
+            if not isinstance(other, DCRandVar):
                 raise TypeError("Summand must be a random variable")
             funs = [lambda *args: sf(*args) + of(*args)
                     for sf, of in zip(self.funs, other.funs)]
@@ -1206,14 +1211,14 @@ class RandVar(DetChan):
             else:
                 funs = [lambda *args: sf(*args) + other
                         for sf in self.funs]
-        return RandVar(funs, self.dom)
+        return DCRandVar(funs, self.dom)
 
     def __radd__(self, other):
         return self + other
 
     def __neg__(self):
         funs = [lambda *args: -sf(*args) for sf in self.funs]
-        return RandVar(funs, self.dom)
+        return DCRandVar(funs, self.dom)
 
     def __sub__(self, other):
         if isinstance(other, list):
@@ -1607,7 +1612,7 @@ def sporter2():
 def dice():
     pips = [1,2,3,4,5,6]
     stat = uniform_state(pips)
-    rv = RandVar(lambda x: x, pips)
+    rv = DCRandVar(lambda x: x, pips)
     print("Exp.", rv.exp(stat))
     print("Var.", rv.var(stat))
     print("St.Dev.", rv.stdev(stat))
@@ -1618,7 +1623,7 @@ def dice():
     print("Var. by formula 2:",
           (rv * rv).exp(stat) - rv.exp(stat) ** 2)
 
-    rv_sum = RandVar(lambda x,y: x+y, [pips]*2)
+    rv_sum = DCRandVar(lambda x,y: x+y, [pips]*2)
     stat2 = stat @ stat
     print("Exp.", rv_sum.exp(stat2))
     print("Var.", rv_sum.var(stat2))
