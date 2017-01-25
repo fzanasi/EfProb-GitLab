@@ -245,13 +245,16 @@ def supp_isempty(supp):
 
 def supp_fun(supp, fun):
     def f(*xs):
-        return fun(*xs) if supp_contains(supp, xs) else 0.0
+        if supp_contains(supp, xs):
+            return fun(*xs)
+        return 0.0
     return f
 
 def supp_fun2(supp1, supp2, fun):
     def f(xs, ys):
-        return fun(xs, ys) if (supp_contains(supp1, xs)
-                               and supp_contains(supp2, ys)) else 0.0
+        if supp_contains(supp1, xs) and supp_contains(supp2, ys):
+            return fun(xs, ys)
+        return 0.0
     return f
 
 
@@ -326,7 +329,7 @@ class Fun:
     u_marginal = np.frompyfunc(lambda f, selectors: f.marginal(selectors), 2, 1)
 
     def asscalar(self):
-        """Return a scalar, assuming 'self.cont_dim == 0'."""
+        """Return a scalar, assuming ``self.cont_dim == 0``."""
         return self()
 
     _u_asscalar = np.frompyfunc(lambda f: f.asscalar(), 1, 1)
@@ -387,14 +390,7 @@ u_asfun = np.frompyfunc(asfun, 2, 1)
 
 
 class StateOrPredicate:
-    """Common structures of states and predicates.
-
-    Args:
-    TODO
-
-    Attributes:
-    TODO
-    """
+    """Class for common structures of states and predicates."""
     def __init__(self, array, dom):
         dom = asdom(dom)
         if dom.iscont:
@@ -455,8 +451,8 @@ class StateOrPredicate:
     def __rmul__(self, scalar):
         return self * scalar
 
-    def __matmul__(self, other):
-        """Forms the joint state / predicate"""
+    def joint(self, other):
+        """Form a joint state/predicate."""
         if self.dom.iscont:
             if other.dom.iscont:
                 outer = Fun.u_joint.outer
@@ -469,6 +465,9 @@ class StateOrPredicate:
                 outer = np.outer
         return type(self)(outer(self.array, other.array),
                           self.dom + other.dom)
+
+    def __matmul__(self, other):
+        return self.joint(other)
 
     def __pow__(self, n):
         if n == 0:
@@ -568,6 +567,7 @@ class StateOrPredicate:
 
 
 class State(StateOrPredicate):
+    """States."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -581,15 +581,18 @@ class State(StateOrPredicate):
                 spec=float_format_spec)
             for indices in np.ndindex(*self.shape))
 
-    def __ge__(self, pred):
-        """Returns the validity."""
+    def validity(self, pred):
+        """Return the validity of a predicate."""
         check_dom_match(self.dom, pred.dom)
         if self.dom.iscont:
             return Fun.vect_integrate(self.array * pred.array).sum()
         return np.inner(self.array.ravel(), pred.array.ravel())
 
-    def __truediv__(self, pred):
-        """Returns the conditional state."""
+    def __ge__(self, pred):
+        return self.validity(pred)
+
+    def conditional(self, pred):
+        """Return a conditional state."""
         check_dom_match(self.dom, pred.dom)
         array = self.array * pred.array
         if self.dom.iscont:
@@ -603,8 +606,11 @@ class State(StateOrPredicate):
             return State(Fun.u_sdiv(array, v), self.dom)
         return State(array / v, self.dom)
 
-    def __mod__(self, selectors):
-        """Return a marginal state"""
+    def __truediv__(self, pred):
+        return self.conditional(pred)
+
+    def marginal(self, selectors):
+        """Return a marginal state."""
         dom_marg, disc_sel, cont_sel = [], [], []
         for d, s in zip(self.dom, selectors):
             if s:
@@ -625,11 +631,15 @@ class State(StateOrPredicate):
             array = array.sum(axes)
         return State(array, dom_marg)
 
+    def __mod__(self, selectors):
+        return self.marginal(selectors)
+
     def as_pred(self):
-        """
-        Turning a state into a predicate. This works well in the discrete
-        case but may not produce a predicate in the continuous case if
-        the pdf becomes greater than 1
+        """Turning a state into a predicate.
+
+        This works well in the discrete case but may not produce a
+        predicate in the continuous case if the pdf becomes greater
+        than 1.
         """
         return Predicate(self.array, self.dom)
 
@@ -642,6 +652,7 @@ class State(StateOrPredicate):
 
 
 class Predicate(StateOrPredicate):
+    """Predicates."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -831,11 +842,7 @@ u_asfun2 = np.frompyfunc(asfun2, 3, 1)
 
 
 class Channel:
-    """Channels.
-
-    Attributes:
-    TODO
-    """
+    """Channels."""
     def __init__(self, array, dom, cod):
         dom, cod = asdom(dom), asdom(cod)
         self.iscont = dom.iscont or cod.iscont
@@ -935,6 +942,7 @@ class Channel:
         return Channel(self.array * scalar, self.dom, self.cod)
 
     def stat_trans(self, stat):
+        """State transformer."""
         check_dom_match(self.dom, stat.dom)
         dom_size = stat.array.size
         self_a = self.array.reshape(-1, dom_size)
@@ -954,6 +962,7 @@ class Channel:
         return self.stat_trans(stat)
 
     def pred_trans(self, pred):
+        """Predicate transformer."""
         check_dom_match(self.cod, pred.dom)
         cod_size = pred.array.size
         self_a = self.array.reshape(cod_size, -1)
