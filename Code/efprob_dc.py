@@ -286,7 +286,7 @@ class Fun:
 
     @staticmethod
     def vect_integrate(array):
-        """Integrates array of functions elementwise."""
+        """Integrate functions in an array."""
         out = np.empty_like(array, dtype=float)
         Fun.u_integrate(array, out=out)
         return out
@@ -508,7 +508,7 @@ class StateLike:
         return preargs, interval, postargs
 
     def plot(self, *args, **kwargs):
-        """Plots a certain axis of the state-like.
+        """Plot a certain axis of the state-like.
 
         Suppose self is a state/predicate on domain A * B * C and B is
         continuous type. The method can be called as
@@ -631,7 +631,7 @@ class State(StateLike):
         return self.marginal(selectors)
 
     def as_pred(self):
-        """Turning a state into a predicate.
+        """Turn a state into a predicate.
 
         This works well in the discrete case but may not produce a
         predicate in the continuous case if the pdf becomes greater
@@ -1043,10 +1043,10 @@ class Channel:
             array = Fun2.vect_fun_at2(array, cont_args)
             if not self.dom.iscont:
                 array = Fun.vect_asscalar(array)
-        return Predicate(array, self.dom)
+        return RandVar(array, self.dom)
 
     def comp(self, other):
-        """Computes the composition (self after other)."""
+        """Compute the composition (self after other)."""
         check_dom_match(self.dom, other.cod)
         if self.iscont or other.iscont:
             if self.iscont and other.iscont:
@@ -1448,7 +1448,6 @@ def gaussian_state(mu, sigma, supp=R):
 
 _sqrt2pi = math.sqrt(2 * math.pi)
 
-
 def gaussian_pred(mu, sigma, supp=R, scaling=True):
     if scaling:
         s = _sqrt2pi * sigma
@@ -1650,24 +1649,24 @@ def sporter2():
 def dice():
     pips = [1,2,3,4,5,6]
     stat = uniform_state(pips)
-    rv = DCRandVar(lambda x: x, pips)
+    rv = RandVar.fromfun(lambda x: x, pips)
     print("Exp.", rv.exp(stat))
     print("Var.", rv.var(stat))
     print("St.Dev.", rv.stdev(stat))
-    exp = rv.exp(stat)
-    rv2 = rv - exp
-    print("Var. by formula 1:",
-          (rv2 * rv2).exp(stat))
-    print("Var. by formula 2:",
-          (rv * rv).exp(stat) - rv.exp(stat) ** 2)
+    print("Var. by formula:",
+          (rv & rv).exp(stat) - rv.exp(stat) ** 2)
+    # exp = rv.exp(stat)
+    # rv2 = rv - exp
+    # print("Var. by formula 2:",
+    #       (rv2 * rv2).exp(stat))
 
-    rv_sum = DCRandVar(lambda x,y: x+y, [pips]*2)
+    rv_sum = RandVar.fromfun(lambda x,y: x+y, [pips]*2)
     stat2 = stat @ stat
     print("Exp.", rv_sum.exp(stat2))
     print("Var.", rv_sum.var(stat2))
     print("St.Dev.", rv_sum.stdev(stat2))
     print("Var. by formula:",
-          (rv_sum * rv_sum).exp(stat2) - rv_sum.exp(stat2) ** 2)
+          (rv_sum & rv_sum).exp(stat2) - rv_sum.exp(stat2) ** 2)
 
 
 def test_chan():
