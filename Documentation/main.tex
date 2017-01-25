@@ -1844,15 +1844,14 @@ to \pythoninline{100} and the domain element \pythoninline{False} to
 \pythoninline{-20}. This is achieved in \EfProb via:
 \begin{python}
 >>> rain_state = flip(0.3)
->>> umbrella_sales_rv = RandVar(lambda x: 100 if x else -20, [True,False])
+>>> umbrella_sales_rv = RandVar([100, -20], [True,False])
 >>> umbrella_sales_rv.exp(rain_state)
 16.0
 \end{python}
 
-\noindent We see that a random variable is defined by a function and a
-domain. The function acts on the elements of the domain and produces a
-real number. (More generally, the function may produce a sequence of
-real numbers, see below.) A random variable has an
+\noindent We see that a random variable is defined by a list and a
+domain (also a list). The first list gives the real number values
+corresponding to the elements of the domain. A random variable has an
 expectation\index{expectation!discrete~--} method \pythoninline{exp},
 which takes a state as argument. This state must have the same domain
 as the random variable. In a similar way one obtains the
@@ -1861,12 +1860,13 @@ deviation\index{standard~deviation!discrete~--} via the methods
 \pythoninline{var} and \pythoninline{stdev}.
 
 Here is another example of a random variable, now defined on (the
-domain of) the product state of a pair of dices. It maps a pair $(x,y)
-\in \{1,2,3,4,5,6\} \times \{1,2,3,4,5,6\}$ to the sum $x+y$.
+domain of) the product state of a pair of dices. Instead of using a
+list, we use a function as first argument. It maps a pair $(x,y) \in
+\{1,2,3,4,5,6\} \times \{1,2,3,4,5,6\}$ to the sum $x+y$.
 \begin{python}
 >>> fdice = uniform_state([1,2,3,4,5,6])
 >>> twodice = fdice @ fdice
->>> sum_rv = RandVar(lambda x,y: x+y, twodice.dom)
+>>> sum_rv = RandVar.fromfun(lambda x,y: x+y, twodice.dom)
 >>> sum_rv.exp(twodice)
 7.0
 \end{python}
@@ -1895,7 +1895,7 @@ We can use \Python as `meta-language' to define for instance
 a function that returns the expected value of \pythoninline{n}
 dices:
 \begin{python}
->>> def sums_exp(n): return RandVar(lambda *xs: sum(xs), 
+>>> def sums_exp(n): return RandVar.fromfun(lambda *xs: sum(xs), 
 ... (fdice ** n).dom).exp(fdice ** n)
 >>> sums_exp(1)
 3.5
@@ -1921,7 +1921,7 @@ for \pythoninline{n} dices with \pythoninline{even} outcome, via
 conditional states.\marginnote[3\baselineskip]{Here the pattern is
   \pythoninline{even\_sums\_exp(n)} equals \pythoninline{4 * n}.}
 \begin{python}
->>> def even_sums_exp(n): return RandVar(lambda *xs: sum(xs), 
+>>> def even_sums_exp(n): return RandVar.fromfun(lambda *xs: sum(xs), 
 ... (fdice ** n).dom).exp( (fdice ** n) / (even ** n) )
 ... 
 >>> even_sums_exp(1)

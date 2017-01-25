@@ -259,7 +259,7 @@ def random_variables():
 
     print("* umbrella sales expectation")
     rain_state = flip(0.3)
-    umbrella_sales_rv = RandVar(lambda x: 100 if x else -20, [True,False])
+    umbrella_sales_rv = RandVar([100, -20], [True,False])
     print( umbrella_sales_rv.exp(rain_state) )
 
     print("\n===\n")
@@ -267,7 +267,7 @@ def random_variables():
     print("* two-dice expectation")
     fdice = uniform_state([1,2,3,4,5,6])
     twodice = fdice @ fdice
-    sum_rv = RandVar(lambda x,y: x+y, twodice.dom)
+    sum_rv = RandVar.fromfun(lambda x,y: x+y, twodice.dom)
     print( sum_rv.exp(twodice) )
 
     print("\n===\n")
@@ -281,8 +281,8 @@ def random_variables():
     print("\n===\n")
 
     print("* Dice sums expectation")
-    def sums_exp(n): return RandVar(lambda *xs: sum(xs),
-                                    (fdice ** n).dom).exp(fdice ** n)
+    def sums_exp(n): return RandVar.fromfun(lambda *xs: sum(xs),
+                                            (fdice ** n).dom).exp(fdice ** n)
     print( sums_exp(1) )
     print( sums_exp(2) )
     print( sums_exp(3) )
@@ -291,8 +291,8 @@ def random_variables():
     print("\n===\n")
 
     print("* Dice even sums expectation")
-    def even_sums_exp(n): return RandVar(lambda *xs: sum(xs),
-                                         (fdice ** n).dom).exp( (fdice ** n) / (even ** n) )
+    def even_sums_exp(n): return RandVar.fromfun(lambda *xs: sum(xs),
+                                                 (fdice ** n).dom).exp( (fdice ** n) / (even ** n) )
     print( even_sums_exp(1) )
     print( even_sums_exp(2) )
     #print( even_sums_exp(8) )
@@ -526,8 +526,8 @@ def main():
     #excursion()
     #validity()
     #conditioning()
-    #random_variables()
-    channels()
+    random_variables()
+    #channels()
     #state_pred_transformation()
     #structural_channels()
     #bayesian_networks()
