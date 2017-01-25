@@ -292,16 +292,14 @@ class Fun:
         return out
 
     def smul(self, scalar):
-        return Fun(lambda *xs: self(*xs) * scalar,
-                   self.supp)
+        return Fun(lambda *xs: self(*xs) * scalar, self.supp)
 
     u_smul = np.frompyfunc(lambda f, s: f.smul(s), 2, 1)
 
     u_rsmul = np.frompyfunc(lambda s, f: f.smul(s), 2, 1)
 
     def sdiv(self, scalar):
-        return Fun(lambda *xs: self(*xs) / scalar,
-                   self.supp)
+        return Fun(lambda *xs: self(*xs) / scalar, self.supp)
 
     u_sdiv = np.frompyfunc(lambda f, s: f.sdiv(s), 2, 1)
 
@@ -388,8 +386,11 @@ def asfun(fun, dom):
 u_asfun = np.frompyfunc(asfun, 2, 1)
 
 
-class StateOrPredicate:
-    """Class for common structures of states and predicates."""
+class StateLike:
+    """State-like objects.
+
+    It is a superclass of states, random variables and predicates.
+    """
     def __init__(self, array, dom):
         dom = asdom(dom)
         if dom.iscont:
@@ -414,12 +415,11 @@ class StateOrPredicate:
 
     @classmethod
     def fromfun(cls, fun, dom):
-        """Create a state/predicate from a function.
+        """Create a state-like object from a function.
 
         Example:
 
            Predicate.fromfun(lambda x, y: x < y, [R, range(10)])
-
         """
         dom = asdom(dom)
         shape = tuple(len(d) for d in dom.disc)
@@ -430,7 +430,7 @@ class StateOrPredicate:
         for index in np.ndindex(*shape):
             disc_args = dom.disc_get(index)
             array[index] = (
-                StateOrPredicate._fromfun_getelm(fun, dom, disc_args))
+                StateLike._fromfun_getelm(fun, dom, disc_args))
         return cls(array, dom)
 
     def __add__(self, other):
@@ -451,7 +451,7 @@ class StateOrPredicate:
         return self * scalar
 
     def joint(self, other):
-        """Form a joint state/predicate."""
+        """Form a joint state-like."""
         if self.dom.iscont:
             if other.dom.iscont:
                 outer = Fun.u_joint.outer
@@ -508,7 +508,7 @@ class StateOrPredicate:
         return preargs, interval, postargs
 
     def plot(self, *args, **kwargs):
-        """Plots a certain axis of the state or predicate.
+        """Plots a certain axis of the state-like.
 
         Suppose self is a state/predicate on domain A * B * C and B is
         continuous type. The method can be called as
@@ -552,7 +552,7 @@ class StateOrPredicate:
         elif contplot:
             (preargs,
              interval,
-             postargs) = StateOrPredicate._plot_split(*cont_args)
+             postargs) = StateLike._plot_split(*cont_args)
             fun = self.array[self.dom.get_disc_indices(disc_args)]
             axis = len(preargs)
             if interval is Ellipsis:
@@ -565,7 +565,7 @@ class StateOrPredicate:
             raise ValueError("Nothing to plot")
 
 
-class State(StateOrPredicate):
+class State(StateLike):
     """States."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -582,10 +582,7 @@ class State(StateOrPredicate):
 
     def validity(self, pred):
         """Return the validity of a predicate."""
-        check_dom_match(self.dom, pred.dom)
-        if self.dom.iscont:
-            return Fun.vect_integrate(self.array * pred.array).sum()
-        return np.inner(self.array.ravel(), pred.array.ravel())
+        return pred.exp(self)
 
     def __ge__(self, pred):
         return self.validity(pred)
@@ -600,7 +597,7 @@ class State(StateOrPredicate):
             v = array.sum()
         if v == 0.0:
             raise ValueError("Zero validity making "
-                            "conditioning impossible")
+                             "conditioning impossible")
         if self.dom.iscont:
             return State(Fun.u_sdiv(array, v), self.dom)
         return State(array / v, self.dom)
@@ -650,12 +647,58 @@ class State(StateOrPredicate):
         return Channel(array, [], self.dom)
 
 
-class RandVar(StateOrPredicate):
+def _var_integral(rvfun, sfun, exp):
+    def integrand(*xs):
+        v = rvfun(*xs) - exp
+        return v * v * sfun(*xs)
+    return nquad_wrapper(integrand, sfun.supp)
+
+_var_integral_u = np.frompyfunc(_var_integral, 3, 1)
+
+
+class RandVar(StateLike):
     """Random Variables."""
-    ...
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __repr__(self):
+        if self.dom.iscont:
+            return "Random variable on " + str(self.dom)
+        return " | ".join(
+            "{}: {:{spec}}".format(
+                ",".join([str(d) for d in self.dom.disc_get(indices)]),
+                self.array[indices],
+                spec=float_format_spec)
+            for indices in np.ndindex(*self.shape))
+
+    def __and__(self, other):
+        """Sequential conjunction (pointwise multiplication)."""
+        check_dom_match(self.dom, other.dom)
+        return type(self)(self.array * other.array, self.dom)
+
+    def exp(self, stat):
+        check_dom_match(self.dom, stat.dom)
+        if self.dom.iscont:
+            return Fun.vect_integrate(self.array * stat.array).sum()
+        return np.inner(self.array.ravel(), stat.array.ravel())
+
+    def var(self, stat, exp=None):
+        check_dom_match(self.dom, stat.dom)
+        if exp is None:
+            exp = self.exp(stat)
+        if self.dom.iscont:
+            a = np.empty_like(self.array, dtype=float)
+            _var_integral_u(self.array, stat.array, exp, out=a)
+            return a.sum()
+        a = self.array - exp
+        a = a * a
+        return np.inner(a.ravel(), stat.array.ravel())
+
+    def stdev(self, stat, exp=None):
+        return math.sqrt(self.var(stat, exp=exp))
 
 
-class Predicate(StateOrPredicate):
+class Predicate(RandVar):
     """Predicates."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -670,15 +713,6 @@ class Predicate(StateOrPredicate):
                 spec=float_format_spec)
             for indices in np.ndindex(*self.shape))
 
-    def __and__(self, other):
-        """Sequential conjunction (pointwise multiplication)."""
-        check_dom_match(self.dom, other.dom)
-        return Predicate(self.array * other.array, self.dom)
-
-    def __or__(self, other):
-        """De Morgan dual of sequential conjunction."""
-        return ~(~self & ~other)
-
     def ortho(self):
         """Orthosupplement."""
         if self.dom.iscont:
@@ -689,6 +723,10 @@ class Predicate(StateOrPredicate):
 
     def __invert__(self):
         return self.ortho()
+
+    def __or__(self, other):
+        """De Morgan dual of sequential conjunction."""
+        return ~(~self & ~other)
 
     def as_chan(self, cod=[True, False]):
         cod = asdom(cod)
