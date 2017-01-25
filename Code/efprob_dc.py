@@ -34,8 +34,7 @@ use_lru_cache = True
 float_format_spec = ".3g"
 
 
-def prod(iterable):
-    """Product of elements in iterable."""
+def _prod(iterable):
     return reduce(operator.mul, iterable, 1)
 
 
@@ -859,8 +858,8 @@ class Channel:
         self.array = array
         self.dom = dom
         self.cod = cod
-        self.dom_size = prod(self.dom_shape)
-        self.cod_size = prod(self.cod_shape)
+        self.dom_size = _prod(self.dom_shape)
+        self.cod_size = _prod(self.cod_shape)
 
     @staticmethod
     def _fromklmap_getarray(klmap, cod, dom_disc_a):
@@ -1058,7 +1057,7 @@ def idn(dom):
     dom = asdom(dom)
     if dom.iscont:
         raise ValueError("Cannot make a continuous identity channel")
-    dom_size = prod(len(s) for s in dom)
+    dom_size = _prod(len(s) for s in dom)
     return Channel(np.eye(dom_size), dom, dom)
 
 
@@ -1080,8 +1079,8 @@ def swap(dom1, dom2):
     dom2 = asdom(dom2)
     if dom1.iscont or dom2.iscont:
         raise ValueError("Cannot make a continuous swap channel")
-    size1 = prod(len(s) for s in dom1)
-    size2 = prod(len(s) for s in dom2)
+    size1 = _prod(len(s) for s in dom1)
+    size2 = _prod(len(s) for s in dom2)
     array = np.zeros((size2, size1, size1, size2))
     for n1 in range(size1):
         for n2 in range(size2):
@@ -1093,7 +1092,7 @@ def copy(dom):
     dom = asdom(dom)
     if dom.iscont:
         raise ValueError("Cannot make a continuous copy channnel")
-    size = prod(len(s) for s in dom)
+    size = _prod(len(s) for s in dom)
     array = np.zeros((size, size, size))
     for n in range(size):
         array[n, n, n] = 1.0
@@ -1338,8 +1337,8 @@ def const_state_or_pred(cls, value, subdom, dom=None):
 
 def uniform_state(subdom, dom=None):
     subdom = asdom(subdom)
-    size = prod(len(s) for s in subdom.disc)
-    vol = prod(u - l for l, u in subdom.cont)
+    size = _prod(len(s) for s in subdom.disc)
+    vol = _prod(u - l for l, u in subdom.cont)
     if not math.isfinite(vol):
         raise ValueError("Unbounded domain")
     value = 1.0 / (size * vol)
