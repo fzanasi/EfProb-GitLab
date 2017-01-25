@@ -1333,6 +1333,7 @@ randvar = RandVar
 
 state_fromfun = State.fromfun
 pred_fromfun = Predicate.fromfun
+randvar_fromfun = RandVar.fromfun
 chan_fromklmap = Channel.fromklmap
 chan_from_states = Channel.from_states
 
