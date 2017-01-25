@@ -595,9 +595,12 @@ class State(StateLike):
             v = Fun.vect_integrate(array).sum()
         else:
             v = array.sum()
-        if v == 0.0:
-            raise ValueError("Zero validity making "
-                             "conditioning impossible")
+        if v == 0:
+            raise ValueError("Zero validity")
+        if v < 0:
+            raise ValueError("Negative validity")
+        if math.isinf(v):
+            raise ValueError("Infinite validity")
         if self.dom.iscont:
             return State(Fun.u_sdiv(array, v), self.dom)
         return State(array / v, self.dom)
