@@ -165,6 +165,15 @@ def operations_on_predicates():
     print("* Sequential conjunction of two probabilistic predicates")
     print( probabilistic_pred(0.2,0.8) & probabilistic_pred(0.4, 0.6) )
 
+    print("\n===\n")
+
+    print("* Weakening illustration")
+    s = cflip(0.4)
+    t = ket(0,0)
+    p = unit_pred(2,1)
+    print( s >= p )
+    print( s @ t >= p @ truth(2,2) )
+
 
 
 def validity():
@@ -215,17 +224,6 @@ def validity():
 
     print("\n===\n")
 
-    print("* Linda example")
-    s = vector_state(0.987, -0.1564)
-    feminist = unit_pred(2,0)
-    bankteller = vector_pred(cos(0.4 * pi), sin(0.4 * pi))
-    print( s >= feminist )
-    print( s >= bankteller )
-    print( s >= feminist & bankteller )
-    print( s >= bankteller | feminist )
-
-    print("\n===\n")
-
     print("* Bell table")
     v1 = vector_pred(1/sqrt(2), 1/sqrt(2))
     A1 = v1
@@ -261,70 +259,62 @@ def conditioning():
 
     print("* polarisation illustration, in several steps")
     s = random_state(2)
-    vert = unit_pred(2,0)
-    hor = unit_pred(2,1)
-    diag = plus.as_pred()
-    print( s >= vert )
+    vert_filt = unit_pred(2,0)
+    hor_filt = unit_pred(2,1)
+    diag_filt = plus.as_pred()
+    print( s >= vert_filt )
+    s_vert = s / vert_filt
 
     print("\n===\n")
 
-    print( s / vert >= vert )
-    print( s / vert >= hor )
+    print( s_vert >= vert_filt )
+    print( s_vert >= hor_filt )
 
     print("\n===\n")
 
-    print( s / vert >= diag & hor )
+    print( s_vert >= diag_filt & hor_filt )
 
     print("\n===\n")
 
-    print( s / vert >= hor & diag )
+    print( s_vert >= hor_filt & diag_filt )
 
     print("\n===\n")
 
-    print( s / vert / diag >= hor )
+    print( s_vert / diag_filt >= hor_filt )
 
     print("\n===\n")
 
     print("* Failure of the law of total probability")
 
-    print( s >= hor )
-    print( (s / diag >= hor) * (s >= diag) + 
-           (s / ~diag >= hor) * (s >= ~diag) )
-    print( (s >= diag & hor) + (s >= ~diag & hor) )
+    print( s >= hor_filt )
+    print( (s / diag_filt >= hor_filt) * (s >= diag_filt) + 
+           (s / ~diag_filt >= hor_filt) * (s >= ~diag_filt) )
+    print( (s >= diag_filt & hor_filt) + (s >= ~diag_filt & hor_filt) )
 
 
-def weakening():
+def random_variables():
 
-    print("\nSubsection: Weakening\n")
+    print("\nSubsection: Operations on random variables\n")
 
-    print("* Predicate mismatch, raising an exception")
-    s = cflip(0.4)
-    t = ket(0,0)
-    p = unit_pred(2,1)
-    print( s >= p )
-    try:
-        print( s @ t >= p )
-    except:
-        print("Exception")
+    print("* Types of scalar multiplications")
+    print( type( ket(0) ) )
+    print( type( 0.5 * ket(0).as_pred() ) )
+    print( type( 5 * ket(0).as_pred() ) )
 
     print("\n===\n")
 
-    print("* Domain of joint predicate")
-    print( s.dom )
-    print( p.dom )
-    print( (s @ t).dom )
+    print("* Types of scalar additions")
+    print( type( unit_pred(2,0) ) )
+    print( type( unit_pred(2,0) + unit_pred(2,0) ) )
 
     print("\n===\n")
 
-    print("* Weakening illustration")
-    print( s @ t >= p @ truth(2,2) )
-
-    print("\n===\n")
-
-    print("* Weakening reformulated")
-    print( t @ s @ t >= truth(*t.dom.dims) @ p @ truth(*t.dom.dims) )
-
-
+    print("* Dice variance, quantum style")
+    dice = uniform_probabilistic_state(6)
+    points = 1 * unit_pred(6,0) + 2 * unit_pred(6,1) + 3 * unit_pred(6,2) \
+             + 4 * unit_pred(6,3) + 5 * unit_pred(6,4) + 6 * unit_pred(6,5)
+    print( dice >= points )
+    print( points.variance(dice) )
 
 
 def state_transformation():
@@ -366,79 +356,6 @@ def predicate_transformation():
     print( (x_chan * hadamard) >> s >= p )
     print( s >= hadamard << (x_chan << p) )
     print( s >= (x_chan * hadamard) << p )
-
-    print("\n===\n")
-
-    print("* Man's car preferences")
-    B = unit_pred(3, 0)
-    A = unit_pred(3, 1)
-    C = unit_pred(3, 2)
-    M = vector_state(-0.6963, 0.6963, 0.1741)
-    print("Probability of man choosing Audi: ", M >= A )
-    print("Probability of man choosing BMW: ", M >= B )
-    print("Probability of man choosing Cadillac: ", M >= C )
-    print("Probability of man choosing Audi or BMW: ", M >= A | B)
-
-    print("\n===\n")
-
-    print("* Woman's car preferences")
-    U = np.array([[1/sqrt(2), 1/2, -1/2], 
-                  [1/sqrt(2), -1/2, 1/2], 
-                  [0, 1/sqrt(2), 1/sqrt(2)]])
-    ch = channel_from_unitary(U, [3], [3])
-    W = ch >> M
-    print( W >= B )
-    print( W >= A )
-    print( W >= C )
-
-    print("\n===\n")
-
-    print("* Man first thinks his wife prefers the Cadillac")
-    print( M >= (ch << C) & B )
-    print( M >= (ch << C) & C, M >= C )
-
-    print("\n===\n")
-
-    print("* Woman first thinks her man prefers the BMW then she prefers the Cadillac")
-    print( M >= B & (ch << C) )
-
-    print("\n===\n")
-
-    print("* Man and woman force themselves to make the same choice")
-    js = (M @ W) / (A @ A | B @ B | C @ C)
-    print( js >= A @ A)
-    print( js >= B @ B)
-    print( js >= C @ C)
-    print("Same numbers, obtained via normalisation")
-    a = (M >= A) * (W >= A) + (M >= B) * (W >= B) + (M >= C) * (W >= C)
-    print( (M >= A) * (W >= A) / a)
-    print( (M >= B) * (W >= B) / a)
-    print( (M >= C) * (W >= C) / a)
-
-
-def random_variables():
-
-    print("\nSubsection: Operations on random variables\n")
-
-    print("* Types of scalar multiplications")
-    print( type( ket(0) ) )
-    print( type( 0.5 * ket(0).as_pred() ) )
-    print( type( 5 * ket(0).as_pred() ) )
-
-    print("\n===\n")
-
-    print("* Types of scalar additions")
-    print( type( unit_pred(2,0) ) )
-    print( type( unit_pred(2,0) + unit_pred(2,0) ) )
-
-    print("\n===\n")
-
-    print("* Dice variance, quantum style")
-    dice = uniform_probabilistic_state(6)
-    points = 1 * unit_pred(6,0) + 2 * unit_pred(6,1) + 3 * unit_pred(6,2) \
-             + 4 * unit_pred(6,3) + 5 * unit_pred(6,4) + 6 * unit_pred(6,5)
-    print( dice >= points )
-    print( points.variance(dice) )
 
 
 def structural_channels():
@@ -764,12 +681,11 @@ def main():
     # basic_states()
     # predicates()
     # operations_on_predicates()
-    validity()
+    # validity()
     # conditioning()
-    # weakening()
+    random_variables()
     # state_transformation()
     # predicate_transformation()
-    # random_variables()
     # structural_channels()
     # measurement()
     # teleportation_and_superdensecoding()

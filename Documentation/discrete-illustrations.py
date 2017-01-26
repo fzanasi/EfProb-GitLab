@@ -264,6 +264,12 @@ def random_variables():
 
     print("\n===\n")
 
+    print("* alternative umbrella sales expectation")
+    umbrella_sales_alt_rv = 100 * Predicate([1,0], [True,False]) + (-20) * Predicate([0,1], [True,False])
+    print( umbrella_sales_alt_rv.exp(rain_state) )
+
+    print("\n===\n")
+
     print("* two-dice expectation")
     fdice = uniform_state([1,2,3,4,5,6])
     twodice = fdice @ fdice

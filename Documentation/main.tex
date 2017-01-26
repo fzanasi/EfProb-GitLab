@@ -101,6 +101,7 @@
 \usepackage{refcount}
 \usepackage{url}
 \usepackage{xspace} 
+\usepackage{MnSymbol}
 %\usepackage{nccmath}
 %\usepackage{fancybox}
 %\usepackage{xypic}
@@ -1451,13 +1452,40 @@ The validity \pythoninline{s >= p} is defined only when the state
 domain. Often it happens that the domain of the state is `broader'
 than the domain of the predicate. In that case we need to `widen' the
 predicate. This is called
-\emph{weakening}.\index{weakening!of~discrete~predicates} Weakening is
-a structural rule in logic that makes it possible to ``extend the
-context''. In general, it allows you to use a predicate that is
-defined in a context of assumptions $\Gamma$, also in an enlarged
-context $\Gamma,\Delta$. Often, weakening is done implicitly. However,
-here we have to deal with weakening explicitly, namely via parallel
-conjunction with truth.
+\emph{weakening}.\index{weakening!of~discrete~predicates} 
+
+More generally, if you have defined a term or a predicate in a context
+of assumptions $\Gamma$, then you can also use this same term or
+predicate in an enlarged context $\Gamma,\Delta$. Often, weakening is
+done implicitly. However, in certain settings weakening requires more
+care.
+\begin{enumerate}
+\item In a \emph{linear} setting, like in linear logic, weakening does
+  not exist. In the current setting of quantum logic, we do have
+  weakening, since discarding is possible in a quantum
+  setting.\sidenote{The companion of weakening is
+    \emph{contraction},\index{contraction} making it possible to move
+    someting from a context $\Gamma,\Gamma$ to a context
+    $\Gamma$. This involves copying of resources, which is not
+    possible in a quantum setting, because of
+    no-cloning. Semantically, weakening requires projections
+    $\Gamma,\Delta \rightarrow \Gamma$, whereas contraction requires
+    diagonals $\Gamma \rightarrow \Gamma,\Gamma$.}
+
+\item Usually in logic, weakening is handled automatically, via
+  variables, see the the next illustration.
+$$\begin{prooftree}
+x:A \vdash M(x):B
+\justifies
+x:A, y:C \vdash M(x):B
+\end{prooftree}$$
+
+\noindent The term $M(x)$, depending on variable $x:A$, is weakened to
+a larger context with an additional variable $y:B$. In doing so the
+term $M$ does not change. This may seem obvious, but in a formalism
+without variables, like in the current embedded language \EfProb, we
+need to make clear somehow that $M$ has moved.
+\end{enumerate}
 
 Here is an example.
 \begin{python}
@@ -1482,7 +1510,14 @@ domain.
 
 Weakening involves some bookkeeping, see for instance
 Example~\ref{ex:churchmedical} below. It is not difficult, but one has
-to be aware of it, in order to avoid error messages.
+to be aware of it, in order to avoid error messages. The conclusion is:
+\begin{quote}
+Weakening of a predicate works via parallel conjunction with truth,
+either on the left or on the right. One then extends the type of a
+predicate so that it matches a larger state, without affecting the
+validity of the predicate.
+\end{quote}
+
 
 
 
@@ -3598,6 +3633,8 @@ We shall discuss the following operations on predicates.
 \item parallel conjunction \pythoninline{@}
 
 \item sequential conjunction \pythoninline{\&}
+
+\item weakening.
 \end{itemize}
 
 \noindent The first three points capture the \emph{effect module}
@@ -3780,6 +3817,35 @@ is simply pointwise multiplication --- and thus commutative.
 later on, for instance in Example~\ref{ex:polarisation}.
 
 
+\paragraph{Weakening}
+Weakening\index{weakening!of~quantum~predicates} is a structural rule
+in logic that makes it possible to ``widen the context'', see the
+general explanation at the end of
+Subsection~\ref{subsec:dpred:validity} for discrete probability. It
+works the same way in quantum probability: we have to deal with
+weakening explicitly, namely via parallel conjunction with truth:
+\begin{python}
+>>> t = ket(0,0)
+>>> p = unit_pred(2,1)
+>>> s >= p
+0.6
+>>> s @ t >= p @ truth(2,2)
+0.6
+\end{python}
+
+%% \noindent Weakening thus involves some burocracy. One has to be
+%% careful to provide the truth predicate with the appropriate
+%% domain. One way of doing this is simply by extracting it form the
+%% additional state components, as in:\sidenote{The \pythoninline{*} is
+%%   needed in \pythoninline{truth(*t.dom.dims)} since the argument of
+%%   \pythoninline{truth} is a list, which has to be converted into a
+%%   tuple by \Python.}
+%% \begin{python}
+%% >>> t @ s @ t >= truth(*t.dom.dims) @ p @ truth(*t.dom.dims)
+%% 0.6
+%% \end{python}
+
+
 
 \subsection{Validity}\label{subsec:qpred:validity}
 
@@ -3953,6 +4019,18 @@ low-level calculations via inner products in the Hilbert space
 $\CN^2$. All that complexity is hidden here.  Similar illustrations
 are given in Examples~\ref{ex:carpreference} and~\ref{??}.
 \end{example}
+
+    print("* Linda example")
+    s = vector_state(0.987, -0.1564)
+    feminist = unit_pred(2,0)
+    bankteller = vector_pred(cos(0.4 * pi), sin(0.4 * pi))
+    print( s >= feminist )
+    print( s >= bankteller )
+    print( s >= feminist & bankteller )
+    print( s >= bankteller | feminist )
+
+    print("\n===\n")
+
 }
 
 
@@ -3988,7 +4066,10 @@ The valdities of the parallel conjunctions of the predicates
 Bell-tables\index{Bell!table} that play an important role in
 non-locality\index{non-locality} in quantum foundations, see
 \eg\cite{AbramskyB11} for more information. The table below summarises
-the validities of these combinations.
+the validities of the 4-tuples of predicates, forming a test:
+$$\mbox{\pythoninline{Ai @ Bj, Ai @ ~Bj, ~Ai @ Bj, ~Ai @ ~Bj}}$$
+
+\noindent for $i,j \in \{1,2\}$.
 
 \bigskip
 
@@ -4001,64 +4082,77 @@ the validities of these combinations.
    {\pythoninline{bell00 >= ~A1 @ ~B1}}
 \\
 \hline
+\hline
 0.5 & -1.11022302463e-16 & -1.11022302463e-16 & 0.5
-\end{tabular}
-\end{center}
-\end{fullwidth}
+\\
+\hline
+& & & \\
+%% \end{tabular}
+%% \end{center}
+%% \end{fullwidth}
 
-\smallskip
+%% \smallskip
 
-\noindent Using the predicate \pythoninline{B2} instead of
-\pythoninline{B1} yields:
+%% \noindent Using the predicate \pythoninline{B2} instead of
+%% \pythoninline{B1} yields:
 
-\smallskip
+%% \smallskip
 
-\begin{fullwidth}
-\begin{center}
-\begin{tabular}{c|c|c|c}
+%% \begin{fullwidth}
+%% \begin{center}
+%% \begin{tabular}{c|c|c|c}
 {\pythoninline{bell00 >= A1 @ B2}} &
    {\pythoninline{bell00 >= A1 @ ~B2}} &
    {\pythoninline{bell00 >= ~A1 @ B2}} &
    {\pythoninline{bell00 >= ~A1 @ ~B2}}
 \\
 \hline
+\hline
 0.375 & 0.125 & 0.125 & 0.375
-\end{tabular}
-\end{center}
-\end{fullwidth}
+\\
+\hline
+& & & \\
+%% \end{tabular}
+%% \end{center}
+%% \end{fullwidth}
 
-\smallskip
+%% \smallskip
 
-\noindent By changing \pythoninline{A1} into \pythoninline{A2} one
-gets:
+%% \noindent By changing \pythoninline{A1} into \pythoninline{A2} one
+%% gets:
 
-\smallskip
+%% \smallskip
 
-\begin{fullwidth}
-\begin{center}
-\begin{tabular}{c|c|c|c}
+%% \begin{fullwidth}
+%% \begin{center}
+%% \begin{tabular}{c|c|c|c}
 {\pythoninline{bell00 >= A2 @ B1}} &
    {\pythoninline{bell00 >= A2 @ ~B1}} &
    {\pythoninline{bell00 >= ~A2 @ B1}} &
    {\pythoninline{bell00 >= ~A2 @ ~B1}}
 \\
 \hline
+\hline
 0.375 & 0.125 & 0.125 & 0.375
-\end{tabular}
-\end{center}
-\end{fullwidth}
+\\
+\hline
+& & & \\
+%% \end{tabular}
+%% \end{center}
+%% \end{fullwidth}
 
-\smallskip
+%% \smallskip
 
-\noindent Finally:
-\begin{fullwidth}
-\begin{center}
-\begin{tabular}{c|c|c|c}
+%% \noindent Finally:
+%% \begin{fullwidth}
+%% \begin{center}
+%% \begin{tabular}{c|c|c|c}
 {\pythoninline{bell00 >= A2 @ B2}} &
    {\pythoninline{bell00 >= A2 @ ~B2}} &
    {\pythoninline{bell00 >= ~A2 @ B2}} &
    {\pythoninline{bell00 >= ~A2 @ ~B2}}
 \\
+\hline
 \hline
 0.125 & 0.375 & 0.375 & 0.125
 \end{tabular}
@@ -4116,12 +4210,12 @@ be illustrated next.
 \label{ex:polarisation}
 Polarised light filters are a great illustration of the `weirdness' of
 the quantum world. Briefly, if we first polarise\index{polarisation} a
-light source vertically as $\uparrow$, and then check how much
-horizontally polarised light $\rightarrow$ is visible, we see nothing,
-of course. But if one puts a diagonally oriented filter $\nearrow$
-inbetween $\uparrow$ and $\rightarrow$, light does go trough the
-sequence of filters $\uparrow, \nearrow, \rightarrow$, namely one
-quarter of it.
+light source vertically as $\updownarrow$, and then check how much
+horizontally polarised light $\leftrightarrow$ is visible, we see
+nothing, of course. But if one puts a diagonally oriented filter
+$\neswarrow$ inbetween $\updownarrow$ and $\leftrightarrow$, light
+does go trough the sequence of filters $\updownarrow, \neswarrow,
+\leftrightarrow$, namely one quarter of it.
 
 Here we describe this situation via condtioning of states,
 following~\cite{Jacobs15}. For more background information see
@@ -4130,11 +4224,12 @@ following~\cite{Jacobs15}. For more background information see
 We start with a random qubit state, and the relevant predicates.
 \begin{python}
 >>> s = random_state(2)
->>> vert = unit_pred(2,0)
->>> hor = unit_pred(2,1)
->>> diag = plus
->>> s >= vert
+>>> vert_filt = unit_pred(2,0)
+>>> hor_filt = unit_pred(2,1)
+>>> diag_filt = plus.as_pred()
+>>> s >= vert_filt
 0.574918520238
+>>> s_vert = s / vert_filt
 \end{python}
 
 \noindent The latter probability tells how much of the light from the
@@ -4142,9 +4237,9 @@ arbitrary source (state) is horizontally polarised.  We proceed to
 condition the state. This corresponds to putting a horizontally
 polarised filter right after the (random) source:
 \begin{python}
->>> s / vert >= vert
+>>> s_vert >= vert_filt
 1.0
->>> s / vert >= hor
+>>> s_vert >= hor_filt
 0.0
 \end{python}
 
@@ -4156,14 +4251,14 @@ Next we ask for the probability of light coming through if we first
 look at the vertically polarised light diagonally \emph{and then}
 horizontally:
 \begin{python}
->>> s / vert >= diag & hor
+>>> s_vert >= diag_filt & hor_filt
 0.25
 \end{python}
 
 \noindent Now (approximately) one quarter is horizontally polarised!
 If we do this in the other order, we still see nothing:
 \begin{python}
->>> s / vert >= hor & diag
+>>> s_vert >= hor_filt & diag_filt
 0.0
 \end{python}
 
@@ -4171,7 +4266,7 @@ If we do this in the other order, we still see nothing:
 that is, via conditioning once more --- and then ask how much of the
 light is horizontally polarised we get a probability of one half:
 \begin{python}
->>> s / vert / diag >= hor
+>>> s_vert / diag_filt >= hor_filt
 0.5
 \end{python}
 
@@ -4188,125 +4283,34 @@ Example~\ref{ex:dtotalprobability}. For instance:
 \noindent The `law of total probability' formulation gives a different
 outcome:
 \begin{python}
->>> (s / diag >= hor) * (s >= diag) + (s / ~diag >= hor) * (s >= ~diag)
+>>> (s / diag_filt >= hor_filt) * (s >= diag_filt) + 
+...    (s / ~diag_filt >= hor_filt) * (s >= ~diag_filt)
 0.5
 \end{python}
 
 \noindent Since Baye's rule~\eqref{eqn:qbayes} does hold in the
 quantum world, the latter probability can also be obtained as:
 \begin{python}
->>> (s >= diag & hor) + (s >= ~diag & hor)
+>>> (s >= diag_filt & hor_filt) + (s >= ~diag_filt & hor_filt)
 0.5
 \end{python}
 \end{example}
 
+%% By now we can perform non-trivial constructions with states and
+%% predicates. Here is an example. Let \pythoninline{s} be a ``binary''
+%% state with type \pythoninline{[n,m]} and let \pythoninline{p} be a
+%% predicate on \pythoninline{n}. We can extend/weaken \pythoninline{p}
+%% to a predicate \pythoninline{p @ truth(m)} on \pythoninline{[n,m]},
+%% condition \pythoninline{s} with it, and take the resulting second
+%% marginal in:
+%% \begin{python}
+%% (s / (p @ truth(m))) % [0,1]
+%% \end{python}
 
-\subsection{Weakening}\label{subsec:qpred:weakening}
-
-Weakening\index{weakening!of~quantum~predicates} is a structural rule
-in logic that makes it possible to ``extend the context''. This means
-that if you have defined a term or a predicate in a context of
-assumptions $\Gamma$, then you can also use this same term or
-predicate in an enlarged context $\Gamma,\Delta$. Often, weakening is
-done implicitly. However, in certain settings weakening requires more
-care.
-\begin{enumerate}
-\item In a \emph{linear} setting, like in linear logic, weakening does
-  not exist. In the current setting of quantum logic, we do have
-  weakening, since discarding is possible in a quantum
-  setting.\sidenote{The companion of weakening is
-    \emph{contraction},\index{contraction} making it possible to move
-    someting from a context $\Gamma,\Gamma$ to a context
-    $\Gamma$. This involves copying of resources, which is not
-    possible in a quantum setting, because of
-    no-cloning. Semantically, weakening requires projections
-    $\Gamma,\Delta \rightarrow \Gamma$, whereas contraction requires
-    diagonals $\Gamma \rightarrow \Gamma,\Gamma$.}
-
-\item Usually in logic, weakening is handled automatically, via
-  variables, see the the next illustration.
-$$\begin{prooftree}
-x:A \vdash M(x):B
-\justifies
-x:A, y:C \vdash M(x):B
-\end{prooftree}$$
-
-\noindent The term $M(x)$, depending on variable $x:A$, is weakened to
-a larger context with an additional variable $y:B$. In doing so the
-term $M$ does not change. This may seem obvious, but in a formalism
-without variables, like in the current embedded language \EfProb, we
-need to make clear somehow that $M$ has moved.
-\end{enumerate}
-
-\noindent Here is a concrete example.
-\begin{python}
->>> s = cflip(0.4)
->>> t = ket(0,0)
->>> p = unit_pred(2,1)
->>> s >= p
-0.6
->>> s @ t >= p
-...
-Exception: State and predicate with different dimensions in validity
-\end{python}
-
-\noindent We see that we can ask for the validity \pythoninline{s >= p}
-because the state \pythoninline{s} and the predicate \pythoninline{p}
-have the same type, namely \pythoninline{[2]}. But asking for
-the validiy of \pythoninline{p} in the `extended context' given by the
-product state \pythoninline{s @ t} leads to an exception: there is
-a mismatch. We can make this explicit by asking for the dimensions:
-\begin{python}
->>> s.dom
-[2]
->>> p.dom
-[2]
->>> (s @ t).dom
-[2, 2, 2]
-\end{python}
-
-\noindent The solution is to put a truth predicate in parallel to the
-predicate \pythoninline{p}, as in:
-\begin{python}
->>> s @ t >= p @ truth(2,2)
-0.6
-\end{python}
-
-\noindent The conclusion is:
-\begin{quote}
-Weakening of a predicate works via parallel conjunction with truth,
-either on the left or on the right. One then extends the type of a
-predicate so that it matches a larger state, without affecting the
-validity of the predicate.
-\end{quote}
-
-\noindent Weakening thus involves some burocracy. One has to be
-careful to provide the truth predicate with the appropriate
-domain. One way of doing this is simply by extracting it form the
-additional state components, as in:\sidenote{The \pythoninline{*} is
-  needed in \pythoninline{truth(*t.dom.dims)} since the argument of
-  \pythoninline{truth} is a list, which has to be converted into a
-  tuple by \Python.}
-\begin{python}
->>> t @ s @ t >= truth(*t.dom.dims) @ p @ truth(*t.dom.dims)
-0.6
-\end{python}
-
-By now we can perform non-trivial constructions with states and
-predicates. Here is an example. Let \pythoninline{s} be a ``binary''
-state with type \pythoninline{[n,m]} and let \pythoninline{p} be a
-predicate on \pythoninline{n}. We can extend/weaken \pythoninline{p}
-to a predicate \pythoninline{p @ truth(m)} on \pythoninline{[n,m]},
-condition \pythoninline{s} with it, and take the resulting second
-marginal in:
-\begin{python}
-(s / (p @ truth(m))) % [0,1]
-\end{python}
-
-\noindent This yields a state of dimension \pythoninline{m}, which
-shows in the second coordinate the `crossover' influence of
-conditioning with predicate \pythoninline{p} in the first coordinate.
-This is a common construction.
+%% \noindent This yields a state of dimension \pythoninline{m}, which
+%% shows in the second coordinate the `crossover' influence of
+%% conditioning with predicate \pythoninline{p} in the first coordinate.
+%% This is a common construction.
 
 
 \section{Random variables}\label{sec:qrandvar}
@@ -4314,16 +4318,17 @@ This is a common construction.
 So far we have seen states and predicates. States are density
 matrices: positive square matrices (operators) whose trace is
 one. Predicates are effects: positive square matrices below the
-identity. States form a subclass of predicates.  In the \EfProb
-library predicates are themselves a subclass, namely of random
-variables. Mathematically the latter are
+identity. States can be turned into predicates via their
+\pythoninline{as\_pred()} method.  In the \EfProb library predicates
+form a subclass, namely of random variables. Mathematically the latter
+are
 \emph{self-adjoint}\index{self-adjoint~matrix}\index{matrix!self-adjoint~--}
 square matrices: they are equal to their conjugate transpose. Such
 operators are also called
 \emph{Hermitian}.\index{Hermitian~matrix}\index{matrix!Hermitian~--}
-Thus we have the following hierarchy of classes in \Python,
+Thus we have the following structure of classes in \Python,
 corresponding to inclusions between sets of associated matrices.
-$$\xymatrix{
+$$\xymatrix@C+1pc{
 \shabox{\begin{tabular}{c}
 \textbf{Random Variables} \\[-.5em]
 (self-adjoint matrices)
@@ -4333,24 +4338,24 @@ $$\xymatrix{
 \textbf{Predicates} \\[-.5em]
 (effects)
 \end{tabular}}\ar@{^{(}->}[u]
-\\
+& 
 \shabox{\begin{tabular}{c}
 \textbf{States} \\[-.5em]
 (density matrices)
-\end{tabular}}\ar@{^{(}->}[u]
+\end{tabular}}\ar@{..>}[l]_-{\mbox{\pythoninline{as\_pred()}}}
 }$$
 
-\noindent These conversions are performed implicitly. As we already
-saw, a state is a predicate. Predicates are closed under scalar
+\noindent These conversions from predicates to random variables is
+performed implicitly. Predicates are closed under scalar
 multiplication with a number from the unit interval. Random variables
 are closed under scalar multiplication with arbitrary real --- but not
 complex --- numbers. Hence we get the following type information:
 \begin{python}
 >>> type( ket(0) )
 <class 'efprob_qu.State'>
->>> type( 0.5 * ket(0) )
+>>> type( 0.5 * ket(0).as_pred() )
 <class 'efprob_qu.Predicate'>
->>> type( 5 * ket(0) )
+>>> type( 5 * ket(0).as_pred() )
 <class 'efprob_qu.RandVar'>
 \end{python}
 
@@ -4380,27 +4385,22 @@ cast to a random variable:
 <class 'efprob_qu.RandVar'>
 \end{python}
 
-\noindent The sequential conjunction \pythoninline{\&} and disjunction
-\pythoninline{|} operations on predicates do not exist for random
-variables.
-
-Random variables have a domain like predicates and states. Random
-variable can be put in parallel via \pythoninline{@}. Also
-marginalisation exists for random variables, via selectors like
-\pythoninline{[1,0,1]}, as described in
-Subsection~\ref{subsec:qstate:operations}. In fact, in the \EfProb
-library, parallel product and marginalisation are defined for the
-superclass of random variable, and then inherited by the subclasses of
-predicates and states.
+\noindent Random variables have a domain like predicates and
+states. Random variable can be put in parallel via
+\pythoninline{@}. In fact, in the \EfProb library, parallel product
+\pythoninline{@} is defined for the superclass of random variable, and
+then inherited by the subclass of predicates.
 
 Validity \pythoninline{s >= rv} in state \pythoninline{s} is defined
 for a random variable \pythoninline{rv} and not just for a predicate.
 This validity is what is usually called the
-expectation.\index{expectation!of~a~quantum~random~variable} But,
-in contrast, conditioning \pythoninline{s / p} of a state
+expectation.\index{expectation!of~a~quantum~random~variable} But, in
+contrast, conditioning \pythoninline{s / p} of a state
 \pythoninline{s} is defined only for a predicate \pythoninline{p}, and
 not for a random variable. These types are checked in the \EfProb
-implementation.
+implementation. Also, the sequential conjunction \pythoninline{\&} and
+disjunction \pythoninline{|} operations on predicates do not exist for
+random variables. They exist only for predicates.
 
 A new operation that exists on random variables is
 \emph{variance}.\index{variance!quantum~--} We shall illustrate
@@ -4456,7 +4456,7 @@ $$\xymatrix@C+1pc{
 channel can be accessed via the \pythoninline{dom} attribute of
 a channel. Similarly, the type $[m_{1}, \ldots, m_{b}]$ is
 available as \pythoninline{cod} attribute. The channel
-is represented as a \emph{nested} matrix, given by:
+is represented in \EfProb as a \emph{nested} matrix, given by:
 \begin{itemize}
 \item an $m\times m$ matrix, where $m = m_{1} \cdot \ldots \cdot
   m_{b}$, whose entries are:
@@ -4488,7 +4488,7 @@ can be seen as:
 \end{equation}
 
 \noindent This matrix\index{matrix!of a quantum channel} can be
-accessed via an attribute, as \pythoninline{c.array} for a channel
+accessed via an attribute, as in \pythoninline{c.array} for a channel
 \pythoninline{c}.
 
 The channel implementation involves quite a bit of
@@ -4561,19 +4561,22 @@ s \models c \ll p.
 \end{array}
 \end{equation}
 
+\noindent This is sometimes called the transformation validity
+equation.
+
 
 \subsection{Channels from unitary matrices}\label{subsec:qchannel:unitaries}
 
 An $n\times n$ complex matrix $U$ is called \emph{unitary} if its
-conjugate transpose $U^*$ is its inverse. Such $n\times n$ unitary matrix
-gives rise to a quantum channel $[n] \rightarrow [n]$, given by a
-`Choi' matrix of the following form:
+conjugate transpose $U^\dag$ is its inverse. Such $n\times n$ unitary
+matrix gives rise to a quantum channel $[n] \rightarrow [n]$, given by
+a `Choi' matrix of the following form:
 $$\left(\begin{array}{ccc}
-UE_{11}U^{*} & \quad\cdots\quad & UE_{n1}U^{*}
+UE_{11}U^{\dag} & \quad\cdots\quad & UE_{n1}U^{\dag}
 \\
 \vdots & & \vdots
 \\
-UE_{1n}U^{*} & \quad\cdots\quad & UE_{nn}U^{*}
+UE_{1n}U^{\dag} & \quad\cdots\quad & UE_{nn}U^{\dag}
 \end{array}\right)
 \qquad\mbox{where}\qquad
 {\begin{array}{rcl}
@@ -4582,25 +4585,25 @@ E_{ij}
 \ket{i}\bra{j}.
 \end{array}}$$
 
-\noindent The matrices $E_{ij}$ have a $1$ at position $(i,j)$ and
-zero's everywhere else. They form the basis vectors of the vector
-space $\Mat_{n}$ of $n\times n$ matrices.
+\noindent The matrices $E_{ij} = \ket{i}\bra{j}$ have a $1$ at
+position $(i,j)$ and zero's everywhere else. They form the basis
+vectors of the vector space $\Mat_{n}$ of $n\times n$ matrices.
 
 In this way the \EfProb library defines a number of standard
 channels, like:
 \begin{python}
 x_chan = channel_from_unitary(np.array([[0,1],
-                                        [1,0]]), [2])
+                                        [1,0]]), [2], [2])
 y_chan = channel_from_unitary(np.array([[0,-complex(0, 1)],
-                                        [complex(0,1),0]]), [2])
+                                        [complex(0,1),0]]), [2], [2])
 z_chan = channel_from_unitary(np.array([[1,0],
-                                        [0,-1]]), [2])
+                                        [0,-1]]), [2], [2])
 hadamard = channel_from_unitary((1/sqrt(2)) * np.array([ [1, 1],
-                                                              [1, -1] ]), [2])
+                                                         [1, -1] ]), [2], [2])
 def phase_shift(angle):
     return channel_from_unitary(np.array([[1, 0],
                                           [0, complex(cos(angle),
-                                                      sin(angle))]]), [2])
+                                                      sin(angle))]]), [2], [2])
 \end{python}
 
 \noindent These are all channels $[2] \rightarrow [2]$.
@@ -4610,11 +4613,11 @@ In addition, we have the following channels $[2,2] \rightarrow [2,2]$.
 cnot = channel_from_unitary(np.array([ [1, 0, 0, 0],
                                        [0, 1, 0, 0],
                                        [0, 0, 0, 1],
-                                       [0, 0, 1, 0] ]), [2,2])
+                                       [0, 0, 1, 0] ]), [2,2], [2,2])
 swap = channel_from_unitary(np.array([ [1, 0, 0, 0],
                                        [0, 0, 1, 0],
                                        [0, 1, 0, 0],
-                                       [0, 0, 0, 1] ]), [2,2])
+                                       [0, 0, 0, 1] ]), [2,2], [2,2])
 \end{python}
 
 \noindent We can use these channels to define new states and
@@ -4641,10 +4644,10 @@ $m\times m$ matrix $c \gg s$ with at position $(\ell,k)$ the number:
   in~\eqref{diag:channelmatrix}.}
 \end{equation}
 
-\noindent Notice the change of order of indices: at position $(\ell,k)$
-we use the matrix $c_{k\ell}$. What we use at each position is the
-Hilbert-Schmidt inner product, given by $\tuple{A\mid B} =
-\tr(A^{*}\cdot B)$.
+\noindent Notice the change of order of indices: at position
+$(\ell,k)$ of $c \gg s$ we use the matrix $c_{k\ell}$. What we use at
+each position is the Hilbert-Schmidt inner product, given by
+$\tuple{A\mid B} = \tr(A^{*}\cdot B)$.
 
 The same mechanism works for more complicated types $[n_{1},
   \ldots, n_{a}]$.
@@ -4714,13 +4717,13 @@ as sum of scaled matrices:
 \noindent If we view a channel $[n] \rightarrow [m]$ as a map
 $c\colon\Mat_{m} \rightarrow \Mat_{n}$ between von Neumann algebras of
 matrices --- in the opposite direction! --- then $c$ is determined by
-its action on base vectors, as $c_{k\ell} = c(E_{k\ell})$. Then $c(P)
-= \sum_{k,\ell}P_{k\ell}\cdot c_{k\ell}$ is the action of $c$ on $P$,
-obtained by linear extension.
+its action on base vectors, as $c_{k\ell} = c(E_{k\ell}) =
+c(\ket{k}\bra{\ell})$. Then $c(P) = \sum_{k,\ell}P_{k\ell}\cdot
+c_{k\ell}$ is the action of $c$ on $P$, obtained by linear extension.
 
-In addition, the predicates \pythoninline{A2}, \pythoninline{B2} in
-the Bell table Example~\ref{ex:belltable} can now be described
-as:\sidenote{See again the the reference
+As illustration, the predicates \pythoninline{A2}, \pythoninline{B2}
+in the Bell table Example~\ref{ex:belltable} can now be described
+via predicate transformation as:\sidenote{See again the the reference
   \url{https://arxiv.org/abs/1406.7386} from
   sidenote~\getrefnumber{sidenote:abramskycalculations} for details.}
 \begin{python}
@@ -4755,7 +4758,7 @@ manner, using compositon \pythoninline{*} of channels:
 $\ll$ works in backward direction.
 
 
-
+\auxproof{
 \begin{example}
 \label{ex:carpreference}
 We illustrate how the quantum setting can be used to capture different
@@ -4895,6 +4898,55 @@ higher level of abstraction, as also argued in the Linda problem
 in Example~\ref{ex:linda}.
 \end{example}
 
+    print("\n===\n")
+
+    print("* Man's car preferences")
+    B = unit_pred(3, 0)
+    A = unit_pred(3, 1)
+    C = unit_pred(3, 2)
+    M = vector_state(-0.6963, 0.6963, 0.1741)
+    print("Probability of man choosing Audi: ", M >= A )
+    print("Probability of man choosing BMW: ", M >= B )
+    print("Probability of man choosing Cadillac: ", M >= C )
+    print("Probability of man choosing Audi or BMW: ", M >= A | B)
+
+    print("\n===\n")
+
+    print("* Woman's car preferences")
+    U = np.array([[1/sqrt(2), 1/2, -1/2], 
+                  [1/sqrt(2), -1/2, 1/2], 
+                  [0, 1/sqrt(2), 1/sqrt(2)]])
+    ch = channel_from_unitary(U, [3], [3])
+    W = ch >> M
+    print( W >= B )
+    print( W >= A )
+    print( W >= C )
+
+    print("\n===\n")
+
+    print("* Man first thinks his wife prefers the Cadillac")
+    print( M >= (ch << C) & B )
+    print( M >= (ch << C) & C, M >= C )
+
+    print("\n===\n")
+
+    print("* Woman first thinks her man prefers the BMW then she prefers the Cadillac")
+    print( M >= B & (ch << C) )
+
+    print("\n===\n")
+
+    print("* Man and woman force themselves to make the same choice")
+    js = (M @ W) / (A @ A | B @ B | C @ C)
+    print( js >= A @ A)
+    print( js >= B @ B)
+    print( js >= C @ C)
+    print("Same numbers, obtained via normalisation")
+    a = (M >= A) * (W >= A) + (M >= B) * (W >= B) + (M >= C) * (W >= C)
+    print( (M >= A) * (W >= A) / a)
+    print( (M >= B) * (W >= B) / a)
+    print( (M >= C) * (W >= C) / a)
+
+}
 
 
 \subsection{Sequential and parallel composition of channels}\label{subsec:qchannel:composition}
