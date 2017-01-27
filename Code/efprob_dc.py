@@ -1318,6 +1318,15 @@ def event(subdom, dom):
     return const_pred(1.0, subdom, dom)
 
 
+def point_state(point, dom):
+    dom = asdom(dom)
+    if dom.iscont:
+        raise ValueError("Cannot create a continuous point state")
+    if isinstance(point, tuple):
+        return const_state_or_pred(State, 1.0,
+                                   [[p] for p in point], dom)
+    return const_state_or_pred(State, 1.0, [point], dom)
+
 def point_pred(point, dom):
     dom = asdom(dom)
     if dom.iscont:
@@ -1330,20 +1339,10 @@ def point_pred(point, dom):
 def truth(dom):
     return event(dom, dom)
 
-
 def falsity(dom):
     dom = asdom(dom)
     subdom = dom.merge(itertools.repeat([]), itertools.repeat(empty))
     return const_pred(0.0, subdom, dom)
-
-
-def random_pred(dom):
-    dom = asdom(dom)
-    if dom.iscont:
-        raise ValueError("Cannot create a continuous random predicate")
-    shape = tuple(len(s) for s in dom.disc)
-    array = np.random.random_sample(shape)
-    return Predicate(array, dom)
 
 
 def random_state(dom):
@@ -1354,6 +1353,14 @@ def random_state(dom):
     array = np.random.random_sample(shape)
     array = array / array.sum()
     return State(array, dom)
+
+def random_pred(dom):
+    dom = asdom(dom)
+    if dom.iscont:
+        raise ValueError("Cannot create a continuous random predicate")
+    shape = tuple(len(s) for s in dom.disc)
+    array = np.random.random_sample(shape)
+    return Predicate(array, dom)
 
 #
 # Uniform discrete state on {0,1,...,n-1}
