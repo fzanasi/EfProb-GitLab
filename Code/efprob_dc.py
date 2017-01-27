@@ -212,7 +212,8 @@ def asdom(dom):
 
 def check_dom_match(dom1, dom2):
     if dom1 != dom2:
-        raise ValueError("Domains do not match: {} and {}".format(dom1, dom2))
+        raise ValueError("Domains do not match: "
+                         "{} and {}".format(dom1, dom2))
 
 #
 # Functions for supports
@@ -274,6 +275,11 @@ class Fun:
         return Fun(lambda *xs: self(*xs) + other(*xs),
                    supp_union(self.supp, other.supp))
 
+    def __sub__(self, other):
+        """Pointwise subtraction."""
+        return Fun(lambda *xs: self(*xs) - other(*xs),
+                   supp_union(self.supp, other.supp))
+
     def __mul__(self, other):
         """Pointwise multiplication."""
         return Fun(lambda *xs: self(*xs) * other(*xs),
@@ -305,8 +311,7 @@ class Fun:
 
     def joint(self, other):
         n = len(self.supp)
-        return Fun(lambda *xs:
-                   self(*xs[:n]) * other(*xs[n:]),
+        return Fun(lambda *xs: self(*xs[:n]) * other(*xs[n:]),
                    self.supp + other.supp)
 
     u_joint = np.frompyfunc(lambda f, g: f.joint(g), 2, 1)
@@ -438,11 +443,13 @@ class StateLike:
         check_dom_match(self.dom, other.dom)
         return type(self)(self.array + other.array, self.dom)
 
-    def smul(self, scalar):
+    def smul(self, scalar, cls=None):
         """Scalar multiplication."""
+        if cls is None:
+            cls = type(self)
         if self.dom.iscont:
-            return type(self)(Fun.u_smul(self.array, scalar), self.dom)
-        return type(self)(self.array * scalar, self.dom)
+            return cls(Fun.u_smul(self.array, scalar), self.dom)
+        return cls(self.array * scalar, self.dom)
 
     def __mul__(self, scalar):
         return self.smul(scalar)
@@ -679,6 +686,11 @@ class RandVar(StateLike):
         check_dom_match(self.dom, other.dom)
         return type(self)(self.array * other.array, self.dom)
 
+    def __sub__(self, other):
+        """Subtraction."""
+        check_dom_match(self.dom, other.dom)
+        return type(self)(self.array - other.array, self.dom)
+
     def exp(self, stat):
         check_dom_match(self.dom, stat.dom)
         if self.dom.iscont:
@@ -715,6 +727,11 @@ class Predicate(RandVar):
                 self.array[indices],
                 spec=float_format_spec)
             for indices in np.ndindex(*self.shape))
+
+    def __mul__(self, scalar):
+        if 0.0 <= scalar <= 1.0:
+            return self.smul(scalar)
+        return self.smul(scalar, cls=RandVar)
 
     def ortho(self):
         """Orthosupplement."""
