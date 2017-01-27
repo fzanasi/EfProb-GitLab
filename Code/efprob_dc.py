@@ -604,10 +604,10 @@ class State(StateLike):
             v = array.sum()
         if v == 0:
             raise ValueError("Zero validity")
-        if v < 0:
-            raise ValueError("Negative validity")
-        if math.isinf(v):
+        if math.isinf(v) and v > 0:
             raise ValueError("Infinite validity")
+        if v < 0 or math.isnan(v):
+            raise ValueError("Validity is invalid (negative or NaN)")
         if self.dom.iscont:
             return State(Fun.u_sdiv(array, v), self.dom)
         return State(array / v, self.dom)
@@ -1275,6 +1275,13 @@ def const_state_or_pred(cls, value, subdom, dom=None):
         dom = subdom
     else:
         dom = asdom(dom)
+    if len(dom) == 1 and len(subdom) == 0:
+        subdom = Dom([[]])
+    elif len(dom) != len(subdom):
+        raise ValueError("Length of subdom and dom differs")
+    for s, d in zip(subdom, dom):
+        if isinstance(s, Interval) != isinstance(d, Interval):
+            raise ValueError("Type of subdom and dom differs")
     shape = tuple(len(s) for s in dom.disc)
     if dom.iscont:
         array = np.empty(shape, dtype=object)
@@ -1307,8 +1314,21 @@ def const_pred(value, subdom, dom=None):
     return const_state_or_pred(Predicate, value, subdom, dom)
 
 
-def truth(subdom, dom=None):
+def event(subdom, dom):
     return const_pred(1.0, subdom, dom)
+
+
+def point_pred(point, dom):
+    dom = asdom(dom)
+    if dom.iscont:
+        raise ValueError("Cannot create a continuous point predicate")
+    if isinstance(point, tuple):
+        return event([[p] for p in point], dom)
+    return event([point], dom)
+
+
+def truth(dom):
+    return event(dom, dom)
 
 
 def falsity(dom):
