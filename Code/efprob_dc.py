@@ -1337,6 +1337,24 @@ def falsity(dom):
     return const_pred(0.0, subdom, dom)
 
 
+def random_pred(dom):
+    dom = asdom(dom)
+    if dom.iscont:
+        raise ValueError("Cannot create a continuous random predicate")
+    shape = tuple(len(s) for s in dom.disc)
+    array = np.random.random_sample(shape)
+    return Predicate(array, dom)
+
+
+def random_state(dom):
+    dom = asdom(dom)
+    if dom.iscont:
+        raise ValueError("Cannot create a continuous random state")
+    shape = tuple(len(s) for s in dom.disc)
+    array = np.random.random_sample(shape)
+    array = array / array.sum()
+    return State(array, dom)
+
 #
 # Uniform discrete state on {0,1,...,n-1}
 #
