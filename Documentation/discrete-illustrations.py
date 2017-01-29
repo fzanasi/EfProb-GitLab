@@ -41,18 +41,18 @@ def states():
     print("\n===\n")
 
     print("* discrete state example, length 5")
-    print( uniform_disc_state(5) )
+    print( uniform_state(range(5)) )
 
     print("\n===\n")
 
     print("* unit state example")
-    print( unit_disc_state(4,2) )
+    print( point_state(2, range(4)) )
 
     print("\n===\n")
 
     print("* random discrete state example, twice length 5")
-    print( random_disc_state(5) )
-    print( random_disc_state(5) )
+    print( random_state(range(5)) )
+    print( random_state(range(5)) )
 
     print("\n===\n")
 
@@ -73,12 +73,12 @@ def operations_on_states():
     print("\n===\n")
 
     print("* flip and uniform in parallel")
-    print( flip(0.2) @ uniform_disc_state(4) )
+    print( flip(0.2) @ uniform_state(range(4)) )
 
     print("\n===\n")
 
     print("* flip and uniform and flip in parallel")
-    print( flip(0.2) @ uniform_disc_state(4) @ flip(0.8) )
+    print( flip(0.2) @ uniform_state(range(4)) @ flip(0.8) )
 
     print("\n===\n")
 
@@ -93,8 +93,8 @@ def operations_on_states():
     print("\n===\n")
 
     print("* marginalisation")
-    s = random_disc_state(3)
-    t = random_disc_state(2)
+    s = random_state(range(3))
+    t = random_state(range(2))
     print( s )
     print( t )
     print( s @ t )
@@ -104,7 +104,7 @@ def operations_on_states():
     print("\n===\n")
 
     print("* two-out-of-three marginalisation")
-    print( (random_disc_state(100) @ flip(0.5) @ uniform_disc_state(2)) % [0,1,1] )
+    print( (random_state(range(100)) @ flip(0.5) @ uniform_state(range(2))) % [0,1,1] )
 
 def excursion():
 
@@ -116,12 +116,12 @@ def excursion():
     print("\n===\n")
 
     print(" * domain of product")
-    print( (flip(0.8) @ uniform_disc_state(5)).dom )
+    print( (flip(0.8) @ uniform_state(range(5))).dom )
 
     print("\n===\n")
 
     print("* disc of domain")
-    print( (flip(0.8) @ uniform_disc_state(5)).dom.disc )
+    print( (flip(0.8) @ uniform_state(range(5))).dom.disc )
 
     print("\n===\n")
 
@@ -153,10 +153,10 @@ def validity():
     print("\n===\n")
 
     print("* Parallel conjunction validity")
-    s1 = random_disc_state(100)
-    s2 = random_disc_state(50)
-    p1 = random_disc_pred(100)
-    p2 = random_disc_pred(50)
+    s1 = random_state(range(100))
+    s2 = random_state(range(50))
+    p1 = random_pred(range(100))
+    p2 = random_pred(range(50))
     print( (s1 @ s2) >= (p1 @ p2) )
     print( (s1 >= p1) * (s2 >= p2) )
 
@@ -199,9 +199,9 @@ def conditioning():
     print("\n===\n")
 
     print("* local conditioning check")
-    s = random_disc_state(2)
-    t = random_disc_state(3)
-    p = random_disc_pred(2)
+    s = random_state(range(2))
+    t = random_state(range(3))
+    p = random_pred(range(2))
     print( (s @ t) / (p @ truth(t.dom)) )
     print( (s / p) @ t )
 
@@ -237,11 +237,11 @@ def conditioning():
     print("\n===\n")
 
     print("* Law of total probability")
-    s = random_disc_state(4)
-    p = random_disc_pred(4)
+    s = random_state(range(4))
+    p = random_pred(range(4))
     # scaling is used to make sure these predicates are summable
-    q1 = 0.5 * random_disc_pred(4)
-    q2 = 0.5 * random_disc_pred(4)
+    q1 = 0.5 * random_pred(range(4))
+    q2 = 0.5 * random_pred(range(4))
     q3 = ~(q1 + q2)
     print("total probalility formula:", 
           (s / q1 >= p) * (s >= q1) + 
@@ -325,9 +325,9 @@ def channels():
     print("* Channel from states")
     c = Channel.from_states([flip(0.2), flip(0.3), flip(0.5)])
     print( c )
-    print( c >> uniform_disc_state(3) )
+    print( c >> uniform_state(range(3)) )
     print("tests")
-    s = random_disc_state(3)
+    s = random_state(range(3))
     print( s )
     cd = chan_denot(c, s)
     print( convex_state_sum(*cd) )
@@ -338,7 +338,7 @@ def channels():
     d = chan_fromklmap(lambda i: flip(0.2) if i == 0 else
                        flip(0.3) if i == 1 else flip(0.5), range(3), [True,False])
     print( d )
-    print( d >> uniform_disc_state(3) )
+    print( d >> uniform_state(range(3)) )
 
 
 def state_pred_transformation():
@@ -524,15 +524,26 @@ def bayesian_networks():
 
 
 
-
+def all():
+    states()
+    operations_on_states()
+    excursion()
+    validity()
+    conditioning()
+    random_variables()
+    channels()
+    state_pred_transformation()
+    structural_channels()
+    bayesian_networks()
 
 def main():
+    all()
     #states()
     #operations_on_states()
     #excursion()
     #validity()
     #conditioning()
-    random_variables()
+    #random_variables()
     #channels()
     #state_pred_transformation()
     #structural_channels()

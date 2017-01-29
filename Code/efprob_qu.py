@@ -398,6 +398,17 @@ class State:
     #                            formatter={'complexfloat':lambda x: '%3g + %3gi' 
 #                                          % (x.real, x.imag)})
 
+    def __eq__(self, other):
+        """ Equality test == """
+        if not isinstance(other, State):
+            raise Exception('Equality of state requires a state argument')
+        return self.dom == other.dom \
+            and np.all(np.isclose(self.array, other.array))
+
+    def __ne__(self, other):
+        """ Non-equality test != """
+        return not self == other
+
     def __mod__(self, selection):
         """Marginalisation. The selection is a dim-length list of 0's and
         1's, where 0 corresponds to marginalisation of the
@@ -943,10 +954,6 @@ def cflip(r):
                            [0, 1 - r]]), [2])
 
 cfflip = cflip(0.5)
-
-true = cflip(1)   # = ket(0)
-false = cflip(0)  # = ket(1)
-
 
 #
 # Convex sum of states: the input list contains pairs (ri, si) where

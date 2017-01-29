@@ -1362,27 +1362,27 @@ def random_pred(dom):
     array = np.random.random_sample(shape)
     return Predicate(array, dom)
 
-#
-# Uniform discrete state on {0,1,...,n-1}
-#
-def uniform_disc_state(n):
-    return uniform_state(range(n))
+# #
+# # Uniform discrete state on {0,1,...,n-1}
+# #
+# def uniform_disc_state(n):
+#     return uniform_state(range(n))
 
-#
-# Unit discrete state 1|i> on {0,1,...,n-1}
-#
-def unit_disc_state(n, i):
-    ls = [0] * n
-    ls[i] = 1
-    return State(ls, range(n))
+# #
+# # Unit discrete state 1|i> on {0,1,...,n-1}
+# #
+# def unit_disc_state(n, i):
+#     ls = [0] * n
+#     ls[i] = 1
+#     return State(ls, range(n))
 
-#
-# Random discrete state on {0,1,...,n-1}
-#
-def random_disc_state(n):
-    ls = [random.uniform(0,1) for i in range(n)]
-    s = sum(ls)
-    return State([v/s for v in ls], range(n))
+# #
+# # Random discrete state on {0,1,...,n-1}
+# #
+# def random_disc_state(n):
+#     ls = [random.uniform(0,1) for i in range(n)]
+#     s = sum(ls)
+#     return State([v/s for v in ls], range(n))
 
 
 @functools.lru_cache(maxsize=None)
@@ -1418,19 +1418,19 @@ def gaussian_pred(mu, sigma, supp=R, scaling=True):
             return stats.norm.pdf(x, loc=mu, scale=sigma)
     return Predicate(Fun(fun, supp), [supp])
 
-#
-# Random discrete predicate on {0,1,...,n-1}
-#
-def random_disc_pred(n):
-    return Predicate([random.uniform(0,1) for i in range(n)], range(n))
+# #
+# # Random discrete predicate on {0,1,...,n-1}
+# #
+# def random_disc_pred(n):
+#     return Predicate([random.uniform(0,1) for i in range(n)], range(n))
 
-#
-# Discrete predicate that is 1 at i in {0,1,...,n-1}
-#
-def unit_pred(n, i):
-    ls = [0] * n
-    ls[i] = 1
-    return Predicate(ls, range(n))
+# #
+# # Discrete predicate that is 1 at i in {0,1,...,n-1}
+# #
+# def unit_pred(n, i):
+#     ls = [0] * n
+#     ls[i] = 1
+#     return Predicate(ls, range(n))
 
 
 ##############################################################

@@ -734,42 +734,33 @@ domain:
 \noindent When you are happy with natural numbers as domain you
 can use:
 \begin{python}
->>> uniform_disc_state(5)
+>>> uniform_state(range(5))
 0.2|0> + 0.2|1> + 0.2|2> + 0.2|3> + 0.2|4>
 \end{python}
 
 \noindent For an arbitray number \pythoninline{n} this
-\pythoninline{uniform\_disc\_state(n)} produces a uniform distribution
-with as domain the set
-$\{0,1,2,\ldots,n-1\}$.\marginnote[-2\baselineskip]{Notice the
-  occurrence of the substring `\pythoninline{disc}' in the name
-  `\pythoninline{uniform\_disc\_state(n)}'. It is there since this
-  function produces a \emph{discrete} distribution. The substring
-  `\pythoninline{disc}' is not used in the name
-  `\pythoninline{uniform\_state}'. As we shall see in the next
-  chapter, the latter function can also be used for uniform
-  \emph{continuous} states. }
-
-There is also a function that produces a singleton state $1\ket{i}$
-with domain $\{0,1,2,\ldots,n-1\}$ for $0 \leq i < n$, namely
-\pythoninline{unit\_disc\_state(n,i)}, see for instance:
+\pythoninline{uniform\_state(range(n))} produces a uniform
+distribution with as domain the set $\{0,1,2,\ldots,n-1\}$. There is
+also a function that produces a singleton state $1\ket{i}$ with domain
+$\{0,1,2,\ldots,n-1\}$ for $0 \leq i < n$, namely
+\pythoninline{point\_state(n,i)}, see for instance:
 \begin{python}
->>> unit_disc_state(4,2)
+>>> point_state(2, range(4))
 0|0> + 0|1> + 1|2> + 0|3>
 \end{python}
 
 \noindent The simplest possible distribution $1\ket{0}$ with domain
 $\{0\}$ can be produced as \pythoninline{unit\_disc\_state(1,0)} or
-also as \pythoninline{uniform_disc_state(1)}.
+also as \pythoninline{uniform_state(range(1))}.
 
 For testing purposes it is useful to have a random discrete
 probability on the $\{0,1,2,\ldots,n-1\}$. It works as described
 below, internally using \Python's random number generator. Each time
 it gives a different answer.
 \begin{python}
->>> random_disc_state(5)
+>>> random_tate(range(5))
 0.133|0> + 0.273|1> + 0.175|2> + 0.119|3> + 0.3|4>
->>> random_disc_state(5)
+>>> random_state(range(5))
 0.252|0> + 0.25|1> + 0.452|2> + 0.035|3> + 0.0103|4>
 \end{python}
 
@@ -840,14 +831,14 @@ the sum of the weights is still one.
 It is is not necessary that the two states that are combined in a
 product have the same length or domain:
 \begin{python}
->>> flip(0.2) @ uniform_disc_state(4)
+>>> flip(0.2) @ uniform_state(range(4))
 0.05|True,0> + 0.05|True,1> + 0.05|True,2> + 0.05|True,3> + 
    0.2|False,0> + 0.2|False,1> + 0.2|False,2> + 0.2|False,3>
 \end{python}
 
 \noindent Multiple products are also possible:
 \begin{python}
->>> flip(0.2) @ uniform_disc_state(4) @ flip(0.8)
+>>> flip(0.2) @ uniform_state(range(4)) @ flip(0.8)
 0.04|True,0,True> + 0.01|True,0,False> + 0.04|True,1,True> + 0.01|True,1,False> + 
    0.04|True,2,True> + 0.01|True,2,False> + 0.04|True,3,True> + 
    0.01|True,3,False> + 0.16|False,0,True> + 0.04|False,0,False> + 
@@ -903,8 +894,8 @@ marginalisation returns the original components. In order to give a
 bit more generality to a demonstration like the one below, we use
 randomly generated states.
 \begin{python}
->>> s = random_disc_state(3)
->>> t = random_disc_state(2)
+>>> s = random_state(range(3))
+>>> t = random_state(range(2))
 >>> s
 0.255|0> + 0.465|1> + 0.28|2>
 >>> t
@@ -926,7 +917,7 @@ this $i$-th component; a `\pythoninline{0}' at position $i$ says:
 delete this $i$-th component. For instance we remove the
 really big state and keep the two smaller ones in:
 \begin{python}
->>> (random_disc_state(100) @ flip(0.5) @ uniform_disc_state(2)) % [0,1,1]
+>>> (random_state(range(100)) @ flip(0.5) @ uniform_state(range(2))) % [0,1,1]
 0.25|True,0> + 0.25|True,1> + 0.25|False,0> + 0.25|False,1>
 \end{python}
 
@@ -1015,14 +1006,14 @@ made visible via the \pythoninline{dom} attribute of a state:
 \noindent If we ask for the domain of a product state we get the
 combination of their domains, printed via \pythoninline{*} as:
 \begin{python}
->>> (flip(0.8) @ uniform_disc_state(5)).dom
+>>> (flip(0.8) @ uniform_state(range(5))).dom
 [True, False] * range(0, 5)
 \end{python}
 
 \noindent You can go one level deeper and ask for the 
 discrete domain; it yields a list of domains:
 \begin{python}
->>> (flip(0.8) @ uniform_disc_state(5)).dom.disc
+>>> (flip(0.8) @ uniform_state(range(5))).dom.disc
 [[True, False], range(0, 5)]
 \end{python}
 
@@ -1047,10 +1038,9 @@ a non-entwined state.
 Predicates in logic are statements about some space/domain of
 elements, such as $x \geq 5$, where $x$ is a variable that ranges for
 instance over the domain of natural or real numbers. In predicate
-logic
-\mycomment[K]{some word missing?}
-are standardly interpreted as \emph{subsets} of $S\subseteq X$
-of a given space $X$.  In the present context we call such predicates
+logic predicates are standardly interpreted as \emph{subsets} 
+$S\subseteq X$ of a given space $X$.  In the present context we call
+such predicates
 \emph{sharp}.\index{sharp~predicate!discrete~--}\index{predicate!sharp~discrete~--}
 They can be identified with their `characteristic' function $\indic{S}
 \colon X \rightarrow \{0,1\}$ given by $\indic{S}(x) = 1$ iff $x\in
@@ -1111,7 +1101,7 @@ p$, and conditioning $\omega|_{p}$. But first we describe the basic
 
 In this section we discuss the following operations on predicates.
 \begin{itemize}
-\item orthocomplement, or negation \pythoninline{\~}
+\item orthosupplement, or negation \pythoninline{\~}
 
 \item scalar multiplication \pythoninline{*}
 
@@ -1162,7 +1152,7 @@ predicate on the domain of the dice distribution:
 on the range $\{0,1,\ldots, n-1\}$. There is a similar random-predicate
 function --- but this time the probabilities do not add up to one.
 \begin{python}
->>> random_disc_pred(5)
+>>> random_pred(range(5))
 0: 0.806 | 1: 0.593 | 2: 0.758 | 3: 0.68 | 4: 0.442
 \end{python}
 
@@ -1171,9 +1161,9 @@ appear.
 
 On such a state with range $\{0,1,\ldots, n-1\}$ it is useful to have
 a predicate which is $1$ only at the $i$-th position. This predicate
-is called \pythoninline{unit\_pred}. It is illustrated in:
+is called \pythoninline{point\_pred}. It is illustrated in:
 \begin{python}
->>> unit_pred(4,3)
+>>> point_pred(3, range(4))
 0: 0 | 1: 0 | 2: 0 | 3: 1
 \end{python}
 
@@ -1195,21 +1185,21 @@ define predicates directly, instead of via states.
 
 In the remainder of this section we describe operations on predicates.
 
-\paragraph{Orthocomplement} 
+\paragraph{Orthosupplement} 
 As described in the beginning of this section, the
-orthocomplement\index{orthocomplement!discrete~--} of a predicate $p$
+orthosupplement\index{orthosupplement!discrete~--} of a predicate $p$
 changes all of its probabilities $p(x)$ into $1-p(x)$, for each
 element $x$ in the domain, see:
 \begin{python}
->>> p = random_disc_pred(5)
+>>> p = random_pred(range(5))
 >>> p
 0: 0.15 | 1: 0.803 | 2: 0.132 | 3: 0.819 | 4: 0.855
 >>> ~p
 0: 0.85 | 1: 0.197 | 2: 0.868 | 3: 0.181 | 4: 0.145
 \end{python}
 
-\noindent Obviously, the orthocomplement of truth is falsity; and
-taking the orthocomplement twice returns the original predicate.
+\noindent Obviously, the orthosupplement of truth is falsity; and
+taking the orthosupplement twice returns the original predicate.
 
 
 \paragraph{Scalar multiplication}
@@ -1246,7 +1236,7 @@ domain.\sidenote{This condition is not checked in the \EfProb
 partial sum\index{partial~sum!of~discrete~predicates} predicate $p+q$,
 as in:
 \begin{python}
->>> unit_pred(4,3) + unit_pred(4,0)
+>>> point_pred(3,range(4)) + point_pred(0,range(4))
 0: 1 | 1: 0 | 2: 0 | 3: 1
 \end{python}
 
@@ -1258,7 +1248,7 @@ It is not hard to see that predicates, like states are closed under
 convex combinations. With the sum operator \pythoninline{+} we can
 write such combinations simply as:
 \begin{python}
->>> 0.3 * truth(range(4)) + 0.7 * unit_pred(4,0)
+>>> 0.3 * truth(range(4)) + 0.7 * point_pred(0,range(4))
 0: 1 | 1: 0.3 | 2: 0.3 | 3: 0.3
 \end{python}
 
@@ -1439,10 +1429,10 @@ r * (\omega\models p)
 \noindent Such properties can be tested (but not proven!) by using
 random states and predicates, as in:
 \begin{python}
->>> s1 = random_disc_state(100)
->>> s2 = random_disc_state(50)
->>> p1 = random_disc_pred(100)
->>> p2 = random_disc_pred(50)
+>>> s1 = random_state(range(100))
+>>> s2 = random_state(range(50))
+>>> p1 = random_pred(range(100))
+>>> p2 = random_pred(range(50))
 >>> (s1 @ s2) >= (p1 @ p2)
 0.25646568531521891
 >>> (s1 >= p1) * (s2 >= p2)
@@ -1670,9 +1660,9 @@ $$\begin{array}{rcl}
 
 \noindent Here is an illustration.
 \begin{python}
->>> s = random_disc_state(2)
->>> t = random_disc_state(3)
->>> p = random_disc_pred(2)
+>>> s = random_state(range(2))
+>>> t = random_state(range(3))
+>>> p = random_pred(range(2))
 >>> (s @ t) / (p @ truth(t.dom))
 0.131|0,0> + 0.161|0,1> + 0.266|0,2> + 0.104|1,0> + 0.127|1,1> + 0.21|1,2>
 >>> (s / p) @ t
@@ -1826,8 +1816,8 @@ probability\index{law~of~total~probability}\index{probability!law~of~total~--}
 in the current setting. We start from an arbitrary state and predicate
 and the associated validity:
 \begin{python}
->>> s = random_disc_state(4)
->>> p = random_disc_pred(4)
+>>> s = random_state(range(4))
+>>> p = random_pred(range(4))
 >>> s >= p
 0.326073622519
 \end{python}
@@ -1841,8 +1831,8 @@ to ensure that the scaled predicates \pythoninline{0.5 * q1} and
 \pythoninline{q3} is then determined so that \pythoninline{q1 + q2 +
   q3} equals the truth predicate.
 \begin{python}
->>> q1 = 0.5 * random_disc_pred(4)
->>> q2 = 0.5 * random_disc_pred(4)
+>>> q1 = 0.5 * random_pred(range(4))
+>>> q2 = 0.5 * random_pred(range(4))
 >>> q3 = ~(q1 + q2)
 >>> (s / q1 >= p) * (s >= q1) + (s / q2 >= p) * (s >= q2) +  (s / q3 >= p) * (s >= q3)
 0.326073622519
@@ -2377,8 +2367,10 @@ channel\index{discard~channel!discrete~---}\index{channel!discrete~discard~--}
 input. Again this looks silly. But discard channels, in parallel with
 identity channels, give us projection channels. This is illustrated
 below, via the projections \pythoninline{proj1} and
-\pythoninline{proj2} which can do both marginalisation of states and
-weakening of predicates.
+\pythoninline{proj2} which can do both
+marginalisation\index{marginalisation!via~a~projection~channel} of
+states and weakening\index{weakening!via~a~projection~channel} of
+predicates.
 \begin{python}
 >>> s = State([1/12, 1/8, 1/4, 1/4, 1/6, 1/8], [[True,False], range(3)])
 >>> s
@@ -3067,7 +3059,7 @@ their domains. Only 1-dimensional continuous states can be plotted.
 \chapter{Quantum Probability}\label{ch:qp}
 
 The reader is assumed to be familiar with the basics of quantum
-theory, see for instance\cite{NielsenC00} or\cite{YanofskyM08}.
+theory, see for instance\cite{NielsenC00,RieffelP11,YanofskyM08}.
 
 \marginnote{To do: comparison with other quantum languages like
 Quipper,\cite{GreenLRSV13} Qwire,\cite{PaykinRZ17}
@@ -3626,7 +3618,7 @@ that states are not closed under these operations.
 
 We shall discuss the following operations on predicates.
 \begin{itemize}
-\item orthocomplement, or negation \pythoninline{\~}
+\item orthosupplement, or negation \pythoninline{\~}
 
 \item scalar multiplication \pythoninline{*}
 
@@ -3644,16 +3636,12 @@ structure of quantum predicates. This effect module structure is
 common for predicates in discrete, continuous, and quantum
 probability.
 
-There is another operation on predicates namely weakening; it is a
-so-called `structural' operation that will be discussed separatedly in
-Subsection~\ref{subsec:qpred:weakening}.
 
-
-\paragraph{Orthocomplement} Negation in a probabilistic or quantum
-setting is called orthocomplement.\index{orthocomplement!quantum~--}
+\paragraph{Orthosupplement} Negation in a probabilistic or quantum
+setting is called orthosupplement.\index{orthosupplement!quantum~--}
 Here it is written as $\ortho p$, but in the literature one often sees
-$p^{\bot}$ instead. On the unit interval $[0,1]$ orthocomplement is
-given by $\ortho r = 1 - r$. In a quantum setting the orthocomplement
+$p^{\bot}$ instead. On the unit interval $[0,1]$ orthosupplement is
+given by $\ortho r = 1 - r$. In a quantum setting the orthosupplement
 of a predicate is given similarly, by subtracting the predicate from
 the identity (diagonal) matrix. Thus, $\ortho p = 1 - p$, see:
 \begin{python}
@@ -3666,8 +3654,8 @@ the identity (diagonal) matrix. Thus, $\ortho p = 1 - p$, see:
  [ 0.15404606-0.00875401j  0.03734450+0.j        ]]
 \end{python}
 
-\noindent Notice that the orthocomplement of a probabilistic predicate
-is probabilistic again. Obviously, taking the orthocomplement twice
+\noindent Notice that the orthosupplement of a probabilistic predicate
+is probabilistic again. Obviously, taking the orthosupplement twice
 returns the original predicate. Hence the `double negation' rule of
 classical (Boolean) logic holds. But the logic of
 quantum/probabilistic predicate is not Boolean. Its structure is
@@ -4064,7 +4052,7 @@ described in a more systematic manner via predicate transformation.
 
 The valdities of the parallel conjunctions of the predicates
 \pythoninline{A1}, \pythoninline{A2}, \pythoninline{B1},
-\pythoninline{B2} and their orthocomplements yield the famous
+\pythoninline{B2} and their orthosupplements yield the famous
 Bell-tables\index{Bell!table} that play an important role in
 non-locality\index{non-locality} in quantum foundations, see
 \eg\cite{AbramskyB11} for more information. The table below summarises
@@ -4975,7 +4963,7 @@ hand side below are the same:
 \\
 \mbox{\pythoninline{(d * c) << p}}
 & \qquad\mbox{is}\qquad\quad &
-\mbox{\pythoninline{d << (c << p)}}
+\mbox{\pythoninline{c << (d << p)}}
 \end{tabular}
 \end{center}
 
@@ -5037,21 +5025,22 @@ visually explain what these channels do.\sidenote{Wires in quantum
   concrete, tranditionally one would write $\Qcircuit@C-1pc{& \gate{U}
     & \qw}$ for a unitary matrix $U$, used as \emph{gate}, where we
   use $\Qcircuit@C-1pc{& \gate{c} & \qw}$ where $c$ is a
-  \emph{channel}.  Of course, this channel could be
-  \pythoninline{channel\_from\_unitary(U)}, so that both cases amount
-  to the same.}
+  \emph{channel}.  Of course, this channel result from applying the
+  function \pythoninline{channel\_from\_unitary} to the gate
+  \pythoninline{U}, so that both cases amount to the same.}
 
 
 
 \paragraph{Identity channels}
-For each list of dimensions \pythoninline{dims} there is an identity
+For each domain \pythoninline{dom} (list of dimensions) there is an
+identity
 channel\index{identity~channel!quantum~---}\index{channel!quantum~identity~--}
-\pythoninline{dims -> dims} written as \pythoninline{idn(dims)}. It
-does nothing. It is useless in sequential composition \pythoninline{*}
-of channels, but it is extremely useful in parallel composition
-\pythoninline{@}, for instance in defining the Bell states from the
-end of Section~\ref{sec:qstate} more systematically via the Bell
-channel\index{Bell!channel} as:
+\pythoninline{dom -> dom} written as \pythoninline{idn(dom)}. This
+identity channel has no effect in sequential composition
+\pythoninline{*} of channels, but it is extremely useful in parallel
+composition \pythoninline{@}, for instance in defining the Bell states
+from the end of Section~\ref{sec:qstate} more systematically via the
+Bell channel\index{Bell!channel} as:
 \begin{python}
 bell_chan = cnot * (hadamard @ idn(2))
 bell00 = bell_chan >> ket(0,0)
@@ -5110,9 +5099,10 @@ True
 \end{example}
 
 
-In \EfProb an identity channel can work on arbitary dimension.
-In circuits, wires represent qubit channels, of dimension $2$.
-Hence three qubit wires in parallel can be described as:
+In \EfProb an identity channel can work on an arbitary domain, given
+as list of dimentions.  In circuits, wires represent qubit channels,
+of dimension $2$.  Hence three qubit wires in parallel can be
+described as:
 $$\mbox{\pythoninline{idn(2,2,2)}}
 \quad=\;\quad
 \vcenter{\Qcircuit@R-1pc{
@@ -5131,11 +5121,13 @@ discard\index{discard~channel!quantum~---}\index{channel!quantum~discard~--}
 states. For these same reasons we have channels for discarding, and
 for projection, see below.
 
-The discard channel has type \pythoninline{dims -> []} for an
-arbitrary list of dimensions \pythoninline{dims}. It simply terminates
+The discard channel has type \pythoninline{dom -> []} for an
+arbitrary list of dimensions \pythoninline{dom}. It simply terminates
 everything coming through. A discard channel \pythoninline{[2] -> []}
 is drawn as:
-$$\vcenter{\Qcircuit@R-1pc{
+$$\mbox{\pythoninline{discard(2)}}
+\quad=\;\quad
+\vcenter{\Qcircuit@R-1pc{
 & \qw {\Qdiscard}
 }}$$
 
@@ -5149,9 +5141,9 @@ input, see for instance:
 \end{python}
 
 
-\paragraph{Projection channels} Once we can discard channels, we can
-also do projections, namely via a discard in parallel with an identity
-channel, as suggested in:
+\paragraph{Projection channels} Now that we have discard channels, we can
+form projection channels, namely via a discard in parallel with an
+identity channel, as suggested in:
 $$\vcenter{\Qcircuit@R-1pc{
 & \qw {\Qdiscard}
 \\
@@ -5204,8 +5196,11 @@ $$\vcenter{\Qcircuit@R-1pc{
  [ 0.21691432-0.01717443j  0.52273841+0.j        ]]
 \end{python}
 
-\noindent These last lines illustrate that marginalisation coincides
-with projection.
+\noindent These last lines illustrate that
+marginalisation\index{marginalisation!via~a~projection~channel} coincides with projection.
+
+In the same way, weakening\index{weakening!via~a~projection~channel}
+corresponds to predicate transformation with a projection channel.
 
 
 \paragraph{Swapping} Sometimes it is convenient when wires
@@ -5281,31 +5276,23 @@ $$\vcenter{\Qcircuit@R-1pc{
 \\
 & \lstick{\ket{1}} & \qw & 
 }}
-\quad\;=\quad
+=\quad
 \mbox{\pythoninline{c @ ket(1).as\_chan()}}$$
 
-\noindent Here we use that each state of type \pythoninline{dims} has
-a method \pythoninline{as\_chan} which turns in to a channel
-\pythoninline{[] -> dims}. By using this ancilla state/channel in
+\noindent Here we use that each state of type \pythoninline{dom} has a
+method \pythoninline{as\_chan} which turns in to a channel
+\pythoninline{[] -> dom}. By using this ancilla state/channel in
 parallel with an existing channel, this existing channel is widenend.
 This effect is illustrated in:
 \begin{python}
 >>> c = hadamard
 >>> s = random_state(2)
->>> (c @ ket(1).as_chan()) >> s
-[[ 0.00000000+0.j  0.00000000+0.j  0.00000000+0.j  0.00000000+0.j  ]
- [ 0.00000000+0.j  0.39179105+0.j  0.00000000+0.j  0.26317288+0.38733646j ]
- [ 0.00000000+0.j  0.00000000+0.j  0.00000000+0.j  0.00000000+0.j  ]
- [ 0.00000000+0.j  0.26317288-0.38733646j  0.00000000+0.j  0.60820895+0.j ]]
->>> (c >> s) @ ket(1)
-[[ 0.00000000+0.j  0.00000000+0.j  0.00000000+0.j  0.00000000+0.j  ]
- [ 0.00000000+0.j  0.39179105+0.j  0.00000000+0.j  0.26317288+0.38733646j ]
- [ 0.00000000+0.j  0.00000000+0.j  0.00000000+0.j  0.00000000+0.j  ]
- [ 0.00000000+0.j  0.26317288-0.38733646j  0.00000000+0.j  0.60820895+0.j ]]
+>>> (c @ ket(1).as_chan()) >> s == (c >> s) @ ket(1) )
+True
 \end{python}
 
 The combination of discard and ancilla makes it possible to terminate
-a write and restart it with a new qubit on it, as in:
+a wire and restart it with a new qubit on it, as in:
 $$\vcenter{\Qcircuit@R-1pc{
 & \qw \Qdiscard & & \lstick{\ket{0}} & \qw
 }}
@@ -5334,8 +5321,9 @@ this construction:
 This subsection introduces measurement, both for predicates and for
 tests. It also describes how to use the outcomes of such measurements
 in classical control, where only the probabilistic outcomes of the
-measurement are used. Multiple examples are included, of teleportation
-and superdense coding, both using shared Bell and GHZ states.
+measurement are used. Multiple examples are given in
+Section~\ref{sec:teleportation}, of teleportation and superdense
+coding, both using shared Bell and GHZ states.
 
 
 
@@ -5373,8 +5361,8 @@ produces the resulting value as a probabilistic state. Concretely:
 \noindent The following abbreviations are convenient for binary
 measurement in the standard basis:
 \begin{python}
-meas0 = meas(ket(0))
-meas1 = meas(ket(1))
+meas0 = meas_pred(unit_pred(2,0))
+meas1 = meas_pred(unit_pred(2,1))
 \end{python}
 
 In quantum circuits it is custom to indicate the classical outcome of
@@ -5404,8 +5392,9 @@ $$\mbox{\pythoninline{meas0}}
 %% }$$
 
 These measurement ideas are used in a channel
-\pythoninline{classic(dims) : dims -> dims} that removes everything from
-a state except its diagonal:
+\pythoninline{classic(dom) : dom -> dom} that measures in the
+`computational basic' of the domain. This channel removes everything
+from a state except its diagonal:
 \begin{python}
 >>> s = random_state(3)
 >>> s
@@ -5435,31 +5424,31 @@ input.\index{measurement!wrt.~a~test}
  [ 0.00000000+0.j  0.16059948+0.j  0.00000000+0.j  0.00000000+0.j]
  [ 0.00000000+0.j  0.00000000+0.j  0.31687829+0.j  0.00000000+0.j]
  [ 0.00000000+0.j  0.00000000+0.j  0.00000000+0.j  0.39304459+0.j]]
->>> w >= bell00
+>>> w >= bell00.as_pred()
 0.129477644519
->>> w >= bell01
+>>> w >= bell01.as_pred()
 0.160599477211
->>> w >= bell10
+>>> w >= bell10.as_pred()
 0.316878289196
->>> w >= bell11
+>>> w >= bell11.as_pred()
 0.393044589075
 \end{python}
 
 \noindent We see that measurement of an (arbitrary) state
 \pythoninline{w : [2,2]} in the Bell basis, turned into a test of
 predicates, yields a probabilistic state. These probabilities on the
-diagonal can be obtained by separately as validities of the separate
+diagonal can be obtained separately as validities of the individual
 predicates in the state \pythoninline{w}.
 
 
 \paragraph{Control channels}
 In Subsection~\ref{subsec:qchannel:unitaries} we have seen the
 \pythoninline{cnot} channel, obtained from a unitary matrix. It
-performs what is called `controlled-not'. One would like to have a
+performs what is called `controlled-not'. One would like to have
 similar `controlled' channels. At this stage we only support
 `classical control'.  The more adventurous `quantum
 control'\cite{Ying16} also known as `alternation'\cite{BadescuP16} is
-not yet supported.
+not yet supported in \EfProb.
 
 For a channel \pythoninline{c : dom -> cod} there is a classical
 control channel \pythoninline{ccontrol(c) : [2]+dom -> [2]+cod}
@@ -5533,7 +5522,7 @@ the probabilities of the measurement, as classical
 state. Instruments,\index{instrument} as introduced in\cite{Jacobs15},
 combine measurement and state update, by producing not only
 probabilities but also a convex sum of conditional states. Instruments
-can be defined for tests, but they are currently only supported for
+can be defined for tests, but \EfProb currently only supports them for
 predicates.
 
 Let \pythoninline{p} be a predicate with domain \pythoninline{dom}.
@@ -5647,9 +5636,9 @@ $$\vcenter{\Qcircuit@R-1pc{
 $$\begin{array}{rcl}
 \mbox{\pythoninline{bob}}
 & = &
-\mbox{\pythoninline{proj2 * ccontrol(z_chan)}} \\
+\mbox{\pythoninline{(discard(2) @ idn(2)) * ccontrol(z_chan)}} \\
 & & \qquad 
-\mbox{\pythoninline{ * (idn(2) @ proj2) * (idn(2) @ ccontrol(x_chan))}}
+\mbox{\pythoninline{ * (idn(2) @ discard(2) @ idn(2)) * (idn(2) @ ccontrol(x_chan))}}
 \end{array}$$
 
 \noindent The circuit for the whole protocol first prepares the
@@ -5688,9 +5677,9 @@ this:
 \end{python}
 
 \noindent Of course, testing does not prove anything. But it can
-\emph{disprove} and thus reveal errors. More succintly, the fact that
-the original state \pythoninline{s} re-appears after teleportation
-can be tested as:
+\emph{disprove} (falsify) and thus reveal errors. More succintly, the
+fact that the original state \pythoninline{s} re-appears after
+teleportation can be tested as:
 \begin{python}
 >>> s == (teleportation >> s)
 True
@@ -5699,7 +5688,7 @@ True
 We can actually do a little bit more. If we claim that the
 \pythoninline{teleportation} and \pythoninline{idn(2)} channels are
 the same, we can check that they have the same matrices, via their
-\pythoninline{.array} attribute. Checking actual equality does not work,
+\pythoninline{array} attribute. Checking actual equality does not work,
 because of the small inaccuracies in floating point calculations. By
 \Python's matrix library \pythoninline{numpy}, commonly abbreviated
 (imported) as \pythoninline{np}, provides a function
@@ -5721,15 +5710,17 @@ argument matrices are really close.
    [ True  True]]]]
 \end{python}
 
-\noindent This looks good! We can reduce the answer to one boolean
-by adding the \pythoninline{numpy} function \pythoninline{all},
-as in:
+\noindent This looks good! We can reduce the answer to one boolean by
+adding the \pythoninline{numpy} function
+\pythoninline{all},\marginnote{The combination of \pythoninline{all}
+  and \pythoninline{isclose} exists in \pythoninline{numpy} as
+  \pythoninline{allclose}.} as in:
 \begin{python}
 >>> np.all(np.isclose(teleportation.array, idn(2).array))
 True
 \end{python}
 
-\noindent We could have saved ourselves much trouble, via the
+\noindent We could have saved ourselves this trouble, via the
 pre-defined equality of channels, which checks equality of domains and
 codomains, and `closedness' of arrays, as described above,
 see also Sidenote~\ref{sidenote:qstateequality}.
@@ -5846,7 +5837,7 @@ access to the second and third qubit.\sidenote[][-3\baselineskip]{In a
   \pythoninline{ghz} and a third participant Charlie has access to the
   third qubit. In this set-up one can achieve `secret sharing', where
   Alice shares an unknown quantum state, and Bob and Charlie have to
-  cooperate to obtain that state, see \eg~\citep{HilleryBB99}.} Alice
+  cooperate to obtain that state, see \eg\cite{HilleryBB99}.} Alice
 jointly measures the state-to-be-transported \pythoninline{s} and her
 part of the state \pythoninline{ghz} in the Bell basis, given by the
 four states \pythoninline{bell00}, \pythoninline{bell01},
@@ -5881,7 +5872,7 @@ Alice, via the Kronecker channel \pythoninline{kron}, into a joint
 probabilistic state with 8 options. Then he can make the relevant
 case distinctions:
 \begin{python}
->>> hadamard_test = [plus, minus]
+>>> hadamard_test = [plus.as_pred(), minus.as_pred()]
 >>> meas_hadamard = meas_test(hadamard_test)
 >>> bob = ( discard(8) @ idn(2) ) \
 ...       * ccase(idn(2), z_chan, x_chan, x_chan * z_chan, \
@@ -5927,7 +5918,7 @@ It is defined first.
 \begin{python}
 >>> iy_matrix = np.array([[0,1],
 ...                       [-1,0]])
->>> iy_chan = channel_from_unitary(iy_matrix, [2])
+>>> iy_chan = channel_from_unitary(iy_matrix, [2], [2])
 >>> alice = (discard(8) @ idn(2,2)) * ccase(idn(2) @ idn(2), 
 ...                                         idn(2) @ x_chan, 
 ...                                         x_chan @ idn(2), 
@@ -5946,7 +5937,8 @@ It is defined first.
 measures\index{GHZ!measurement} the two incoming qubits and his own
 third qubit of the GHZ state in the GHZ basis.
 \begin{python}
->>> ghz_test = [ghz1, ghz2, ghz3, ghz4, ghz5, ghz6, ghz7, ghz8]
+>>> ghz_test = [ghz1.as_pred(), ghz2.as_pred(), ghz3.as_pred(), ghz4.as_pred(), 
+...             ghz5.as_pred(), ghz6.as_pred(), ghz7.as_pred(), ghz8.as_pred()]
 >>> meas_ghz = meas_test(ghz_test)
 >>> bob = meas_ghz
 >>  ghz_sdc = bob * (alice @ idn(2)) * (idn(8) @ ghz.as_chan())
@@ -6005,11 +5997,13 @@ reverse order.
 In the end we point out that the transfer from Alice to Bob is of type
 \pythoninline{[8,2,2] -> [8,2,2]}. This involves a $1024 \times 1024$
 matrix. The computation time for this protocol is indeed noticeable,
-in the order of a second (on an average laptop). Our formalism hides
-these implementation details.
+in the order of a second (on an average laptop). The \EfProb formalism
+hides these implementation details.
 \end{example}
 
 
+
+\auxproof{
 \section{Order inference effect example}\label{sec:orderinference}
 
 In classical (discrete and continuous) probability the order of
@@ -6153,10 +6147,10 @@ presented: a clear 'order inference effect'. The judge is most
 convinced by the one who speaks last. This is a very human
 characteristic.
 \end{example}
+}
 
 
-
-
+\auxproof{
 \section{Operators}\label{sec:operator}\marginpar{Unfinished}
 
 In Diagram~\eqref{diag:channelmatrix} we have described a channel as
@@ -6504,7 +6498,7 @@ w.
 
 \noindent Of course, this works under the assumption that the relevant
 inverse matrix exists.
-
+}
 
 
 \backmatter

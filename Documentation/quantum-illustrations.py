@@ -388,8 +388,7 @@ def structural_channels():
     print("* Ancilla added to a channel")
     c = hadamard
     s = random_state(2)
-    print( (c @ ket(1).as_chan()) >> s )
-    print( (c >> s) @ ket(1) )
+    print( (c @ ket(1).as_chan()) >> s == (c >> s) @ ket(1) )
 
     print("\n===\n")
 
@@ -675,7 +674,25 @@ def order_inference():
           J / D_ev / P_ev >= pGpE | pGnE )
 
 
+def all():
+    states()
+    operations_on_states()
+    basic_states()
+    predicates()
+    operations_on_predicates()
+    validity()
+    conditioning()
+    random_variables()
+    state_transformation()
+    predicate_transformation()
+    structural_channels()
+    measurement()
+    teleportation_and_superdensecoding()
+    order_inference()
+
+
 def main():
+    # all()
     # states()
     # operations_on_states()
     # basic_states()
@@ -683,10 +700,10 @@ def main():
     # operations_on_predicates()
     # validity()
     # conditioning()
-    random_variables()
+    # random_variables()
     # state_transformation()
     # predicate_transformation()
-    # structural_channels()
+    structural_channels()
     # measurement()
     # teleportation_and_superdensecoding()
     # order_inference()
