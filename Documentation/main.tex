@@ -4260,6 +4260,20 @@ light is horizontally polarised we get a probability of one half:
 0.5
 \end{python}
 
+To conclude, we use this polarisation example for some counter
+examples.  First, we show that iterated conditioning yields a
+different outcome than conditioning with conjunction:
+\begin{python}
+>>> s / vert_filt / diag_filt
+[[ 0.5+0.j  0.5+0.j]
+ [ 0.5+0.j  0.5+0.j]]
+>>> s / (vert_filt & diag_filt)
+[[ 1.+0.j  0.+0.j]
+ [ 0.+0.j  0.+0.j]]
+\end{python}
+
+\noindent In classical probability these outcomes are the same.
+
 This polarisation example can also be used to illustrate the failure
 of the law of total
 probability\index{law~of~total~probability}\index{probability!law~of~total~--}

@@ -284,6 +284,12 @@ def conditioning():
 
     print("\n===\n")
 
+    print("* Iterated conditioning is not the same as conditioning by conjunction")
+    print( s / vert_filt / diag_filt )
+    print( s / (vert_filt & diag_filt) )
+
+    print("\n===\n")
+
     print("* Failure of the law of total probability")
 
     print( s >= hor_filt )
@@ -645,12 +651,12 @@ def main():
     # predicates()
     # operations_on_predicates()
     # validity()
-    # conditioning()
+    conditioning()
     # random_variables()
     # state_transformation()
     # predicate_transformation()
     # structural_channels()
-    measurement()
+    # measurement()
     # teleportation_and_superdensecoding()
     # order_inference()
 
