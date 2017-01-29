@@ -767,7 +767,7 @@ def vector_pred(*ls):
 #
 # Computational unit state |i><i| of dimension n
 #
-def unit_state(n, i):
+def point_state(i, n):
     if i < 0 or i >= n:
         raise Exception('Index out-of-range in unit state creation')
     ls = [0] * n
@@ -782,8 +782,8 @@ def ket(*ls):
     if n == 0:
         raise Exception('Empty ket is impossible')
     if n == 1:
-        return unit_state(2, ls[0])
-    return unit_state(2, ls[0]) @ ket(*ls[1:n])
+        return point_state(ls[0], 2)
+    return point_state(ls[0], 2) @ ket(*ls[1:n])
 
 #
 # A probabilistic state constructed from an n-tuple of positive
@@ -874,7 +874,7 @@ def probabilistic_pred(*ls):
         raise Exception('Probabilities cannot exceed 1 for a probabilistic predicate')
     return Predicate(np.diag(ls), [n])
 
-def unit_pred(n, i):
+def point_pred(i, n):
     ls = [0] * n
     ls[i] = 1
     return probabilistic_pred(*ls)
@@ -1020,7 +1020,7 @@ def classic(*dims):
 # Injection channel kappa(m,k,n) : n -> m @ n for k below m with main
 # property:
 #
-#   kappa(m,k,n) >> s  =  unit_state(m,k) @ s
+#   kappa(m,k,n) >> s  =  point_state(k,m) @ s
 #
 def kappa(m,k,n):
     mat = np.zeros((n*m,n*m,n,n)) + 0j
@@ -1347,7 +1347,7 @@ def convex_channel_sum(*ls):
 # Let c = channel_from_states(s1, ..., sn). Then c >> t equals the
 # convex sum of states, given by the pairs 
 #
-#        ( t >= unit_pred(n,i), si )
+#        ( t >= point_pred(i,n), si )
 #
 # This means that much information about t is lost.
 #
@@ -1415,8 +1415,8 @@ def meas_pred(p):
     mat[1][1] = (~p).array
     return Channel(mat, p.dom, [2])
 
-meas0 = meas_pred(unit_pred(2,0))
-meas1 = meas_pred(unit_pred(2,1))
+meas0 = meas_pred(point_pred(0,2))
+meas1 = meas_pred(point_pred(1,2))
 
 #
 # Measurement generalised from a predicate to a test, that is to a
@@ -1461,8 +1461,8 @@ meas_ghz = meas_test(ghz_test)
 #                                                 (s >= ~p, s/~p) )
 #
 #   instr(p) << truth(2) @ q  =  (p & q) + (~p & q) 
-#   instr(p) << unit_pred(2,0) @ q  =  p & q
-#   instr(p) << unit_pred(2,1) @ q  =  ~p & q 
+#   instr(p) << point_pred(0,2) @ q  =  p & q
+#   instr(p) << point_pred(1,2) @ q  =  ~p & q 
 #
 def instr(p):
     n = p.dom.size
@@ -1567,7 +1567,7 @@ def ccase(*chans):
 #
 # Hence we have a probabilistic state with entries given by the validities:
 #
-#    t >= unit_pred(n,i)
+#    t >= point_pred(i,n)
 #
 def graph(c):
     if len(c.dom.dims) != 1:
@@ -1580,8 +1580,6 @@ def graph(c):
             for l in range(m):
                 mat[i*m+k][i*m+l] = 1.0/n * c.array[k][l]
     return Channel(mat, c.dom, c.cod * n)
-#    return channel_from_states(*[unit_state(n,i) @ (c >> unit_state(n,i)) 
-#                                 for i in range(n)])
 
 
 #
@@ -1593,7 +1591,7 @@ def productstate2channel(s):
         raise Exception('Product state required to form a channel')
     n = s.dom.dims[0]
     cod_dims = s.dom.dims[1:]
-    ls = [s / (unit_pred(n,i) @ truth(*cod_dims)) % [0,1] 
+    ls = [s / (point_pred(i,n) @ truth(*cod_dims)) % [0,1] 
           for i in range(n)]
     return channel_from_states(*ls)
 
@@ -1785,9 +1783,9 @@ def measurement():
     print("* measurement channel applied to a state, with validity", 
            s >= p, "\n", meas_pred(p) >> s )
     print("cnot predicate transformation")
-    print( (cnot << unit_pred(2,0) @ q) == unit_pred(2,0) @ q,
-           (cnot << unit_pred(2,1) @ r) == (unit_pred(2,1) @ ~r),
-           (cnot << unit_pred(2,1) @ q) == (unit_pred(2,1) @ ~q) )
+    print( (cnot << point_pred(0,2) @ q) == point_pred(0,2) @ q,
+           (cnot << point_pred(1,2) @ r) == (point_pred(1,2) @ ~r),
+           (cnot << point_pred(1,2) @ q) == (point_pred(1,2) @ ~q) )
     r = random.uniform(0,1)
     print("* Classical control with classical control bit:")
     print( (ccontrol(x_chan) >> cflip(r) @ s) % [1,0] == 
@@ -1810,8 +1808,8 @@ def instrument():
            (instr(p) >> s) % [0,1] == convex_state_sum( (s >= p, s/p), 
                                                         (s >= ~p, s/~p) ),
            instr(p) << truth(2) @ q == (p & q) + (~p & q),
-           instr(p) << unit_pred(2,0) @ q == (p & q),
-           instr(p) << unit_pred(2,1) @ q == (~p & q) )
+           instr(p) << point_pred(0,2) @ q == (p & q),
+           instr(p) << point_pred(1,2) @ q == (~p & q) )
     print("channel equalities")
     print( (idn(2) @ discard(2)) * instr(p) == meas_pred(p) )
 
@@ -1847,9 +1845,9 @@ def channel():
            swaps(i,j) >> si @ sj == sj @ si )
     print( swap * swap == idn(2,2) )
     print("* channel from state state transformation as convex sum")
-    print( convex_state_sum((t >= unit_pred(3, 0), s1),
-                            (t >= unit_pred(3, 1), s2),
-                            (t >= unit_pred(3, 2), s3)) )
+    print( convex_state_sum((t >= point_pred(0,3), s1),
+                            (t >= point_pred(1,3), s2),
+                            (t >= point_pred(2,3), s3)) )
     print( c >> t )
     print("* predicate as channel")
     p = random_pred(2)
@@ -1877,8 +1875,8 @@ def bayesian_probability():
     prior = probabilistic_state(0.01, 0.99)
     print( sens >> prior )
     sense_inv = sens.inversion(prior)
-    print( prior / (sens << unit_pred(2,0)) == sense_inv >> ket(0),
-           prior / (sens << unit_pred(2,1)) == sense_inv >> ket(1) )
+    print( prior / (sens << point_pred(0,2)) == sense_inv >> ket(0),
+           prior / (sens << point_pred(1,2)) == sense_inv >> ket(1) )
     print( sense_inv << truth(2) == truth(2),
            is_positive(sense_inv.as_operator().array) )
 
@@ -1887,7 +1885,7 @@ def kappa_copy():
     s = random_state(4)
     p = random_pred(4)
     q = random_pred(2)
-    print( kappa(3,2,4) >> s == unit_state(3, 2) @ s,
+    print( kappa(3,2,4) >> s == point_state(2,3) @ s,
            kappa(3,1,4) << probabilistic_pred(0.3, 0.2, 0.5) @ p == 0.2 * p )
     c = hadamard * x_chan * z_chan
     d = y_chan * phase_shift(math.pi/3) * x_chan
@@ -1916,7 +1914,7 @@ def kappa_copy():
 def graphs():
     print("\nGraph tests")
     c = x_chan * hadamard * phase_shift(math.pi/3)
-    gr = (idn(2) @ c) * instr(unit_pred(2,0))
+    gr = (idn(2) @ c) * instr(point_pred(0,2))
     print("* truth preservation by channels")
     print( truth(2) == c << truth(2), truth(2) == gr << truth(2, 2) )
     # print("* graph properties")
