@@ -5595,6 +5595,15 @@ True
 \noindent The latter equality corresponds to the familar weakest
 precondition rule for if-then-else.
 
+Finally, by conditioning the outcome of an instrument to the ``true''
+case and taking the second marginal we can extract the updated state:
+\begin{python}
+>>> p = random_pred(10)
+>>> s = random_state(10)
+>>> ((instr(p) >> s) / (unit_pred(2,0) @ truth(10))) % [0,1] ==  s / p 
+True
+\end{python}
+
 
 \section{Teleportation and superdense coding examples}\label{sec:teleportation}
 
@@ -6147,6 +6156,70 @@ presented: a clear 'order inference effect'. The judge is most
 convinced by the one who speaks last. This is a very human
 characteristic.
 \end{example}
+
+    print("* States for the three perspectives")
+    H = np.array([[2, 1, 1, 0],
+                  [1, -2, 0, 1],
+                  [1, 0, 0, 1],
+                  [0, 1, 1, 0]])
+    Ujp = scipy.linalg.expm(complex(0,-1) * 1.2393 * H)
+    Ujd = scipy.linalg.expm(complex(0,-1) * -3.8324 * H)
+    Upd = np.dot(Ujd, conjugate_transpose(Ujp))
+    Udp = np.dot(Ujp, conjugate_transpose(Ujd))
+    print("Self-adjoint and unitaries: ",
+          is_hermitian(H), is_unitary(Ujp), is_unitary(Ujd), is_unitary(Upd) )
+    chjp = channel_from_unitary(Ujp, [4], [4])
+    chjd = channel_from_unitary(Ujd, [4], [4])
+    chpd = channel_from_unitary(Upd, [4], [4])
+    chdp = channel_from_unitary(Udp, [4], [4])
+    J = vector_state(sqrt(0.459/2),sqrt(0.459/2),sqrt(0.541/2),sqrt(0.541/2))
+    P = chjp >> J
+    D = chjd >> J
+    print("Equality of states: ", D == chpd >> P, P == chdp >> D )
+    print("Alternative descriptions via evolution: ",
+          P == RandVar(H, [4]).evolution(J)(1.2393),
+          D == RandVar(H, [4]).evolution(J)(-3.8324) )
+
+    print("\n===\n")
+
+    print("* Predicates for the four kinds of information, and naieve perspective")
+    pGpE = unit_pred(4,0)
+    pGnE = unit_pred(4,1)
+    nGpE = unit_pred(4,2)
+    nGnE = unit_pred(4,3)
+    print( J >= pGpE | pGnE )
+    print( J >= nGpE | nGnE )
+
+    print("\n===\n")
+
+    print("* Prosecutor's perspective")
+    print("Guilt and non-guilt: ", P >= pGpE | pGnE, P >= nGpE | nGnE )
+    print("Similarly, via predicate transformation: ",
+          J >= chjp << (pGpE | pGnE), J >= chjp << (nGpE | nGnE) )
+    print( P / (pGpE | nGpE) >= (pGpE | pGnE) )
+    print("This can also be obtained by moving back and forth, since the channel is MIU")
+    print( chjp >> (J / (chjp << (pGpE | nGpE))) >= (pGpE | pGnE) )
+
+    print("\n===\n")
+
+    print("* Defense perspective")
+    print( D >= pGpE | pGnE )
+    print( D / (chdp << (pGpE | nGpE)) >= pGpE, 
+           D / (chdp << (pGpE | nGpE)) >= pGnE,
+           D / (chdp << (pGpE | nGpE)) >= nGpE,
+           D / (chdp << (pGpE | nGpE)) >= nGnE )
+    print( D / (chdp << (pGpE | nGpE)) >= pGpE | pGnE )
+
+    print("\n===\n")
+
+    print("* Judge's perspective")
+    P_ev = chjp << (pGpE | nGpE)
+    D_ev = chjd << (pGnE | nGnE)
+    print("Positive evidence of prosector first: ",
+          J / P_ev / D_ev >= pGpE | pGnE )
+    print("Negative evidence of defense first: ",
+          J / D_ev / P_ev >= pGpE | pGnE )
+
 }
 
 
