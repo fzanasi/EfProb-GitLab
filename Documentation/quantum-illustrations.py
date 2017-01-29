@@ -84,8 +84,8 @@ def basic_states():
 
     print("\n===\n")
 
-    print("* Unit state")
-    print( unit_state(3,2) )
+    print("* Point/unit state")
+    print( point_state(2,3) )
 
     print("\n===\n")
 
@@ -117,7 +117,7 @@ def predicates():
     print("\n===\n")
 
     print("* Unit predicate, of length 4")
-    print( unit_pred(4,2) )
+    print( point_pred(2,4) )
 
     print("\n===\n")
 
@@ -140,7 +140,7 @@ def operations_on_predicates():
     print("\n===\n")
 
     print("* Sum of unit predicates")
-    print( unit_pred(4,2) + unit_pred(4,0) )
+    print( point_pred(2,4) + point_pred(0,4) )
 
     print("\n===\n")
 
@@ -170,7 +170,7 @@ def operations_on_predicates():
     print("* Weakening illustration")
     s = cflip(0.4)
     t = ket(0,0)
-    p = unit_pred(2,1)
+    p = point_pred(1,2)
     print( s >= p )
     print( s @ t >= p @ truth(2,2) )
 
@@ -197,7 +197,7 @@ def validity():
     print("\n===\n")
 
     print("* Commutativity of sequential conjunction")
-    p = unit_pred(2,0)
+    p = point_pred(0,2)
     q = plus.as_pred()
     print( ket(0) >= p & q )
     print( ket(0) >= q & p )
@@ -259,8 +259,8 @@ def conditioning():
 
     print("* polarisation illustration, in several steps")
     s = random_state(2)
-    vert_filt = unit_pred(2,0)
-    hor_filt = unit_pred(2,1)
+    vert_filt = point_pred(0,2)
+    hor_filt = point_pred(1,2)
     diag_filt = plus.as_pred()
     print( s >= vert_filt )
     s_vert = s / vert_filt
@@ -310,15 +310,15 @@ def random_variables():
     print("\n===\n")
 
     print("* Types of scalar additions")
-    print( type( unit_pred(2,0) ) )
-    print( type( unit_pred(2,0) + unit_pred(2,0) ) )
+    print( type( point_pred(0,2) ) )
+    print( type( point_pred(0,2) + point_pred(0,2) ) )
 
     print("\n===\n")
 
     print("* Dice variance, quantum style")
     dice = uniform_probabilistic_state(6)
-    points = 1 * unit_pred(6,0) + 2 * unit_pred(6,1) + 3 * unit_pred(6,2) \
-             + 4 * unit_pred(6,3) + 5 * unit_pred(6,4) + 6 * unit_pred(6,5)
+    points = 1 * point_pred(0,6) + 2 * point_pred(1,6) + 3 * point_pred(2,6) \
+             + 4 * point_pred(3,6) + 5 * point_pred(4,6) + 6 * point_pred(5,6)
     print( dice >= points )
     print( points.variance(dice) )
 
@@ -347,7 +347,7 @@ def predicate_transformation():
     print("\nSubsection: Predicate transformation\n")
 
     print("* Predicates used in Bell table, via predicate transformation")
-    A1 = hadamard << unit_pred(2,0)
+    A1 = hadamard << point_pred(0,2)
     print( A1 )
     angle = pi / 3
     A2 = phase_shift(angle) << A1
@@ -469,8 +469,8 @@ def measurement():
     p = random_pred(10)
     q = random_pred(10)
     print( instr(p) << truth(2) @ q == (p & q) + (~p & q) )
-    print( instr(p) << unit_pred(2,0) @ q == p & q )
-    print( instr(p) << unit_pred(2,1) @ q == ~p & q )
+    print( instr(p) << point_pred(0,2) @ q == p & q )
+    print( instr(p) << point_pred(1,2) @ q == ~p & q )
 
     print("\n===\n")
 
@@ -489,7 +489,7 @@ def measurement():
     print("* Extract update state from instrument")
     p = random_pred(10)
     s = random_state(10)
-    print( ((instr(p) >> s) / (unit_pred(2,0) @ truth(10))) % [0,1] ==  s / p )
+    print( ((instr(p) >> s) / (point_pred(0,2) @ truth(10))) % [0,1] ==  s / p )
 
 
 def teleportation_and_superdensecoding():
@@ -644,14 +644,14 @@ def all():
 
 
 def main():
-    # all()
+    all()
     # states()
     # operations_on_states()
     # basic_states()
     # predicates()
     # operations_on_predicates()
     # validity()
-    conditioning()
+    # conditioning()
     # random_variables()
     # state_transformation()
     # predicate_transformation()
