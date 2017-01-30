@@ -277,6 +277,7 @@
 \newcommand{\CN}{\mathbb{C}}     % complex numbers
 \newcommand{\RN}{\mathbb{R}}     % real numbers
 \newcommand{\RNpos}{\RN_{\geq 0}}  % positive real numbers
+\newcommand{\RNext}{\overline{\RN}} % extended real numbers
 \newcommand{\NN}{\mathbb{N}}     % natural numbers
 \newcommand{\Mat}{\mathsf{M}}
 \newcommand{\tr}{\mathsf{tr}}
@@ -2935,25 +2936,23 @@ measurable subset $U\subseteq D$.
 Given this situation, the \EfProb library uses a restricted class of
 probability measures. Such a measure consists of:
 \begin{enumerate}
-\item a \emph{domain} $D \subseteq \RN^{n}$, given by an
-  $n$-dimensional rectangle of intervals:
+\item a \emph{domain} $D \subseteq \RNext^{n}$, given by an
+  $n$-dimensional rectangle of intervals in the extended
+real numbers $\RNext=\RN\cup\{-\infty,\infty\}$.
 $$\begin{array}{rcccl}
 D
 & = &
 [\lb_{1}, \ub_{1}] \times [\lb_{2}, \ub_{2}] \times \cdots \times
    [\lb_{n}, \ub_{n}]
 & \subseteq &
-\RN^{n}
+\RNext^{n}
 \end{array}$$
 
-\noindent where the $\lb_{i},\ub_{i}\in\RN$ are the lower and upper
-bounds. This subset $D$ is thus a compact metric space.
+\noindent where the $\lb_{i},\ub_{i}\in\RNext$ are the lower and upper
+bounds.
 
-\item A continuous probability density function $f\colon D \rightarrow
-  \RN$, which, by compactness of $D$, is necessarily bounded. We will
-  deal with unbounded functions and unbounded domains by
-  approximation, like for the Poisson distribution in
-  Remark~\ref{rem:poisson}.
+\item A probability density function $f\colon D \rightarrow
+  \RNpos$.
 \end{enumerate}
 
 \noindent In the \EfProb library there are no separate (\Python)
@@ -2966,7 +2965,7 @@ more complicated.
 
 In the remainder of this chapter we will use `state' as a synonym for
 `distribution', either discrete or continuous. If we wish to emphasise
-one or the other, we will speake of a `discrete state' or a
+one or the other, we will speak of a `discrete state' or a
 `continuous state'.
 
 
@@ -2977,7 +2976,7 @@ In order to gain familiarity with continuous states --- and their
 combination with discrete ones --- we go through a series of examples.
 
 The most elementary continuous distribution is the continuous one,
-given on an interval, say $[0,5] \subseteq \RN$. It is defined as:
+given on an interval, say $[0,5] \subseteq \RNext$. It is defined as:
 \begin{python}
 >>> u = uniform_state(R(0,5))
 >>> u
