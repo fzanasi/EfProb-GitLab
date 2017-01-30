@@ -731,34 +731,38 @@ domain:
 0.167|*> + 0.167|**> + 0.167|***> + 0.167|****> + 0.167|*****> + 0.167|******>
 \end{python}
 
+\noindent There is also a function that produces a singleton state
+$1\ket{x}$ with domain $D$ (which must contain $x$), namely
+\pythoninline{point_state(x, D)}, see for instance:
+\begin{python}
+>>> point_state(True, [True,False])
+1|True> + 0|False>
+>>> point_state(3, [1,2,3,4,5,6])
+0|1> + 0|2> + 1|3> + 0|4> + 0|5> + 0|6>
+\end{python}
+
 \noindent When you are happy with natural numbers as domain you
-can use:
+can use \Python's built-in function \pythoninline{range}.
+For an arbitrary number $n$,
+\pythoninline{range(n)} is the sequence
+of $0, 1, 2, \dotsc, n-1$ and can be used as domain:
 \begin{python}
 >>> uniform_state(range(5))
 0.2|0> + 0.2|1> + 0.2|2> + 0.2|3> + 0.2|4>
-\end{python}
-
-\noindent For an arbitray number \pythoninline{n} this
-\pythoninline{uniform\_state(range(n))} produces a uniform
-distribution with as domain the set $\{0,1,2,\ldots,n-1\}$. There is
-also a function that produces a singleton state $1\ket{i}$ with domain
-$\{0,1,2,\ldots,n-1\}$ for $0 \leq i < n$, namely
-\pythoninline{point\_state(n,i)}, see for instance:
-\begin{python}
 >>> point_state(2, range(4))
 0|0> + 0|1> + 1|2> + 0|3>
 \end{python}
 
 \noindent The simplest possible distribution $1\ket{0}$ with domain
-$\{0\}$ can be produced as \pythoninline{unit\_disc\_state(1,0)} or
+$\{0\}$ can be produced as \pythoninline{point_state(0,range(1))} or
 also as \pythoninline{uniform_state(range(1))}.
 
 For testing purposes it is useful to have a random discrete
-probability on the $\{0,1,2,\ldots,n-1\}$. It works as described
+probability. It works as described
 below, internally using \Python's random number generator. Each time
 it gives a different answer.
 \begin{python}
->>> random_tate(range(5))
+>>> random_state(range(5))
 0.133|0> + 0.273|1> + 0.175|2> + 0.119|3> + 0.3|4>
 >>> random_state(range(5))
 0.252|0> + 0.25|1> + 0.452|2> + 0.035|3> + 0.0103|4>
@@ -1148,8 +1152,17 @@ predicate on the domain of the dice distribution:
 1: 0 | 2: 0 | 3: 0 | 4: 0 | 5: 0 | 6: 0
 \end{python}
 
-\noindent In the previous section we have seen a random-state function
-on the range $\{0,1,\ldots, n-1\}$. There is a similar random-predicate
+\noindent It is useful to have
+a predicate which is $1$ only at one element of its domain.
+This predicate
+is called \pythoninline{point\_pred}. It is illustrated in:
+\begin{python}
+>>> point_pred(3, range(4))
+0: 0 | 1: 0 | 2: 0 | 3: 1
+\end{python}
+
+\noindent In the previous section we have seen a function
+\pythoninline{random_state}. There is a similar random-predicate
 function --- but this time the probabilities do not add up to one.
 \begin{python}
 >>> random_pred(range(5))
@@ -1158,14 +1171,6 @@ function --- but this time the probabilities do not add up to one.
 
 \noindent Each time this function is called, different probabilities
 appear.
-
-On such a state with range $\{0,1,\ldots, n-1\}$ it is useful to have
-a predicate which is $1$ only at the $i$-th position. This predicate
-is called \pythoninline{point\_pred}. It is illustrated in:
-\begin{python}
->>> point_pred(3, range(4))
-0: 0 | 1: 0 | 2: 0 | 3: 1
-\end{python}
 
 As mentioned in the beginning of this section, each state is a
 predicate --- but not the other way around. In the \EfProb library
@@ -2665,7 +2670,7 @@ $f$ & $f$ & $\frac{1}{10}$ \\
 In \EfProb this Bayesian network can be modeled as follows. There
 are the following pre-defined functions for states and predicates.
 \begin{python}
-bnd = Dom(['t', 'f'])
+bnd = ['t', 'f']
 def bn_prior(r): return State([r,1-r], bnd)
 def bn_pred(r,s): return Predicate([r,s], bnd)
 bn_pos_pred = bn_pred(1,0)

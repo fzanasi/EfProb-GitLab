@@ -40,12 +40,14 @@ def states():
 
     print("\n===\n")
 
-    print("* discrete state example, length 5")
-    print( uniform_state(range(5)) )
+    print("* unit state example")
+    print( point_state(True, [True,False]) )
+    print( point_state(3, [1,2,3,4,5,6]) )
 
     print("\n===\n")
 
-    print("* unit state example")
+    print("* discrete state example")
+    print( uniform_state(range(5)) )
     print( point_state(2, range(4)) )
 
     print("\n===\n")
