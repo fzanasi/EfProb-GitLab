@@ -2259,6 +2259,67 @@ obtained via iterated sampling.
 \end{example}
 
 
+The next example illustrates the `denotation of a channel'
+construction, as used in the area of quantitative information flow.
+
+
+\begin{example}
+\label{ex:channeldenotation}
+It is not hard to see that a channel $c \colon dom \rightarrow [n]$
+corresponds to an $n$-test of predicates on the domain $dom$. If we
+write $c(x) = c(x)(1)\ket{1} + \cdots + c(x)(n)\ket{n}$, then this
+$n$-test of predicates $p_{1}, \ldots, p_{n}$ is given by $p_{i}(x) =
+c(x)(i)$.
+
+In the \EfProb library there is a function
+\pythoninline{predicates\_from\_channel} that extracts this test as a
+list of predicates from a channel. Subsequently, it is used to define
+what is called the `denotation of a
+channel',\index{channel!denotation~of~--} see \eg\cite{McIverMSEM14}.
+The denotation produces a list of pairs $(r_{i}, \omega_{i})$ 
+of numbers $r_{i}\in [0,1]$ adding up to one, and states $\omega_{i}$.
+It is defined via validity and conditioning:
+\begin{python}
+def channel_denotation(c, s):
+    return [(s >= p, s/p) for p in predicates_from_channel(c)]
+\end{python}
+
+\noindent We illustrate this denotation function by copying Example~1
+from\cite{McIverMSEM14}.
+\begin{python}
+>>> X = ['x1', 'x2', 'x2']
+>>> Y = ['y1', 'y2', 'y3', 'y4']
+>>> c = Channel.from_states([State([1,   0,   0,   0  ], Y),
+...                          State([0,   1/2, 1/4, 1/4], Y),
+...                          State([1/2, 1/3, 1/6, 0  ], Y)], X)
+>>> s = uniform_state(X)
+>>> c >> s
+0.5|y1> + 0.278|y2> + 0.139|y3> + 0.0833|y4>
+>>> predicates_from_channel(c)
+[x1: 1 | x2: 0 | x2: 0.5, 
+ x1: 0 | x2: 0.5 | x2: 0.333, 
+ x1: 0 | x2: 0.25 | x2: 0.167, 
+ x1: 0 | x2: 0.25 | x2: 0]
+>>> cd = channel_denotation(c, s)
+>>> cd
+[(0.5, 0.667|x1> + 0|x2> + 0.333|x2>), 
+ (0.27777777777777779, 0|x1> + 0.6|x2> + 0.4|x2>), 
+ (0.1388888888888889, 0|x1> + 0.6|x2> + 0.4|x2>), 
+ (0.083333333333333329, 0|x1> + 1|x2> + 0|x2>)]
+>>> convex_sum(cd)
+0.333|x1> + 0.333|x2> + 0.333|x2>
+\end{python}
+
+\noindent We see how the four extracted predicates are obtained by
+`vertically' reading out the probabilities of the three states in the
+definition of the channel. We have inserted spacing to increase the
+readability. The channel-denotation is printed subsequently as a list
+of four pairs (probability, state). Interestingly, the convex sum of
+these pairs is the original state \pythoninline{s}. This is a general
+fact about the construction, see also\cite{Jacobs16}.
+\end{example}
+
+
 
 \subsection{Sequential and parallel composition}\label{subsec:dchannel:composition}
 

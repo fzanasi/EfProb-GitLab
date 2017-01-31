@@ -313,18 +313,10 @@ def channels():
 
     print("\nSection: Channels")
 
-    def chan_denot(c, s):
-        return [(s >= p, s/p) for p in predicates_from_chan(c)]
-
     print("* Channel from states")
     c = Channel.from_states([flip(0.2), flip(0.3), flip(0.5)])
     print( c )
     print( c >> uniform_state(range(3)) )
-    print("tests")
-    s = random_state(range(3))
-    print( s )
-    cd = chan_denot(c, s)
-    print( convex_state_sum(*cd) )
 
     print("\n===\n")
 
@@ -386,6 +378,24 @@ def state_pred_transformation():
     print( s4  )
     s5 = trs >> (s4 / (obs << G))
     print( s5 )
+
+    print("\n===\n")
+
+    print("* Denotation of a channel")
+    X = ['x1', 'x2', 'x2']
+    Y = ['y1', 'y2', 'y3', 'y4']
+    c = Channel.from_states([State([1,   0,   0,   0  ], Y),
+                             State([0,   1/2, 1/4, 1/4], Y),
+                             State([1/2, 1/3, 1/6, 0  ], Y)], X)
+    s = uniform_state(X)
+    print( c >> s )
+    print("The 4-test extracted from the channel")
+    print( predicates_from_channel(c) )
+    cd = channel_denotation(c, s)
+    print("The 4 pairs probability-state pairs")
+    print( cd )
+    print("The original state")
+    print( convex_sum(cd) )
 
 
 def structural_channels():
@@ -531,15 +541,15 @@ def all():
     bayesian_networks()
 
 def main():
-    all()
+    #all()
     #states()
     #operations_on_states()
     #excursion()
     #validity()
     #conditioning()
     #random_variables()
-    #channels()
-    #state_pred_transformation()
+    channels()
+    state_pred_transformation()
     #structural_channels()
     #bayesian_networks()
 

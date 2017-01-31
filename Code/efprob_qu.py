@@ -932,8 +932,8 @@ def choi(u):
 #   chan(u) << p  =  u * p.array * conj_trans(u)
 #
 def channel_from_unitary(u, dom, cod):
-    #if not is_unitary(u):
-    #    raise Exception('Unitary matrix required for channel construction')
+    if not is_unitary(u):
+        raise Exception('Unitary matrix required for channel construction')
     return Channel(choi(u), dom, cod)
 
 
@@ -1995,7 +1995,7 @@ def transition():
 
 def experiment():
     c = hadamard * x_chan
-    print( c )
+    #print( c )
     # same outcome for x_chan, y_chan
     #print( chan2productpredicate(c) )
     #print( chan2productstate(c) )
@@ -2014,23 +2014,48 @@ def experiment():
     #print( ((s2p(t) @ truth(2)) & chan2productpredicate(c)) % [0, 1] )
     #print("state transformer\n", s2p(c >> t.conjugate()) )
 
-    print( channel_from_unitary((np.array([[2, 3],
-                                                          [5, 7]])), 
-                                Dom([2]), Dom([2])) )
+    # c = channel_from_unitary((np.array([[2, 3],
+    #                                     [5, 7]])), 
+    #                          Dom([2]), Dom([2]))
 
+    # print( c )
+    # print( c.as_operator() )
+
+    # d = channel_from_unitary(lower_right_one(np.array([[2, 3.j],
+    #                                                    [5.j, 7]])), 
+    #                          [2, 2], [2, 2])
+    # print( d )
+    # print( d.as_operator() )
+
+    e = hadamard * phase_shift(math.pi/2)
+    # print( e.array )
+    # print( e.as_operator().array )
+    print( e.as_kraus().array_list )
+
+    p = random_pred(2)
+    print( np.allclose((hadamard << p).array,
+                       np.dot(np.dot(conjugate_transpose(hadamard_matrix), 
+                                     p.array),
+                              hadamard_matrix)) )
+    #print( hadamard << p )
+    #print( hadamard.as_kraus() << p )
+
+    print( e << p )
+    print( phase_shift_matrix(math.pi/2) )
+    #print( e.as_kraus() << p )
 
 def main():
-    validity()
-    marginals()
-    measurement()
-    instrument()
-    conditioning()
-    channel()
-    bayesian_probability()
-    kappa_copy()
-    graphs()
-    transition()
-    #experiment()
+    # validity()
+    # marginals()
+    # measurement()
+    # instrument()
+    # conditioning()
+    # channel()
+    # bayesian_probability()
+    # kappa_copy()
+    # graphs()
+    # transition()
+    experiment()
 
 
 if __name__ == "__main__":

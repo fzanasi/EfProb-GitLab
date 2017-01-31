@@ -1187,7 +1187,7 @@ def case_channel(*channels, case_dom=None):
     return Channel(array, case_dom + dom, cod)
 
 
-def predicates_from_chan(c):
+def predicates_from_channel(c):
     if c.cod.iscont:
         return ValueError('Codomain must be discrete')
     if len(c.cod) != 1:
@@ -1198,6 +1198,9 @@ def predicates_from_chan(c):
                 for i in range(len(c.cod[0]))]
     return [Predicate(c.array[i, ...], c.dom)
             for i in range(len(c.cod[0]))]
+
+def channel_denotation(c, s):
+    return [(s >= p, s/p) for p in predicates_from_channel(c)]
 
 
 class DetChan:
