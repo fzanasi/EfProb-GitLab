@@ -314,15 +314,7 @@ def channels():
     print("\nSection: Channels")
 
     def chan_denot(c, s):
-        if c.dom.iscont or c.cod.iscont:
-            return Exception('Channel semantics defined only for discrete channels')
-        if len(c.dom.disc) > 1 or len(c.cod.disc) > 1:
-            return Exception('Channel semantics requires one-dimensional domain and codomain')
-        test_dom = c.dom.disc[0]
-        test_cod = c.cod.disc[0]
-        test = [ Predicate([c.get_state(i).array[j] for i in test_dom], test_dom) 
-                 for j in range(len(test_cod)) ]
-        return [ [s >= p, s/p] for p in test ]
+        return [(s >= p, s/p) for p in predicates_from_chan(c)]
 
     print("* Channel from states")
     c = Channel.from_states([flip(0.2), flip(0.3), flip(0.5)])

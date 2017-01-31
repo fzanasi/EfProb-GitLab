@@ -1187,6 +1187,19 @@ def case_channel(*channels, case_dom=None):
     return Channel(array, case_dom + dom, cod)
 
 
+def predicates_from_chan(c):
+    if c.cod.iscont:
+        return ValueError('Codomain must be discrete')
+    if len(c.cod) != 1:
+        return ValueError('Codomain must be one-dimensional')
+    if c.dom.iscont:
+        return [Predicate(Fun2.vect_fun_at2(c.array[i, ...], ()),
+                          c.dom)
+                for i in range(len(c.cod[0]))]
+    return [Predicate(c.array[i, ...], c.dom)
+            for i in range(len(c.cod[0]))]
+
+
 class DetChan:
     """Deterministic channels."""
     def __init__(self, funs, dom):
