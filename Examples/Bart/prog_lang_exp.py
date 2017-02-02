@@ -62,7 +62,7 @@ print( (ex2 / (Predicate([1,0], [True,False]) @ truth([True,False]) @ truth([Tru
 print("\nExample 2 alternative")
 
 def observe(p, c):
-    return chan_fromklmap(lambda i: c.get_state(i) / p,
+    return chan_fromklmap(lambda *args: c.get_state(*args) / p,
                           c.dom,
                           c.cod)
 
