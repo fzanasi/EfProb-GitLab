@@ -82,14 +82,35 @@ def matrix_square_root(mat):
 # Produce the list of eigenvectors vi, with (roots of )eigenvalues
 # incorporated so that mat = sum |vi><vi|, given in python as:
 #
-# sum([ np.outer(v, v) for v in spectral_decomposition(mat) ]) 
+# sum([ np.outer(v.conj(), v).T for v in spectral_decomposition(mat) ]) 
 #
-# For some reason there is no complex-conjugate involved.
+# see the nympy outer product description at:
+# https://docs.scipy.org/doc/numpy/reference/generated/numpy.outer.html
 #
 def spectral_decomposition(mat):
     E = np.linalg.eigh( mat )
     EVs = [cmath.sqrt(x) * y for x,y in zip(list(E[0]), list(E[1].T))]
     return EVs
+
+def kraus_decomposition(mat, n, m):
+    EVs = spectral_decomposition(mat)
+    # Turn each n*m vector e in EVs into an nxm matrix kraus_e
+    out = []
+    for e in EVs:
+        kraus_e = np.zeros((n,m)) + 0j
+        for i in range(n):
+            for j in range(n):
+                kraus_e[i][j] = e[j*n+i]
+    out.append(kraus_e)
+    return out
+
+#
+# Purification of a (square) matrix, which is assumed to be positive
+#
+def purify(mat):
+    n = mat.shape[0]
+    EV = spectral_decomposition(mat)
+    return sum([np.kron(EV[i], vector_base(i,n)) for i in range(n)])
 
 #
 # We concentrate on square matrices/arrays
@@ -163,6 +184,19 @@ def is_state(mat):
 def entanglement_test(s):
     return np.allclose(s.array,
                        np.kron((s%[1,0]).array, (s%[0,1]).array))
+
+
+def vector_base(i,n):
+    ls = np.zeros(n)
+    ls[i] = 1
+    return ls
+
+def matrix_base(i,j,n):
+    mat = np.zeros((n,n))
+    mat[i][j] = 1
+    return mat
+
+
 
 ########################################################################
 # 
@@ -492,6 +526,12 @@ class State:
                        Dom([]),
                        self.dom)
 
+    def purify(self):
+        v = purify(self.array)
+        mat = np.outer(v, np.conjugate(v))
+        return State(mat, [self.dom.size, self.dom.size])
+
+
         
 
 # A channel A -> B
@@ -615,6 +655,13 @@ class Channel:
     def as_kraus(self):
         return self.as_operator().as_kraus()
 
+    def purify(self):
+        """ to be finished """
+        array_list = self.as_operator().as_kraus().array_list
+        print(len(array_list))
+        print(array_list[0].shape)
+        return None
+
 
 #
 # Alternative representation of a channel n -> m, namely as a
@@ -670,17 +717,7 @@ class Operator:
 
     def as_kraus(self):
         """ produce Kraus operators associated with operator """
-        n = self.dom.size
-        m = self.cod.size
-        SD = spectral_decomposition(self.array)
-        # Turn each n*m vector e in SD into an nxm matrix kraus_e
-        out = []
-        for e in SD:
-            kraus_e = np.zeros((n,m)) + 0j
-            for i in range(n):
-                for j in range(n):
-                    kraus_e[i][j] = e[j*n+i]
-        out.append(kraus_e)
+        out = kraus_decomposition(self.array, self.dom.size, self.cod.size)
         return Kraus(out, self.dom, self.cod)
 
 
@@ -728,9 +765,8 @@ class Kraus:
         mat = np.zeros((m,m,n,n)) + 0j
         for k in range(m):
             for l in range(m):
-                arg = np.zeros((m,m))
-                arg[k][l] = 1
-                mat[k][l] = sum([np.dot(np.dot(e, arg), e.T) 
+                mat[k][l] = sum([np.dot(np.dot(conjugate_transpose(e), 
+                                               matrix_base(k,l,m)), e) 
                                  for e in self.array_list])
         return Channel(mat, self.dom, self.cod)
 
@@ -770,9 +806,7 @@ def vector_pred(*ls):
 def point_state(i, n):
     if i < 0 or i >= n:
         raise Exception('Index out-of-range in unit state creation')
-    ls = [0] * n
-    ls[i] = 1
-    return vector_state(*ls)
+    return vector_state(*vector_base(i,n))
 
 #
 # ket state, taking 0's and 1's as input, as in ket(0,1,1) for |011>
@@ -850,6 +884,12 @@ def random_probabilistic_state(n):
     ls = [random.uniform(0.0, 1.0) for i in range(n)]
     return probabilistic_state(*ls)
 
+#
+# 0 <= theta <= pi, 0 <= phi <= 2*pi
+#
+def bloch_state(theta, phi):
+    return vector_state(math.cos(theta/2), 
+                        math.sin(theta/2) * math.e ** (phi * complex(0,1)))
 
 #
 # Truth predicate, for arbitrary dims
@@ -875,9 +915,7 @@ def probabilistic_pred(*ls):
     return Predicate(np.diag(ls), [n])
 
 def point_pred(i, n):
-    ls = [0] * n
-    ls[i] = 1
-    return probabilistic_pred(*ls)
+    return probabilistic_pred(*vector_base(i,n))
 
 #
 # A random probabilitisc predicate of dimension n
@@ -917,9 +955,7 @@ def choi(u):
     mat = np.zeros((n,n,n,n)) + 0j
     for i in range(n):
         for j in range(n):
-            arg = np.zeros((n,n))
-            arg[i][j] = 1
-            out = np.dot(u, np.dot(arg, conjugate_transpose(u)))
+            out = np.dot(u, np.dot(matrix_base(i,j,n), conjugate_transpose(u)))
             mat[i,j] = out
     return mat
 
@@ -1143,28 +1179,23 @@ def kron_inv(n,m):
 # Auxiliary function, placing a matrix in the lower-right corner of a
 # new matrix that is twice as big, with zeros everywhere else.
 #
+# This is: |1><1| x mat,  where x is Kronecker
+#
 def lower_right(mat):
     # mat is assumed to be square
-    n = mat.shape[0]
-    out = np.zeros((2*n, 2*n)) + 0j
-    for i in range(n):
-        for j in range(n):
-            out[n+i][n+j] = mat[i][j]
-    return out
+    return np.kron(np.array([[0,0],[0,1]]), mat)
 
 #
 # Same as before, except that ones are put on the upper left diagonal;
 # this is used for conditional channels from gates.
 #
+# This is: |0><0| x id + |1><1| x mat,  where x is Kronecker
+#
 def lower_right_one(mat):
     # mat is assumed to be square
     n = mat.shape[0]
-    out = np.zeros((2*n, 2*n)) + 0j
-    for i in range(n):
-        out[i,i] = 1
-        for j in range(n):
-            out[n+i][n+j] = mat[i][j]
-    return out
+    return np.kron(np.array([[1,0],[0,0]]), np.eye(n)) \
+        + np.kron(np.array([[0,0],[0,1]]), mat)
 
 x_matrix = np.array([[0,1],
                      [1,0]])
@@ -1471,8 +1502,7 @@ def instr(p):
     sqnp = matrix_square_root((~p).array)
     for i in range(n):
         for j in range(n):
-            arg = np.zeros((n,n))
-            arg[i][j] = 1
+            arg = matrix_base(i,j,n)
             out1 = np.dot(sqp, np.dot(arg, sqp))
             out2 = np.dot(sqnp, np.dot(arg, sqnp))
             mat[i][j] = out1
@@ -1581,19 +1611,6 @@ def graph(c):
                 mat[i*m+k][i*m+l] = 1.0/n * c.array[k][l]
     return Channel(mat, c.dom, c.cod * n)
 
-
-#
-# Turn a product state into a channel. We may assume that the first
-# marginal of the product state is probabilistic.
-#
-def productstate2channel(s):
-    if len(s.dom.dims) < 2:
-        raise Exception('Product state required to form a channel')
-    n = s.dom.dims[0]
-    cod_dims = s.dom.dims[1:]
-    ls = [s / (point_pred(i,n) @ truth(*cod_dims)) % [0,1] 
-          for i in range(n)]
-    return channel_from_states(*ls)
 
 #
 # Turn channel and state into joint state, whose first marginal is the
@@ -1985,64 +2002,16 @@ def transition():
     #print( tr1(c.as_operator().array, 4) )
     #print( tr2(c.as_operator().array, 4) )
     d = hadamard * x_chan
-    print( np.all(np.isclose(d.array,
-                             d.as_kraus().as_channel().array)) )
-    t = random_state(2) 
-    #print( d >> t )
-    #print( d.as_kraus().as_channel() >> t )
-
+    print( np.allclose(d.array,
+                       d.as_kraus().as_channel().array) )
     
 
 def experiment():
-    c = hadamard * x_chan
-    #print( c )
-    # same outcome for x_chan, y_chan
-    #print( chan2productpredicate(c) )
-    #print( chan2productstate(c) )
-    # all marginals exist, and are the identity so far
-    #print("first marginal\n", chan2productpredicate(c) % [1, 0] )
-    #print("second marginal\n",  chan2productpredicate(c) % [0, 1] )
-    #print("shapes", chan2productpredicate(c).array.shape,
-    #      chan2productstate(c).array.shape)
-    p1 = random_pred(2)    
-    t = random_state(2)
-    # "conditional state" from Leifer note: outcomes appear at strange points
-    #print( ((t @ truth(2)) & chan2productpredicate(c)) % [0, 1] )
-    #print("predicate transformer\n", c << t, "\n", c >> t )
+    print("Experiments")
+    c = (chadamard * swap * cnot * swap) @ ket(0).as_chan()
+    print( c.dom, c.cod )
+    print( c.purify() )
 
-    # The next two things look mysteriously similar...
-    #print( ((s2p(t) @ truth(2)) & chan2productpredicate(c)) % [0, 1] )
-    #print("state transformer\n", s2p(c >> t.conjugate()) )
-
-    # c = channel_from_unitary((np.array([[2, 3],
-    #                                     [5, 7]])), 
-    #                          Dom([2]), Dom([2]))
-
-    # print( c )
-    # print( c.as_operator() )
-
-    # d = channel_from_unitary(lower_right_one(np.array([[2, 3.j],
-    #                                                    [5.j, 7]])), 
-    #                          [2, 2], [2, 2])
-    # print( d )
-    # print( d.as_operator() )
-
-    e = hadamard * phase_shift(math.pi/2)
-    # print( e.array )
-    # print( e.as_operator().array )
-    print( e.as_kraus().array_list )
-
-    p = random_pred(2)
-    print( np.allclose((hadamard << p).array,
-                       np.dot(np.dot(conjugate_transpose(hadamard_matrix), 
-                                     p.array),
-                              hadamard_matrix)) )
-    #print( hadamard << p )
-    #print( hadamard.as_kraus() << p )
-
-    print( e << p )
-    print( phase_shift_matrix(math.pi/2) )
-    #print( e.as_kraus() << p )
 
 def main():
     # validity()
@@ -2054,7 +2023,7 @@ def main():
     # bayesian_probability()
     # kappa_copy()
     # graphs()
-    # transition()
+    #transition()
     experiment()
 
 

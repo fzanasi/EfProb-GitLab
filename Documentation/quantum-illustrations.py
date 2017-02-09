@@ -14,6 +14,15 @@ def states():
     print( plus )
     print( minus )
 
+    print("\n===\n")
+
+    print("* Bloch state equalities")
+    print( ket(0) == bloch_state(0,0) )
+    print( ket(1) == bloch_state(pi,0) )
+    print( plus == bloch_state(pi/2, 0) )
+    print( minus == bloch_state(pi/2, pi) )
+
+
 
 
 def operations_on_states():
@@ -46,14 +55,18 @@ def operations_on_states():
 
     print("\n===\n")
 
-    # print("* Alternatively written convex sum")
-    # print( (ket(0) + ket(1))(0.2) )
-
     print("\n===\n")
 
     print("* Marginalisation")
     print( ket(0) @ ket(1) @ plus @ minus % [1,0,1,0] )
 
+    print("\n===\n")
+
+    print("* purification")
+    s = random_state(5)
+    v = s.purify()
+    print( v.dom )
+    print( v % [1,0] == s )
 
 
 
@@ -340,6 +353,15 @@ def state_transformation():
     print( cnot >> ket(0,1) )
     print( cnot >> ket(1,0) )
     print( cnot >> ket(1,1) )
+
+    print("\n===\n")
+
+    print("* x/y/z channels on Bloch states")
+    t = random.uniform(0,pi)
+    p = random.uniform(0,2*pi)
+    print( x_chan >> bloch_state(t, p) == bloch_state(pi - t, 2*pi - p) )
+    print( y_chan >> bloch_state(t, p) == bloch_state(pi - t, pi - p) )
+    print( z_chan >> bloch_state(t, p) == bloch_state(t, pi + p) )
 
 
 def predicate_transformation():

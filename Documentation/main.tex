@@ -48,6 +48,11 @@
 %%
 %%   Generalisations of these are getting atten
 %
+%  - Check https://github.com/artiste-qb-net/quantum-fog
+%
+%  - Interesting lecture slides at: 
+%    https://www.cs.umd.edu/class/fall2016/cmsc858K/
+%
 % Literature
 % ==========
 %
@@ -1546,8 +1551,8 @@ is obtained as:
 \noindent The state \pythoninline{fdice / atmost4} is a
 \emph{conditional}\index{conditional!state!discrete~--} state,
 obtained from \pythoninline{fdice} via conditioning. The probabilities
-in \pythoninline{fdice} are updated in the light of the predicate
-\pythoninline{atmost4}. Explicitly,
+in \pythoninline{fdice} are updated (revised) in the light of the
+predicate \pythoninline{atmost4}. Explicitly,
 \begin{python}
 >>> fdice / atmost4
 0.25|1> + 0.25|2> + 0.25|3> + 0.25|4> + 0|5> + 0|6>
@@ -1605,8 +1610,8 @@ Here is the mathematical account, see\cite{Jacobs17a} for details. Let
 $\omega$ be a state and $p$ a predicate, both with domain $X$. If the
 validity $\omega\models p$ is non-zero, one can form the
 conditional\index{conditional!state!discrete~--} state $\omega|_{p}$,
-which is written in \Python as $\omega/p$. This new state is an update
-of $\omega$, given the evidence $p$.  This conditional state
+which is written in \Python as $\omega/p$. This new state is a
+revision of $\omega$, given the evidence $p$.  This conditional state
 $\omega|_{p}$ is defined by the formula:
 \begin{equation}
 \label{eqn:dconditiong}
@@ -1730,7 +1735,7 @@ on, in Example~\ref{ex:bayesianmodeling}.}
 ``noisy-logical functions to describe the dependence of symptoms on
 disease''.
 
-Suppose we observe all these sympotoms. Then we can update
+Suppose we observe all these sympotoms. Then we can revise
 the state to:
 \begin{python}
 >>> post = prior / (cough & fever & chest_pain & short_breath)
@@ -2228,7 +2233,7 @@ gives the probability of each predicate in a particular state.
 example is the following. Suppose we have consecutive observations: C,
 A, A, A, G; what is the resulting state/distribution?
 
-The dynamics of hidden Markov models is given by (1)~update with
+The dynamics of hidden Markov models is given by (1)~revise with
 observation, (2)~make a transition. This is done consecutively by
 using both predicate transformation and state transformation:
 \begin{python}
@@ -2594,7 +2599,7 @@ this same validity via predicate transformation:
 
 
 \noindent Recall that we are interested in the mood after a positive
-test. First we update the prior with the information of a positive
+test. First we revise the prior with the information of a positive
 test, and then we compute the first and second marginal:
 \begin{python}
 >>> joint_post = joint_prior / ((sensitivity << test_pred) @ truth(mood_domain))
@@ -3272,16 +3277,35 @@ ghz7 = State(0.5 * np.outer(ghz_vect7, ghz_vect7), [2,2,2])
 ghz8 = State(0.5 * np.outer(ghz_vect8, ghz_vect8), [2,2,2])
 \end{python}
 
+Finally, the \EfProb library makes it possible to define qubits
+(states of dimension 2) via spherical coordinates of the Bloch
+sphere.\index{Bloch~sphere} For instance the qubits
+\pythoninline{ket(0)}, \pythoninline{ket(1)}, \pythoninline{plus},
+\pythoninline{minus} can alternatively be defined as, respectively:
+\begin{python}
+bloch_state(0,0)
+bloch_state(pi,0)
+bloch_state(pi/2, 0)
+bloch_state(pi/2, pi)
+\end{python}
+
+\noindent The coordinates $(\theta,\phi)$ of the function
+\pythoninline{bloch\_state}$(\theta,\phi)$ have the ranges:
+$\theta\in[0,\pi]$ and $\phi\in[0,2\pi]$. The resulting state is
+obtained from the vector state $(\cos(\theta/2), \sin(\theta/2)\cdot
+e^{i\cdot \phi})$.
+
 
 \subsection{Operations on states}\label{subsec:qstate:operations}
 
-This subsection describes the three operations that can be applied to
+This subsection describes the four operations that can be applied to
 states themselves, namely \emph{parallel product}, \emph{convex sum},
-and \emph{marginalisation}.  Later we shall see more operations that
-produce new states, but they require other structures that we have not
-yet described, like predicates for conditioning (see
-Subsection~\ref{subsec:qpred:conditioning}) and channels for state
-transformation (see Subsection~\ref{subsec:qchannel:statetransform}).
+\emph{marginalisation}, and \emph{purification}.  Later we shall see
+more operations that produce new states, but they require other
+structures that we have not yet described, like predicates for
+conditioning (see Subsection~\ref{subsec:qpred:conditioning}) and
+channels for state transformation (see
+Subsection~\ref{subsec:qchannel:statetransform}).
 
 \paragraph{Product states} As before we can form 
 product
@@ -3430,6 +3454,21 @@ as we have also seen in classical probability theory, see
 Example~\ref{ex:diseasemood}. But quantum entanglement is stronger
 than probabilistic entwinedness.
 
+
+\paragraph{Purification}
+An arbitrary state (density matrix) can be written as convex sum of
+pure (vector) states, via spectral decomposition. This decomposition
+can also be used for purification,\index{purification} whereby a pure
+state is formed with a domain that is twice as big, but whose (first)
+marginal is the orginal state. Here is what this looks like:
+\begin{python}
+>>> s = random_state(5)
+>>> v = s.purify()
+>>> v.dom 
+[5, 5]
+>>> v % [1,0] == s
+True
+\end{python}
 
 
 
@@ -4111,7 +4150,7 @@ predicates, obtained from states.
 \noindent These predicates may look a bit \emph{ad hoc} at this
 stage,\sidenote[][-1\baselineskip]{\label{sidenote:abramskycalculations}Detailed
   calculations and explanations of the coice of these predicates can
-  be found at \url{https://arxiv.org/abs/1406.7386}.} but later in
+  be found in~\citep{Abramsky14}.} but later in
 Subsection~\ref{subsec:qchannel:predtransform} we show how they can be
 described in a more systematic manner via predicate transformation.
 
@@ -4222,7 +4261,8 @@ Validity $\omega\models p$ is one way to combine states and
 predicates. When this validity is non-zero, one can also form the
 conditional\index{conditional!state!quantum~--} state $\omega|_{p}$,
 which is written in \Python as $\omega/p$. This new state is an update
-of $\omega$ given the information given by the predicate $p$.
+(revision) of $\omega$ given the information given by the predicate
+$p$.
 
 Mathematically this conditioning is given by the formula:
 \begin{equation}
@@ -4760,6 +4800,19 @@ binary addition.
  [ 0.+0.j  0.+0.j  0.+0.j  0.+0.j]]
 \end{python}
 
+The action x/y/z channels on qubits in their Bloch
+sphere\index{Bloch~sphere} form can be described via the following
+tests.
+\begin{python}
+>>> t = random.uniform(0, pi)
+>>> p = random.uniform(0, 2*pi)
+>>> x_chan >> bloch_state(t, p) == bloch_state(pi - t, 2*pi - p)
+True
+>>> y_chan >> bloch_state(t, p) == bloch_state(pi - t, pi - p)
+True
+>>> z_chan >> bloch_state(t, p) == bloch_state(t, pi + p)
+True
+\end{python}
 
 
 \subsection{Predicate transformation}\label{subsec:qchannel:predtransform}
@@ -5599,7 +5652,7 @@ second input component.
 As described above, measurement destroys the state and only returns
 the probabilities of the measurement, as classical
 state. Instruments,\index{instrument} as introduced in\cite{Jacobs15},
-combine measurement and state update, by producing not only
+combine measurement and state update/revision, by producing not only
 probabilities but also a convex sum of conditional states. Instruments
 can be defined for tests, but \EfProb currently only supports them for
 predicates.
@@ -5675,7 +5728,7 @@ True
 precondition rule for if-then-else.
 
 Finally, by conditioning the outcome of an instrument to the ``true''
-case and taking the second marginal we can extract the updated state:
+case and taking the second marginal we can extract the revised state:
 \begin{python}
 >>> p = random_pred(10)
 >>> s = random_state(10)
