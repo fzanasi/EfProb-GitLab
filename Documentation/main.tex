@@ -607,7 +607,10 @@ of the least stable parts of the library.
 \item Because side-conditions are not checked systematically, the
   \EfProb language is unsafe. What we have is the familiar tension
   between expressive embedded languages and denotationally-sound
-  type-safe languages.
+  type-safe languages. For instance, when something goes wrong in
+  \EfProb, the error message typically comes from \Python; one needs
+  to understand the embedding of \EfProb in \Python to some extend in
+  order to translate the error back to \EfProb.
 % Quoted from Qwire paper.
 
 But again, the \EfProb library does perform some basic checks. For
@@ -690,11 +693,17 @@ defined.\sidenote{One can define one's own domain elements in \Python,
   but this should be done before the definition of the state that uses
   these domain elements.}
 
+Since the booleans \pythoninline{True} and \pythoninline{False} are
+often combined in a domain, there is a predefined
+boolean domain for them:
+\begin{python}
+bool_dom = [True, False]
+\end{python}
+
 \EfProb is an embedded language within \Python. This means that we
 can define \Python itself to define a parametrised coin as:
 \begin{python}
->>> def flip(r):
-...     return State([r, 1-r], [True,False])
+>>> def flip(r): return State([r, 1-r], bool_dom)
 >>> flip(0.2)
 0.2|True> + 0.8|False>
 \end{python}
@@ -741,7 +750,7 @@ domain:
 $1\ket{x}$ with domain $D$ (which must contain $x$), namely
 \pythoninline{point_state(x, D)}, see for instance:
 \begin{python}
->>> point_state(True, [True,False])
+>>> point_state(True, bool_dom)
 1|True> + 0|False>
 >>> point_state(3, [1,2,3,4,5,6])
 0|1> + 0|2> + 1|3> + 0|4> + 0|5> + 0|6>
@@ -884,7 +893,7 @@ sums over their domains. But there is an additional form of convex
 sum,\index{convex!sum~of~discrete~states} namely of states
 themselves. For instance in:
 \begin{python}
->>> convex_state_sum((0.2,flip(0.3)), (0.5,flip(0.8)), (0.3,flip(1)))
+>>> convex_sum( [ (0.2,flip(0.3)), (0.5,flip(0.8)), (0.3,flip(1)) ] )
 0.76|True> + 0.24|False>
 \end{python}
 
@@ -1013,8 +1022,10 @@ made visible via the \pythoninline{dom} attribute of a state:
 [True, False]
 \end{python}
 
-\noindent If we ask for the domain of a product state we get the
-combination of their domains, printed via \pythoninline{*} as:
+\noindent This boolean domain exists in \EfProb as
+\pythoninline{bool\_dom}. If we ask for the domain of a product state
+we get the combination of their domains, printed via \pythoninline{*}
+as:
 \begin{python}
 >>> (flip(0.8) @ uniform_state(range(5))).dom
 [True, False] * range(0, 5)
@@ -1165,6 +1176,13 @@ is called \pythoninline{point\_pred}. It is illustrated in:
 \begin{python}
 >>> point_pred(3, range(4))
 0: 0 | 1: 0 | 2: 0 | 3: 1
+\end{python}
+
+\noindent There are predefined boolean point predicates which
+are often convenient:
+\begin{python}
+yes_pred = point_pred(True, bool_dom)
+no_pred = point_pred(False, bool_dom)
 \end{python}
 
 \noindent In the previous section we have seen a function
@@ -2264,6 +2282,123 @@ obtained via iterated sampling.
 \end{example}
 
 
+Parameter learning is an important area in probability theory.  We
+illustrate how to use channels in a structural way, via a simple
+example where the unkown bias of a coin is inferred from a series of
+consecutive `head' and `tail' observations. Here we learn the bias
+using discrete probabilitie distributions, which are iteratively
+updated with each observation, much like in the previous hidden Markov
+model. In the next chapter, in Example~\ref{??}, we describe how this
+can be done using continuous distributions. Structurally, the
+approach remains the same.
+
+
+\begin{example}
+\label{ex:dcoinparameter}
+In this example we look at the following classical question: suppose
+we are given a coin with an unknown bias, and we observe the following
+sequence of heads (1) and tails (0):
+$$0,1,1,1,0,0,1,1$$
+
+\noindent What can we say about the bias of the coin?
+
+The approach is as follows. The unknown bias is a number in the
+unit interval $[0,1]$. We chop this interval up in $N$ discrete
+parts and consider a probability distribution over these $N$ parts.
+Initially, we know nothing about the bias of the coin, so our
+prior distribution will be a uniform one. We then update (revise)
+the state with each observation.
+
+In this example we choose as parameter $N=20$ and chop up the unit
+interval in the following way, using a precision of three decimals.
+\begin{python}
+>>> N = 20
+>>> precision = 3
+>>> bias_dom = [floor((10 ** precision) * (i+1)/(N+1) + 0.5) / (10 ** precision)
+                for i in range(N)]
+>>> bias_dom
+[0.048, 0.095, 0.143, 0.19, 0.238, 0.286, 0.333, 0.381, 0.429, 0.476, 
+   0.524, 0.571, 0.619, 0.667, 0.714, 0.762, 0.81, 0.857, 0.905, 0.952]
+>>> prior = uniform_state(coin_bias)
+\end{python}
+
+\noindent Next we define a channel that maps each element \pythoninline{r}
+of this bias domain to the state \pythoninline{flip(r)}.
+\begin{python}
+>>> chan = chan_fromklmap(lambda r: flip(r), bias_dom, bool_dom)
+>>> chan >> prior
+0.5|True> + 0.5|False>
+\end{python}
+
+\noindent Indeed, this prior uniform state corresponds to an
+unbiased coin.
+
+Each head-or-tail observation induces an update of the state on
+\pythoninline{bias_dom} with a yes-or-no predicate, translated
+via the channel. For convenience, we recall the definition of
+these yes/no predicates.
+\begin{python}
+>>> yes_pred = point_pred(True, bool_dom)
+>>> no_pred = point_pred(False, bool_dom)
+>>> observations = [0,1,1,1,0,0,1,1]
+>>> s = prior
+>>> s.plot()
+>>> for i in range(len(observations)):
+...     pred = yes_pred if observations[i]==1 else no_pred
+...     s = s / (chan << pred)
+...     s.plot()
+\end{python}
+
+\noindent The nine states that are plotted in this code
+fragment look as follows.
+\begin{center}
+\begin{tabular}{ccc}
+\includegraphics[width=15em]{Pictures/disc_coin_parameter-0.png} 
+&
+\includegraphics[width=15em]{Pictures/disc_coin_parameter-1.png}
+&
+\includegraphics[width=15em]{Pictures/disc_coin_parameter-2.png}
+\\
+\includegraphics[width=15em]{Pictures/disc_coin_parameter-3.png} 
+&
+\includegraphics[width=15em]{Pictures/disc_coin_parameter-4.png}
+&
+\includegraphics[width=15em]{Pictures/disc_coin_parameter-5.png}
+\\
+\includegraphics[width=15em]{Pictures/disc_coin_parameter-6.png} 
+&
+\includegraphics[width=15em]{Pictures/disc_coin_parameter-7.png}
+&
+\includegraphics[width=15em]{Pictures/disc_coin_parameter-8.png}
+\end{tabular}
+\end{center}
+
+\noindent These states approximate a (continuous) beta distribution.
+
+In the end, after these 8 updates we can ask which coin corresponds to
+the bias distribution:
+\begin{python}
+>>> chan >> s
+0.6|True> + 0.4|False>
+\end{python}
+
+\noindent Alternatively we can ask for the expected value in
+this learned state, via the identity random variable:
+\begin{python}
+>>> RandVar(bias_dom, bias_dom).exp(s)
+0.599974754805
+\end{python}
+
+\noindent Hence we arrive at a bias of 0.6. 
+
+This final outcome is determined by the number of $0$'s and $1$'s in
+the list of observations, and not by their order. This is because the
+order of conditioning does not matter in classical probability ---
+unlike in quantum probability.
+\end{example}
+
+
+
 The next example illustrates the `denotation of a channel'
 construction, as used in the area of quantitative information flow.
 
@@ -3096,6 +3231,10 @@ their domains. Only 1-dimensional continuous states can be plotted.
 
 \subsection{Operations on states}\label{subsec:cstate:operations}
 
+The operations that are described in
+Subsection~\ref{subsec:dstate:operations} for discrete states also
+work for continuous states, via the same notation: product
+\pythoninline{@}, convex sum, and marginal \pythoninline{\%}.
 
 \section{Predicates}\label{sec:cpred}
 

@@ -109,6 +109,7 @@ class Interval(collections.namedtuple('R', 'l u')):
 R = Interval
 R_ = Interval(-inf, inf)
 empty = Interval(inf, -inf)
+bool_dom = [True, False]
 
 
 def isR(obj):
@@ -748,7 +749,7 @@ class Predicate(RandVar):
         """De Morgan dual of sequential conjunction."""
         return ~(~self & ~other)
 
-    def as_chan(self, cod=[True, False]):
+    def as_chan(self, cod=bool_dom):
         cod = asdom(cod)
         if self.dom.iscont:
             array = np.empty((2,)+self.array.shape, dtype=object)
@@ -1280,8 +1281,7 @@ def convex_sum(iterable):
 def andthen(iterable):
     return reduce(operator.and_, iterable)
 
-
-def flip(r, dom=[True, False]):
+def flip(r, dom=bool_dom):
     return State([r, 1.0-r], [dom])
 
 
@@ -1351,6 +1351,8 @@ def point_pred(point, dom):
         return event([[p] for p in point], dom)
     return event([point], dom)
 
+yes_pred = point_pred(True, bool_dom)
+no_pred = point_pred(False, bool_dom)
 
 def truth(dom):
     return event(dom, dom)
@@ -1377,28 +1379,6 @@ def random_pred(dom):
     shape = tuple(len(s) for s in dom.disc)
     array = np.random.random_sample(shape)
     return Predicate(array, dom)
-
-# #
-# # Uniform discrete state on {0,1,...,n-1}
-# #
-# def uniform_disc_state(n):
-#     return uniform_state(range(n))
-
-# #
-# # Unit discrete state 1|i> on {0,1,...,n-1}
-# #
-# def unit_disc_state(n, i):
-#     ls = [0] * n
-#     ls[i] = 1
-#     return State(ls, range(n))
-
-# #
-# # Random discrete state on {0,1,...,n-1}
-# #
-# def random_disc_state(n):
-#     ls = [random.uniform(0,1) for i in range(n)]
-#     s = sum(ls)
-#     return State([v/s for v in ls], range(n))
 
 
 @functools.lru_cache(maxsize=None)
@@ -1543,15 +1523,6 @@ def cpt(*ls):
     return Channel([ls, [1-r for r in ls]], bnd * log, bnd)
 
 
-def channel_from_states(ls):
-    n = len(ls)
-    if n == 0:
-        raise ValueError('Non-empty list required in channel formation')
-    dom = ls[0].dom
-    if any([s.dom != dom for s in ls]):
-        raise ValueError('States must all have the same domain in channel formation')
-    return None
-
 #
 # Convex sum of states: the input list contains pairs (ri, si) where
 # the ri are in [0,1] and add up to 1, and the si are states
@@ -1581,8 +1552,8 @@ def convex_state_sum(*ls):
 def test():
     stat = State([gaussian_fun(1, 1, R(-10, 10)).smul(0.8),
                   gaussian_fun(-1, 1, R(-10, 10)).smul(0.2)],
-                 [[True, False], R(-10, 10)])
-    pred = truth([[True, False], R(-10, 10)]) * 0.5
+                 [bool_dom, R(-10, 10)])
+    pred = truth([bool_dom, R(-10, 10)]) * 0.5
     print(stat >= pred)
     print(stat % [1, 0])
     (stat % [0, 1]).plot()
@@ -1609,7 +1580,7 @@ def sporter2():
     sp2 = flip(1/3)
     joint = sp1 @ sp2
     perf1 = DetChan(lambda x: 16*x - 6, R(0, 1))
-    perf2 = DetChan(lambda b: 5 if b else -5, [True, False])
+    perf2 = DetChan(lambda b: 5 if b else -5, bool_dom)
     t = Predicate(lambda x,y: 1 if x < y else 0,
                   [R(-10, 10), R(-10, 10)])
     print("Sporter 2 wins with prob.",

@@ -185,12 +185,17 @@ def entanglement_test(s):
     return np.allclose(s.array,
                        np.kron((s%[1,0]).array, (s%[0,1]).array))
 
-
+#
+# Standard base vector |i> in C^n
+#
 def vector_base(i,n):
     ls = np.zeros(n)
     ls[i] = 1
     return ls
 
+#
+# Standard base vector |i><j| in Mat_n
+#
 def matrix_base(i,j,n):
     mat = np.zeros((n,n))
     mat[i][j] = 1

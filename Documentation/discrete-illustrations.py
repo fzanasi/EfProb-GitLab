@@ -1,4 +1,5 @@
 from efprob_dc import *
+from math import *
 
 def states():
 
@@ -90,7 +91,7 @@ def operations_on_states():
     print("\n===\n")
 
     print("* convex sum")
-    print( convex_state_sum((0.2,flip(0.3)), (0.5,flip(0.8)), (0.3,flip(1))) )
+    print( convex_sum([(0.2,flip(0.3)), (0.5,flip(0.8)), (0.3,flip(1))]) )
 
     print("\n===\n")
 
@@ -398,6 +399,35 @@ def state_pred_transformation():
     print( convex_sum(cd) )
 
 
+    print("\n===\n")
+
+    print("* Coin parameter learning")
+    N = 20
+    precision = 3
+    bias_dom = [floor((10 ** precision) * (i+1)/(N+1) + 0.5) / (10 ** precision)
+                for i in range(N)]
+    print( bias_dom )
+    prior = uniform_state(bias_dom)
+    chan = chan_fromklmap(lambda r: flip(r), bias_dom, bool_dom)
+    print( chan >> prior )
+    observations = [0,1,1,1,0,0,1,1]
+    s = prior
+    #s.plot()
+    for i in range(len(observations)):
+        pred = yes_pred if observations[i]==1 else no_pred
+        s = s / (chan << pred)
+        #s.plot()
+    print("Learned distribution")
+    print(s)
+    print("Associated coin")
+    print( chan >> s )
+    print("Expected value")
+    print( RandVar(bias_dom, bias_dom).exp(s) )
+
+
+    
+
+
 def structural_channels():
 
     print("\nSubsection: Structural channels")
@@ -548,7 +578,7 @@ def main():
     #validity()
     #conditioning()
     #random_variables()
-    channels()
+    #channels()
     state_pred_transformation()
     #structural_channels()
     #bayesian_networks()
