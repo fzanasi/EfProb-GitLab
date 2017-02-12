@@ -413,8 +413,8 @@ def state_pred_transformation():
     observations = [0,1,1,1,0,0,1,1]
     s = prior
     #s.plot()
-    for i in range(len(observations)):
-        pred = yes_pred if observations[i]==1 else no_pred
+    for ob in observations:
+        pred = yes_pred if ob==1 else no_pred
         s = s / (chan << pred)
         #s.plot()
     print("Learned distribution")

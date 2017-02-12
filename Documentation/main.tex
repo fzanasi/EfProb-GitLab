@@ -2343,8 +2343,8 @@ these yes/no predicates.
 >>> observations = [0,1,1,1,0,0,1,1]
 >>> s = prior
 >>> s.plot()
->>> for i in range(len(observations)):
-...     pred = yes_pred if observations[i]==1 else no_pred
+>>> for ob in observations:
+...     pred = yes_pred if ob==1 else no_pred
 ...     s = s / (chan << pred)
 ...     s.plot()
 \end{python}
