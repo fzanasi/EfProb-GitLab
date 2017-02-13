@@ -1545,6 +1545,28 @@ def convex_state_sum(*ls):
     return reduce(operator.add, [r * s for r,s in ls])
 
 
+def _shannon_ic(x):
+    return -math.log2(x) if x != 0 else 0
+
+_shannon_ic = np.vectorize(_shannon_ic, otypes=[float])
+
+def _shannon_ic_cont(fun):
+    def f(x):
+        v = fun(x)
+        return -math.log2(v) if v != 0 else 0
+    return Fun(f, fun.supp)
+
+_shannon_ic_cont = np.vectorize(_shannon_ic_cont, otypes=[object])
+
+def shannon_entropy(s):
+    """Shannon entropy"""
+    if s.dom.iscont:
+        rv = RandVar(_shannon_ic_cont(s.array), s.dom)
+    else:
+        rv = RandVar(_shannon_ic(s.array), s.dom)
+    return s >= rv
+
+
 ##############################################################
 #
 # Testing 
