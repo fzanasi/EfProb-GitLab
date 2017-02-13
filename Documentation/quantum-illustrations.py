@@ -255,6 +255,25 @@ def validity():
     print("")
     print( bell00 >= A2 @ B2, bell00 >= A2 @ ~B2, bell00 >= ~A2 @ B2, bell00 >= ~A2 @ ~B2 )
 
+    print("\nAdditional experiments")
+    print("Validities of B1, in itself and after conditiong with A1, A2")
+    print( bell00 >= truth(2) @ B1, 
+           bell00 / (A1 @ truth(2)) >= truth(2) @ B1,
+           bell00 / (A2 @ truth(2)) >= truth(2) @ B1 )
+    print("Validities of B2, in itself and after conditiong with A1, A2")
+    print( bell00 >= truth(2) @ B2, 
+           bell00 / (A1 @ truth(2)) >= truth(2) @ B2,
+           bell00 / (A2 @ truth(2)) >= truth(2) @ B2 )
+    print("Validities of A1, in itself and after conditiong with B1, B2")
+    print( bell00 >= A1 @ truth(2), 
+           bell00 / (truth(2) @ B1) >= A1 @ truth(2),
+           bell00 / (truth(2) @ B2) >= A1 @ truth(2) )
+    print("Validities of A2, in itself and after conditiong with B1, B2")
+    print( bell00 >= A2 @ truth(2), 
+           bell00 / (truth(2) @ B1) >= A2 @ truth(2),
+           bell00 / (truth(2) @ B2) >= A2 @ truth(2) )
+
+
 
 
 def conditioning():
@@ -666,13 +685,13 @@ def all():
 
 
 def main():
-    all()
+    #all()
     # states()
     # operations_on_states()
     # basic_states()
     # predicates()
     # operations_on_predicates()
-    # validity()
+    validity()
     # conditioning()
     # random_variables()
     # state_transformation()

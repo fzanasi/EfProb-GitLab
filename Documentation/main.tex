@@ -2288,9 +2288,9 @@ example where the unkown bias of a coin is inferred from a series of
 consecutive `head' and `tail' observations. Here we learn the bias
 using discrete probabilitie distributions, which are iteratively
 updated with each observation, much like in the previous hidden Markov
-model. In the next chapter, in Example~\ref{??}, we describe how this
-can be done using continuous distributions. Structurally, the
-approach remains the same.
+model. In the next chapter, in Example~\ref{ex:ccoinparameter}, we
+describe how this can be done using continuous
+distributions. Structurally, the approach remains the same.
 
 
 \begin{example}
@@ -3256,10 +3256,88 @@ work for continuous states, via the same notation: product
 \section{Channels}\label{sec:cchannel}
 
 
-\subsection{State transformation}\label{subsec:cchannel:statetransform}
+\subsection{State and predicate transformation}\label{subsec:cchannel:statepredtransform}
 
 
-\subsection{Structural channels}\label{subsec:cchannel:structural}
+The following parameter learning illustration is the
+continuous analogue of Example~\ref{ex:dcoinparameter}. 
+The approach is basically the same: we only have to
+change the domain from discrete to continuous.
+
+
+\begin{example}\marginpar{The validity claims are pre-mature}
+\label{ex:ccoinparameter}
+In this example we like to learn the bias of a coin from a sequence of
+heads and tails. The bias is a number from the unit interval
+$[0,1]$. In the discrete approach we chopped this unit interval up
+into intervals, and considered a discrete distribution over these
+intervals. In this chapter we work directly with a continuous
+distribution on the unit interval, represented in \EfProb as
+\pythoninline{R(0,1)}.
+\begin{python}
+>>> bias_dom = R(0,1)
+>>> prior = uniform_state(coin_bias)
+\end{python}
+
+\noindent The channel definition is exactly as in the
+discrete case --- except that the \pythoninline{bias_dom} has 
+a different meaning.
+\begin{python}
+>>> chan = chan_fromklmap(lambda r: flip(r), bias_dom, bool_dom)
+>>> chan >> prior
+0.5|True> + 0.5|False>
+\end{python}
+
+\noindent We use the same head (1) and coin (0) observations as
+in the discrete case. This allows us to compare the resulting
+pictures.
+\begin{python}
+>>> observations = [0,1,1,1,0,0,1,1]
+>>> s = prior
+>>> s.plot()
+>>> for ob in observations:
+...     pred = yes_pred if ob==1 else no_pred
+...     s = s / (chan << pred)
+...     s.plot()
+\end{python}
+
+\noindent This leads to the following sequence of pictures.
+\begin{center}
+\begin{tabular}{ccc}
+\includegraphics[width=15em]{Pictures/cont_coin_parameter-0.png} 
+&
+\includegraphics[width=15em]{Pictures/cont_coin_parameter-1.png}
+&
+\includegraphics[width=15em]{Pictures/cont_coin_parameter-2.png}
+\\
+\includegraphics[width=15em]{Pictures/cont_coin_parameter-3.png} 
+&
+\includegraphics[width=15em]{Pictures/cont_coin_parameter-4.png}
+&
+\includegraphics[width=15em]{Pictures/cont_coin_parameter-5.png}
+\\
+\includegraphics[width=15em]{Pictures/cont_coin_parameter-6.png} 
+&
+\includegraphics[width=15em]{Pictures/cont_coin_parameter-7.png}
+&
+\includegraphics[width=15em]{Pictures/cont_coin_parameter-8.png}
+\end{tabular}
+\end{center}
+
+\noindent We can now calculate for the final state \pythoninline{s}
+after the above loop:
+\begin{python}
+>>> chan >> s
+0.6|True> + 0.4|False>
+>>> randvar_fromfun(lambda r: r, bias_dom).exp(s)
+0.6
+\end{python}
+
+\noindent Hence we arrive at a bias of 0.6, precisely as in
+the discrete case in Example~\ref{ex:dcoinparameter}.
+\end{example}
+
+
 
 
 

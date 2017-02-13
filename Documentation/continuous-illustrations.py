@@ -24,19 +24,40 @@ def operations_on_states():
     print("\nSubsection: Operations on states\n")
 
 
+def state_pred_transformation():
+
+    print("\nSubsection: State and predicate transformation\n")
+
+    print("\n===\n")
+
+    print("* Coin parameter learning")
+    bias_dom = R(0,1)
+    prior = uniform_state(bias_dom)
+    chan = chan_fromklmap(lambda r: flip(r), bias_dom, bool_dom)
+    # The next line gives an error!!
+    #print( chan >> prior )
+    observations = [0,1,1,1,0,0,1,1]
+    s = prior
+    s.plot()
+    for ob in observations:
+        pred = yes_pred if ob==1 else no_pred
+        s = s / (chan << pred)
+        s.plot()
+    print( randvar_fromfun(lambda r: r, bias_dom).exp(s) )
+
+
 
 
 def main():
-    states()
-    operations_on_states()
+    #states()
+    #operations_on_states()
     #basic_states()
     #predicates()
     #operations_on_predicates()
     #validity()
     #conditioning()
-    #weakening()
-    #state_transformation()
-    #predicate_transformation()
+    state_pred_transformation()
+
 
 if __name__ == "__main__":
     main()
