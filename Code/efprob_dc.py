@@ -1012,6 +1012,8 @@ class Channel:
         if stat.dom.iscont:
             stat_a = stat.array.reshape(1, dom_size)
             array = Fun2.u_stat_trans(self_a, stat_a).sum(1)
+            if not self.cod.iscont:
+                array = Fun.vect_asscalar(array)
         else:
             if self.iscont:
                 stat_a = stat.array.reshape(1, dom_size)
@@ -1032,6 +1034,8 @@ class Channel:
         if pred.dom.iscont:
             pred_a = pred.array.reshape(cod_size, 1)
             array = Fun2.u_pred_trans(self_a, pred_a).sum(0)
+            if not self.dom.iscont:
+                array = Fun.vect_asscalar(array)
         else:
             if self.iscont:
                 pred_a = pred.array.reshape(cod_size, 1)
