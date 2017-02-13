@@ -34,15 +34,15 @@ def state_pred_transformation():
     bias_dom = R(0,1)
     prior = uniform_state(bias_dom)
     chan = chan_fromklmap(lambda r: flip(r), bias_dom, bool_dom)
-    # The next line gives an error!!
-    #print( chan >> prior )
+    print( chan >> prior )
     observations = [0,1,1,1,0,0,1,1]
     s = prior
-    s.plot()
+    # s.plot()
     for ob in observations:
         pred = yes_pred if ob==1 else no_pred
         s = s / (chan << pred)
-        s.plot()
+        # s.plot()
+    print( chan >> s )
     print( randvar_fromfun(lambda r: r, bias_dom).exp(s) )
 
 
