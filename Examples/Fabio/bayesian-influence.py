@@ -35,7 +35,7 @@ disease = cpt(9/10, 8/10, 4/10, 0)
 test = cpt(9/10, 1/20)
 
 symptoms = cpt(9/10, 1/15)
-healt_care = cpt(4/5, 1/10)
+health_care = cpt(4/5, 1/10)
 
 print("\n* Initial disease probability")
 print( disease >> (genetic_heredity @ environmental_factors) )
@@ -48,9 +48,11 @@ print("\n* Disease probability after positive test")
 print( (disease >> (genetic_heredity @ environmental_factors)) 
        / (test << bn_pos_pred) )
 
-transition_pred = bn_pred(0.88, 0.1)
+print("\n* Disease probability after receiving healthcare")
+print( (disease >> (genetic_heredity @ environmental_factors)) 
+       / ((health_care * test) << bn_pos_pred) )
 
-print("\nTO BE CHECKED: the next three points do not coincide with the outcomes in the paper")
+transition_pred = bn_pred(0.88, 0.1)
 
 print("\n* Initial state, updated with genetic transition predicate")
 print( (genetic_heredity @ environmental_factors) 
@@ -100,13 +102,13 @@ print("omega updated with positive test: ", omega / (test << bn_pos_pred) )
 r = random.uniform(0,1)
 q = bn_pred(r, 1-r)
 print("with arbitrary predicate added: ",
-      omega / (test << (bn_pos_pred & (healt_care << q))) )
+      omega / (test << (bn_pos_pred & (health_care << q))) )
 
 print("\n* Non-blocking with non-sharp predicates")
 p = bn_pred(1/3, 1/4)
 q = bn_pred(1/5, 1)
 print( omega / (test << p) )
-print( omega / (test << (p & (healt_care << q))) )
+print( omega / (test << (p & (health_care << q))) )
 
 print("\n* Collider connection, with crossover influences:")
 print( cross_infl(bn_neg_pred, 
