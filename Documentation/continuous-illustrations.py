@@ -46,9 +46,15 @@ def state_pred_transformation():
     print( randvar_fromfun(lambda r: r, bias_dom).exp(s) )
 
 
+def all():
+    states()
+    operations_on_states()
+    state_pred_transformation()
+
 
 
 def main():
+    all()
     #states()
     #operations_on_states()
     #basic_states()

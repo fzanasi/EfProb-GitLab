@@ -555,8 +555,13 @@ about the \EfProb library.
 
 \item At the same time the library could be useful in scientific
   \emph{research} as well, in order to quickly model new examples and
-  compute outcomes. We request that usage of the \EfProb library, if
-  any, is mentioned in the acknowledgements of research papers.
+  compute outcomes. Many researchers in (classical and quantum)
+  probability have developed their own scripts for quickly calculating
+  probabilities. The \EfProb library could develop into a common
+  language in which results can be formulated uniformly, so that they
+  can be compared and re-used by colleagues. We request that usage of
+  the \EfProb library, if any, is mentioned in the acknowledgements of
+  research papers.
 
 \item The \EfProb library requires \Python, version $\geq$ 3.5.
   \EfProb heavily relies on existing libraries in \Python, in
@@ -1840,6 +1845,46 @@ also be deduced from~\eqref{eqn:entwined}.
 \end{example}
 
 
+Our next example shows a fundamental property of entwined joint
+states: conditioning in one component influences the other component.
+This is the classical analogue of Einstein's \emph{spukenhaften
+  Fernwirkung} (spooky interaction at a distance), see
+Example~\ref{ex:qcrossover}. The same phenomenon occurs
+in Example~\ref{ex:diseasemood} involving an entwined
+disease-and-mood state.
+
+
+\begin{example}
+\label{ex:dcrossover}
+Here we show that conditioning in one part of an entwined
+state can influence the other part. Consider the joint
+state:
+\begin{python}
+>>> w = State([0.5, 0, 0, 0.5], [range(2), range(2)])
+>>> w
+0.5|0,0> + 0|0,1> + 0|1,0> + 0.5|1,1>
+\end{python}
+
+\noindent We consider the validity of the `zero' point-predicate in
+the second component. As discussed before, we need to use weakening,
+via the truth predicate in the first component, to make the domains
+match.
+\begin{python}
+>>> w >= truth(range(2)) @ point_pred(0, range(2))
+0.5
+\end{python}
+
+\noindent If we condition in the first componet only, the validity
+of this predicate in the second component changes:
+\begin{python}
+>>> w / (point_pred(0, range(2)) @ truth(range(2))) >= truth(range(2)) @ point_pred(0, range(2))
+1.0
+>>>  w / (point_pred(1, range(2)) @ truth(range(2))) >= truth(range(2)) @ point_pred(0, range(2))
+0.0
+\end{python}
+\end{example}
+
+
 \begin{example}
 \label{ex:dtotalprobability}
 This example illustrates the law of total
@@ -2663,7 +2708,9 @@ network in Example~\ref{ex:paperacceptance}.
 
 We conclude this section with an example that illustrates
 the use of structural channels. At the same time it illustrates
-how entwinedness of states.
+how entwinedness of states leads to `crossover' influence,
+as in Example~\ref{ex:dcrossover}.
+
 
 \begin{example}
 \label{ex:diseasemood}
@@ -3323,8 +3370,29 @@ pictures.
 \end{tabular}
 \end{center}
 
-\noindent We can now calculate for the final state \pythoninline{s}
-after the above loop:
+% These pictures arise from a beta function by consecutively
+% taking as alpha and beta parameters:
+% 0: 1 1
+% 1: 1 2
+% 2: 2 2
+% 3: 3 2
+% 4: 4 2
+% 5: 4 3
+% 6: 4 4
+% 7: 5 4
+% 8: 6 4
+%
+% See: http://homepage.divms.uiowa.edu/~mbognar/applets/beta.html
+%
+% Indeed, the expected value in the last case is 0.6.
+
+\noindent These nine plots have the same shape as the (unnormalised)
+beta function $x \mapsto x^{\alpha-1}\cdot (1-x)^{\beta-1}$ on $[0,1]$
+for consecutively $(\alpha,\beta)$-values $(1,1)$, $(1,2)$, $(2,2)$,
+$(3,2)$, $(4,2)$, $(4,3)$, $(4,4)$, $(5,4)$, $(6,4)$.
+
+We can now calculate for the final state \pythoninline{s} after the
+above loop the best bias of the coin:
 \begin{python}
 >>> chan >> s
 0.6|True> + 0.4|False>
@@ -3334,6 +3402,32 @@ after the above loop:
 
 \noindent Hence we arrive at a bias of 0.6, precisely as in
 the discrete case in Example~\ref{ex:dcoinparameter}.
+
+    %% print("\n* Testing the bias learning")
+    %% sample_size = 50
+    %% b = random.uniform(0,1)
+    %% print("Bias, to be learned: ", b, " with sample size ", sample_size)
+    %% samples = np.random.multinomial(sample_size, [b, 1-b])
+    %% print("Number of sampled heads: ", samples[0] )
+    %% p = truth(bias_dom)
+    %% for i in range(samples[0]):
+    %%     p = p & (chan << yes_pred)
+    %% for i in range(samples[1]):
+    %%     p = p & (chan << no_pred)
+    %% s = prior / p
+    %% #s.plot()
+    %% print( chan >> s )
+    %% # alternative way to get observations, by rounding bias fraction b
+    %% heads = math.floor(sample_size * b + 0.5)
+    %% print(heads)
+    %% observations = [1] * heads + [0] * (sample_size - heads)
+    %% t = prior
+    %% for ob in observations:
+    %%     pred = yes_pred if ob==1 else no_pred
+    %%     t = t / (chan << pred)
+    %%     # s.plot()
+    %% print( chan >> t )
+
 \end{example}
 
 
@@ -3499,8 +3593,8 @@ sphere.\index{Bloch~sphere} For instance the qubits
 \pythoninline{ket(0)}, \pythoninline{ket(1)}, \pythoninline{plus},
 \pythoninline{minus} can alternatively be defined as, respectively:
 \begin{python}
-bloch_state(0,0)
-bloch_state(pi,0)
+bloch_state(0, 0)
+bloch_state(pi, 0)
 bloch_state(pi/2, 0)
 bloch_state(pi/2, pi)
 \end{python}
@@ -4573,7 +4667,10 @@ If we do this in the other order, we still see nothing:
 0.0
 \end{python}
 
-\noindent If we enforce diagonal polarisation via a second filter ---
+\noindent This shows the non-commutativity of
+sequential conjunction \pythoninline{\&}.\index{sequential~conjunction!non-commutativity~of~quantum~--}
+
+If we enforce diagonal polarisation via a second filter ---
 that is, via conditioning once more --- and then ask how much of the
 light is horizontally polarised we get a probability of one half:
 \begin{python}
@@ -4619,7 +4716,71 @@ quantum world, the latter probability can also be obtained as:
 >>> (s >= diag_filt & hor_filt) + (s >= ~diag_filt & hor_filt)
 0.5
 \end{python}
+
+Finally, we show that sequential conjunction \pythoninline{\&} is not
+only non-commutative, but also
+\emph{non-associative}:\index{sequential~conjunction!non-associativity~of~quantum~--}
+\begin{python}
+>>> s / vert_filt >= vert_filt & (diag_filt & hor_filt)
+0.25
+>>> s / vert_filt >= (vert_filt & diag_filt) & hor_filt 
+0.0
+\end{python}
 \end{example}
+
+
+The following example contains the essence of what has become known as
+the EPR\index{EPR~paradox} paradox\cite{EinsteinPR35}. It involves the
+influence of conditioning in one component on the other component of
+an entangled joint state. The analogous phenomenon in classical
+probability has already been described in Example~\ref{ex:dcrossover}
+--- with the same predicates, resulting in the same probabilities.
+
+
+\begin{example}
+\label{ex:qcrossover}
+We consider the Bell state \pythoninline{bell00}, and are interested
+in the validity of the `zero' point predicate in the second component.
+We have to use weakening via the truth predicate in the first
+components to make the types match.
+\begin{python}
+>>> bell00 >= truth(2) @ point_pred(0, 2)
+0.5
+\end{python}
+
+\noindent Conditioning in the first component changes the validity
+of this predicate in the second component.
+\begin{python}
+>>> bell00 / (point_pred(0, 2) @ truth(2)) >= truth(2) @ point_pred(0, 2)
+1.0
+>>> bell00 / (point_pred(1, 2) @ truth(2)) >= truth(2) @ point_pred(0, 2)
+0.0
+\end{python}
+
+\noindent This is what Einstein called \emph{spukenhaften
+  Fernwirkung} (spooky interaction at a distance).
+
+This same crossover influence is often illustrated with `X'
+predicates, arising from the eigenvectors of the X matrix
+$\left(\begin{smallmatrix} 0 & 1 \\ 1 & 0 \end{smallmatrix}\right)$.
+\begin{python}
+>>> x_plus = vector_pred(-1/sqrt(2), 1/sqrt(2))
+>>> x_min = vector_pred(1/sqrt(2), 1/sqrt(2))
+>>> bell00 >= truth(2) @ x_plus
+0.5
+>>> bell00 / (x_plus @ truth(2)) >= truth(2) @ x_plus
+1.0
+>>> bell00 / (x_min @ truth(2)) >= truth(2) @ x_plus
+0.0
+\end{python}
+
+\noindent The same validities appear if one uses the state
+\pythoninline{bell01} instead of \pythoninline{bell00}. For
+the states \pythoninline{bell10} and \pythoninline{bell11} the
+last two probabilities are exchanged.
+\end{example}
+
+
 
 %% By now we can perform non-trivial constructions with states and
 %% predicates. Here is an example. Let \pythoninline{s} be a ``binary''

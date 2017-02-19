@@ -239,6 +239,15 @@ def conditioning():
 
     print("\n===\n")
 
+    print("* Crossover influence")
+    w = State([0.5, 0, 0, 0.5], [range(2), range(2)])
+    print( w )
+    print( w >= truth(range(2)) @ point_pred(0, range(2)) )
+    print( w / (point_pred(0, range(2)) @ truth(range(2))) >= truth(range(2)) @ point_pred(0, range(2)) )
+    print( w / (point_pred(1, range(2)) @ truth(range(2))) >= truth(range(2)) @ point_pred(0, range(2)) )
+
+    print("\n===\n")
+
     print("* Law of total probability")
     s = random_state(range(4))
     p = random_pred(range(4))
@@ -571,15 +580,15 @@ def all():
     bayesian_networks()
 
 def main():
-    #all()
+    all()
     #states()
     #operations_on_states()
     #excursion()
     #validity()
-    #conditioning()
+    # conditioning()
     #random_variables()
     #channels()
-    state_pred_transformation()
+    #state_pred_transformation()
     #structural_channels()
     #bayesian_networks()
 

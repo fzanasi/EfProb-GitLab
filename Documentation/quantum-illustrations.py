@@ -329,6 +329,40 @@ def conditioning():
            (s / ~diag_filt >= hor_filt) * (s >= ~diag_filt) )
     print( (s >= diag_filt & hor_filt) + (s >= ~diag_filt & hor_filt) )
 
+    print("\n===\n")
+
+    print("* Failure of associativity of sequential conjunction")
+    print( s / vert_filt >= vert_filt & (diag_filt & hor_filt) )
+    print( s / vert_filt >= (vert_filt & diag_filt) & hor_filt )
+
+    print("\n===\n")
+
+    print("* EPR Crossover")
+    print( bell00 >= truth(2) @ point_pred(0, 2) )
+    print( bell00 / (point_pred(0, 2) @ truth(2)) >= truth(2) @ point_pred(0, 2) )
+    print( bell00 / (point_pred(1, 2) @ truth(2)) >= truth(2) @ point_pred(0, 2) )
+    print("\n===\n")
+
+    print("* Crossover via the x predicates")
+    x_plus = vector_pred(-1/sqrt(2), 1/sqrt(2))
+    x_min = vector_pred(1/sqrt(2), 1/sqrt(2))
+    print( bell00 >= truth(2) @ x_plus )
+    print( bell00 / (x_plus @ truth(2)) >= truth(2) @ x_plus )
+    print( bell00 / (x_min @ truth(2)) >= truth(2) @ x_plus )
+    print("Similar outcomes for the other Bell states")
+    print( "bell01 ", 
+           bell01 >= truth(2) @ x_plus,
+           bell01 / (x_plus @ truth(2)) >= truth(2) @ x_plus,
+           bell01 / (x_min @ truth(2)) >= truth(2) @ x_plus )
+    print( "bell10 ", 
+           bell10 >= truth(2) @ x_plus,
+           bell10 / (x_plus @ truth(2)) >= truth(2) @ x_plus,
+           bell10 / (x_min @ truth(2)) >= truth(2) @ x_plus )
+    print( "bell11 ", 
+           bell11 >= truth(2) @ x_plus,
+           bell11 / (x_plus @ truth(2)) >= truth(2) @ x_plus,
+           bell11 / (x_min @ truth(2)) >= truth(2) @ x_plus )
+
 
 def random_variables():
 
@@ -685,13 +719,13 @@ def all():
 
 
 def main():
-    #all()
+    all()
     # states()
     # operations_on_states()
     # basic_states()
     # predicates()
     # operations_on_predicates()
-    validity()
+    # validity()
     # conditioning()
     # random_variables()
     # state_transformation()
