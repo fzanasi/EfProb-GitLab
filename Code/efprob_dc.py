@@ -1,4 +1,14 @@
 #
+# EfProb
+#
+# Discrete and continuous probability library, prototype version
+#
+# Started by Kenta Cho, nov. 2016
+# 
+# Copyright: Bart Jacobs, Kenta Cho; 
+# Radboud University Nijmegen
+# efprob.cs.ru.nl
+#
 # Notes for coding
 #
 # - Follow Python Style Guide "PEP 8"
@@ -590,7 +600,7 @@ class State(StateLike):
 
     def validity(self, pred):
         """Return the validity of a predicate."""
-        return pred.exp(self)
+        return self.expectation(pred)
 
     def __ge__(self, pred):
         return self.validity(pred)
@@ -657,6 +667,56 @@ class State(StateLike):
             array = self.array
         return Channel(array, [], self.dom)
 
+    def expectation(self, randvar=None):
+        if randvar is None:
+            randvar = randvar_fromfun(lambda x: x, self.dom)
+        check_dom_match(randvar.dom, self.dom)
+        if self.dom.iscont:
+            return Fun.vect_integrate(self.array * randvar.array).sum()
+        return np.inner(self.array.ravel(), randvar.array.ravel())
+
+    def variance(self, randvar=None, exp=None):
+        if randvar is None:
+            randvar = randvar_fromfun(lambda x: x, self.dom)
+        check_dom_match(self.dom, randvar.dom)
+        if exp is None:
+            exp = self.expectation(randvar)
+        if self.dom.iscont:
+            a = np.empty_like(randvar.array, dtype=float)
+            _var_integral_u(randvar.array, self.array, exp, out=a)
+            return a.sum()
+        a = randvar.array - exp
+        a = a * a
+        return np.inner(a.ravel(), self.array.ravel())
+
+    def st_deviation(self, randvar=None, exp=None):
+        if randvar is None:
+            randvar = randvar_fromfun(lambda x: x, self.dom)
+        return math.sqrt(self.variance(randvar, exp=exp))
+
+    def covariance(self, randvar1 = None, randvar2 = None):
+        if randvar1 is None or randvar2 is None:
+            randvar1 = randvar_fromfun(lambda *x: x[0], self.dom)
+            randvar2 = randvar_fromfun(lambda *x: x[1], self.dom)
+        if self.dom != randvar1.dom or self.dom != randvar2.dom:
+            raise Exception('Domain mismatch in covariance computation')
+        e1 = self.expectation(randvar1)
+        e2 = self.expectation(randvar2)
+        rv = RandVar.fromfun(lambda *x: (randvar1.getvalue(*x) - e1) * 
+                             (randvar2.getvalue(*x) - e2), 
+                             self.dom)
+        return self.expectation(rv)
+
+    def correlation(self, randvar1 = None, randvar2 = None):
+        if randvar1 is None or randvar2 is None:
+            randvar1 = randvar_fromfun(lambda *x: x[0], self.dom)
+            randvar2 = randvar_fromfun(lambda *x: x[1], self.dom)
+        cov = self.covariance(randvar1, randvar2)
+        sd1 = self.st_deviation(randvar1)
+        sd2 = self.st_deviation(randvar2)
+        return cov / (sd1 * sd2)
+
+
 
 def _var_integral(rvfun, sfun, exp):
     def integrand(*xs):
@@ -692,26 +752,26 @@ class RandVar(StateLike):
         check_dom_match(self.dom, other.dom)
         return type(self)(self.array - other.array, self.dom)
 
-    def exp(self, stat):
-        check_dom_match(self.dom, stat.dom)
-        if self.dom.iscont:
-            return Fun.vect_integrate(self.array * stat.array).sum()
-        return np.inner(self.array.ravel(), stat.array.ravel())
+    # def exp(self, stat):
+    #     check_dom_match(self.dom, stat.dom)
+    #     if self.dom.iscont:
+    #         return Fun.vect_integrate(self.array * stat.array).sum()
+    #     return np.inner(self.array.ravel(), stat.array.ravel())
 
-    def var(self, stat, exp=None):
-        check_dom_match(self.dom, stat.dom)
-        if exp is None:
-            exp = self.exp(stat)
-        if self.dom.iscont:
-            a = np.empty_like(self.array, dtype=float)
-            _var_integral_u(self.array, stat.array, exp, out=a)
-            return a.sum()
-        a = self.array - exp
-        a = a * a
-        return np.inner(a.ravel(), stat.array.ravel())
+    # def var(self, stat, exp=None):
+    #     check_dom_match(self.dom, stat.dom)
+    #     if exp is None:
+    #         exp = self.exp(stat)
+    #     if self.dom.iscont:
+    #         a = np.empty_like(self.array, dtype=float)
+    #         _var_integral_u(self.array, stat.array, exp, out=a)
+    #         return a.sum()
+    #     a = self.array - exp
+    #     a = a * a
+    #     return np.inner(a.ravel(), stat.array.ravel())
 
-    def stdev(self, stat, exp=None):
-        return math.sqrt(self.var(stat, exp=exp))
+    # def stdev(self, stat, exp=None):
+    #     return math.sqrt(self.var(stat, exp=exp))
 
 
 class Predicate(RandVar):
@@ -1418,19 +1478,16 @@ def gaussian_pred(mu, sigma, supp=R, scaling=True):
             return stats.norm.pdf(x, loc=mu, scale=sigma)
     return Predicate(Fun(fun, supp), [supp])
 
-# #
-# # Random discrete predicate on {0,1,...,n-1}
-# #
-# def random_disc_pred(n):
-#     return Predicate([random.uniform(0,1) for i in range(n)], range(n))
 
-# #
-# # Discrete predicate that is 1 at i in {0,1,...,n-1}
-# #
-# def unit_pred(n, i):
-#     ls = [0] * n
-#     ls[i] = 1
-#     return Predicate(ls, range(n))
+def id_rv(dom):
+    return RandVar(lambda x: x, dom)
+
+def proj1_rv(joint_dom):
+    return randvar_fromfun(lambda *x: x[0], joint_dom)
+
+def proj2_rv(joint_dom):
+    return randvar_fromfun(lambda *x: x[1], joint_dom)
+
 
 
 ##############################################################
@@ -1443,11 +1500,10 @@ def gaussian_pred(mu, sigma, supp=R, scaling=True):
 # Total variation distance between discrete states
 #
 def tvdist(s, t):
-    if s.dom.iscont or t.dom.iscont:
-        raise Exception('Total variation distance is defined only for discrete states')
-    if s.dom != t.dom:
-        raise Exception('Total variation discrete is define only for states with the same domain')
-    return 0.5 * sum(abs(s.array - t.array))
+    if s.dom != t.dom or s.dom.iscont or t.dom.iscont:
+        raise Exception('Distance requires equal, discrete domains')
+    return 0.5 * sum(abs(np.ndarray.flatten(s.array) \
+                         - np.ndarray.flatten(t.array)))
 
 #
 # Direct influence of a predicate on a state
@@ -1623,11 +1679,11 @@ def dice():
     pips = [1,2,3,4,5,6]
     stat = uniform_state(pips)
     rv = RandVar.fromfun(lambda x: x, pips)
-    print("Exp.", rv.exp(stat))
-    print("Var.", rv.var(stat))
-    print("St.Dev.", rv.stdev(stat))
+    print("Exp.", stat.expectation(rv))
+    print("Var.", stat.variance(rv))
+    print("St.Dev.", stat.st_deviation(rv))
     print("Var. by formula:",
-          (rv & rv).exp(stat) - rv.exp(stat) ** 2)
+          stat.expectation(rv & rv) - stat.expectation(rv) ** 2)
     # exp = rv.exp(stat)
     # rv2 = rv - exp
     # print("Var. by formula 2:",
@@ -1635,11 +1691,11 @@ def dice():
 
     rv_sum = RandVar.fromfun(lambda x,y: x+y, [pips]*2)
     stat2 = stat @ stat
-    print("Exp.", rv_sum.exp(stat2))
-    print("Var.", rv_sum.var(stat2))
-    print("St.Dev.", rv_sum.stdev(stat2))
+    print("Exp.", stat2.expectation(rv_sum))
+    print("Var.", stat2.variance(rv_sum))
+    print("St.Dev.", stat2.st_deviation(rv_sum))
     print("Var. by formula:",
-          (rv_sum & rv_sum).exp(stat2) - rv_sum.exp(stat2) ** 2)
+          stat2.expectation(rv_sum & rv_sum) - stat2.expectation(rv_sum) ** 2)
 
 
 def test_chan():
@@ -1655,6 +1711,7 @@ def test_chan():
 
 
 def main():
+    #dice()
     #sporter()
     print( convex_state_sum((0.2,flip(0.3)), (0.8, flip(0.8))))
 

@@ -559,9 +559,9 @@ about the \EfProb library.
   probability have developed their own scripts for quickly calculating
   probabilities. The \EfProb library could develop into a common
   language in which results can be formulated uniformly, so that they
-  can be compared and re-used by colleagues. We request that usage of
-  the \EfProb library, if any, is mentioned in the acknowledgements of
-  research papers.
+  can be verified, compared or re-used by colleagues. We request that
+  usage of the \EfProb library, if any, is mentioned in the
+  acknowledgements of research papers.
 
 \item The \EfProb library requires \Python, version $\geq$ 3.5.
   \EfProb heavily relies on existing libraries in \Python, in
@@ -1110,9 +1110,9 @@ mentioned, namely:
 \end{itemize}
 
 Recall that a distribution on a (finite) set $X$ can be identified
-with a function $\omega \colon X \rightarrow [0,1]$ that satisfies
-$\sum_{x}\omega(x) = 1$. Thus, a state is a predicate, but not the
-other way around. A predicate is also a function $p\colon X
+with a `mass' function $\omega \colon X \rightarrow [0,1]$ that
+satisfies $\sum_{x}\omega(x) = 1$. Thus, a state is a predicate, but
+not the other way around. A predicate is also a function $p\colon X
 \rightarrow [0,1]$, but for predicates there is no requirement that
 the probabilities $p(x) \in [0,1]$ add up to one. Although they look
 similar, it is important to keep states and predicates apart.
@@ -1877,10 +1877,20 @@ match.
 \noindent If we condition in the first componet only, the validity
 of this predicate in the second component changes:
 \begin{python}
->>> w / (point_pred(0, range(2)) @ truth(range(2))) >= truth(range(2)) @ point_pred(0, range(2))
+>>> w / (point_pred(0,range(2)) @ truth(range(2))) >= truth(range(2)) @ point_pred(0,range(2))
 1.0
->>>  w / (point_pred(1, range(2)) @ truth(range(2))) >= truth(range(2)) @ point_pred(0, range(2))
+>>>  w / (point_pred(1,range(2)) @ truth(range(2))) >= truth(range(2)) @ point_pred(0,range(2))
 0.0
+\end{python}
+
+\noindent If we condition in the first coordinate, and then project
+(marginalise) this coordinate away we obtain the point state
+corresponding to the point predicate:
+\begin{python}
+>>> (w / (point_pred(0,range(2)) @ truth(range(2)))) % [0,1]
+1|0> + 0|1>
+>>> (w / (point_pred(1,range(2)) @ truth(range(2)))) % [0,1] 
+0|0> + 1|1>
 \end{python}
 \end{example}
 
@@ -1930,9 +1940,29 @@ the end of Example~\ref{ex:polarisation}.
 \section{Random variables}\label{sec:drandvar}
 
 Random variables are used in probability theory to map elements of the
-sample space (domain) to real numbers. Given a state on the domain,
-one can then comppute the expected value, or variance. Here is a
-simple example where this is useful.
+sample space (domain) to real numbers. Random variables are closed
+under various operations like pointwise sum, product, scalar
+multiplication. Such operations on random variables are pre-defined in
+\EfProb. 
+
+Random variable generalise predicates: where a predicate on a domain
+$D$ is a function $D \rightarrow [0,1]$, a random variable is a
+function $D \rightarrow \RN$. The notion of validity extends from
+predicates to random variable. Thus, besides validity \pythoninline{s
+  >= p} for a predicate \pythoninline{p} in a state \pythoninline{s},
+we can also have validity \pythoninline{s >= rv} of a random
+variable \pythoninline{rv} in a state \pythoninline{s}. This is
+the expected value. Random variables are define in the same way
+that predicates are defined.
+
+In statistics random variables are crucial for expected values,
+variance and standard deviation, and also for covariance and
+correlation. This will be illustrated below.
+
+\subsection{Expected value, variance, and standard deviation}\label{subsec:dexp}
+
+Given a state on the domain, one can then comppute the expected value,
+or variance. Here is a simple example where this is useful.
 \begin{quote}
 If it rains, an umbrella sales person can earn \euro{100} per day. If
 it is a fair weather day (s)he can lose \euro{20} per day. What is the
@@ -1948,19 +1978,52 @@ to \pythoninline{100} and the domain element \pythoninline{False} to
 \begin{python}
 >>> rain_state = flip(0.3)
 >>> umbrella_sales_rv = RandVar([100, -20], [True,False])
->>> umbrella_sales_rv.exp(rain_state)
+>>> rain_state >= umbrella_sales_rv
+16.0
+>>> rain_state.expectation(umbrella_sales_rv)
 16.0
 \end{python}
 
 \noindent We see that a random variable is defined by a list and a
 domain (also a list). The first list gives the real number values
 corresponding to the elements of the domain. A random variable has an
-expectation\index{expectation!discrete~--} method \pythoninline{exp},
-which takes a state as argument. This state must have the same domain
-as the random variable. In a similar way one obtains the
-variance\index{variance!discrete~--} or standard
-deviation\index{standard~deviation!discrete~--} via the methods
-\pythoninline{var} and \pythoninline{stdev}.
+expectation\index{expectation!discrete~--} method
+\pythoninline{expectation}, which takes a state as argument. This
+state must have the same domain as the random variable. In the above
+example the validity of the random variable is printed first, giving
+the expected value (expectation).  In \EfProb there is also an
+\pythoninline{expectation} method on states that computes the expected
+value, taking a random variable as argument.
+
+The above random variable can also be obtained by suitably
+multiplying yes/no point predicates with a scalar, as in:
+\begin{python}
+>>> umbrella_sales_alt_rv = 100 * yes_pred + (-20) * no_pred
+>>> rain_state.expectation(umbrella_sales_alt_rv) 
+16.0
+\end{python}
+
+In a similar way one obtains the variance\index{variance!discrete~--}
+or standard deviation\index{standard~deviation!discrete~--} via the
+methods \pythoninline{variance} and \pythoninline{st\_deviation}, as
+illustrated below.
+
+The average of a sequence of sample data, say \pythoninline{[2, 6, 4,
+    1, 10]} can be computed by turning the list of data into a random
+variable and computing the expected value, variance and standard
+deviation wrt.\ the uniform state:
+\begin{python}
+>>> data = [2, 6, 4, 1, 10]
+>>> dom = range(len(data))
+>>> s = uniform_state(dom)
+>>> rv = RandVar(data, dom)
+>>> s.expectation(rv)
+4.6
+>>> s.variance(rv)
+10.24
+>>> s.st_deviation(rv))
+3.2
+\end{python}
 
 Here is another example of a random variable, now defined on (the
 domain of) the product state of a pair of dices. Instead of using a
@@ -1970,7 +2033,7 @@ list, we use a function as first argument. It maps a pair $(x,y) \in
 >>> fdice = uniform_state([1,2,3,4,5,6])
 >>> twodice = fdice @ fdice
 >>> sum_rv = RandVar.fromfun(lambda x,y: x+y, twodice.dom)
->>> sum_rv.exp(twodice)
+>>> twodice.expectation(sum_rv)
 7.0
 \end{python}
 
@@ -1983,9 +2046,9 @@ given that both of them are even (or odd) are:
 \begin{python}
 >>> even = Predicate([0,1,0,1,0,1], [1,2,3,4,5,6])
 >>> odd = ~even
->>> sum_rv.exp( twodice / (even @ even) )
+>>> (twodice / (even @ even)).expectation(sum_rv)
 8.0
->>> sum_rv.exp( twodice / (odd @ odd) )
+>>> (twodice / (odd @ odd)).expectation(sum_rv)
 6.0
 \end{python}
 
@@ -1998,8 +2061,8 @@ We can use \Python as `meta-language' to define for instance
 a function that returns the expected value of \pythoninline{n}
 dices:
 \begin{python}
->>> def sums_exp(n): return RandVar.fromfun(lambda *xs: sum(xs), 
-... (fdice ** n).dom).exp(fdice ** n)
+>>> def sums_exp(n): return (fdice ** n).expectation(
+...         RandVar.fromfun(lambda *xs: sum(xs), (fdice ** n).dom))
 >>> sums_exp(1)
 3.5
 >>> sums_exp(2)
@@ -2024,9 +2087,8 @@ for \pythoninline{n} dices with \pythoninline{even} outcome, via
 conditional states.\marginnote[3\baselineskip]{Here the pattern is
   \pythoninline{even\_sums\_exp(n)} equals \pythoninline{4 * n}.}
 \begin{python}
->>> def even_sums_exp(n): return RandVar.fromfun(lambda *xs: sum(xs), 
-... (fdice ** n).dom).exp( (fdice ** n) / (even ** n) )
-... 
+>>> def even_sums_exp(n): return ((fdice ** n) / (even ** n)).expectation(
+...         RandVar.fromfun(lambda *xs: sum(xs), (fdice ** n).dom))
 >>> even_sums_exp(1)
 4.0
 >>> even_sums_exp(2)
@@ -2035,12 +2097,97 @@ conditional states.\marginnote[3\baselineskip]{Here the pattern is
 32.0
 \end{python}
 
-As described above, random variables are functions from a domain to
-real numbers. This means that we can define various operations like
-sum, product, scalar multiplication on random variable by applying
-these operations point-wise. Such operations on random variables are
-pre-defined in \EfProb.
+When the domain $D$ of a state \pythoninline{s} is itself a subset $D
+\hookrightarrow \RN$ of the real numbers $\RN$, one can use a trivial
+inclusion function as random variable. In statistics, this trivial
+function is often omitted. This can also be done in \EfProb, as shown
+in the next dice illustration, where, recall, the domain is given by
+the numbers $\{1, 2, 3, 4, 5, 6\} \hookrightarrow \RN$.
+\begin{python}
+>>> fdice.expectation()
+3.5
+>>> fdice.variance()
+2.91666666667
+>>> fdice.st_deviation()
+1.707825127659933
+\end{python}
 
+
+\subsection{Covariance and correlation}\label{subsec:dcov}
+
+For expectation (and variance and standard deviation) one needs a
+state together with a random variable on the same domain. For
+covariance\index{covariance!discrete~--} and
+correlation\index{correlation!discrete~--} one needs a state and
+\emph{two} random variables on the same domain. Sometimes the state is
+omitted when it is trivial (uniform), and sometimes the random
+variables are omitted when they are trivial (projections).  We shall
+show how this works in \EfProb via illustrations.
+
+% Example below copied from:
+%
+% http://www.aptech.com/econometric-models-and-econometric-forecasts-example-2-1/
+
+We start with two samples, given by lists of numbers of the same
+length. We would like to learn their covariance and correlation.
+Implicitly one use a uniform state, with the common length as size.
+\begin{python}
+>>> Xs = [5, 10, 15, 20, 25]
+>>> Ys = [10,  8, 10, 15, 12]
+>>> N = len(Xs)
+>>> dom = range(N)
+>>> s = uniform_state(dom)
+>>> X_rv = RandVar(Xs, dom)
+>>> Y_rv = RandVar(Ys, dom)
+\end{python}
+
+\noindent We can now compute not only expectations and variances, but
+also covariances and correlations. The latter take both random
+variables as argument:
+\begin{python}
+>>> s.expectation(X_rv)
+15.0
+>>> s.expectation(Y_rv)
+11.0
+>>> s.variance(X_rv)
+50.0
+>>> s.variance(Y_rv)
+5.6
+>>> s.covariance(X_rv, Y_rv)
+11.0
+>>> s.correlation(X_rv, Y_rv)
+0.657375735134
+\end{python}
+
+% From wikipedia, or from:
+% https://onlinecourses.science.psu.edu/stat414/node/109
+
+In the next example the covariance and correlation of a joint
+state are computed. Now the random variables are left implicit.
+\begin{python}
+>>> X = [1,2]
+>>> Y = [1,2,3]
+>>> w = State([1/4, 1/4, 0, 0, 1/4, 1/4], [X, Y])
+>>> w
+0.25|1,1> + 0.25|1,2> + 0|1,3> + 0|2,1> + 0.25|2,2> + 0.25|2,3>
+>>> w.covariance()
+0.25
+>>> w.correlation()
+0.707106781187
+\end{python}
+
+\noindent Like at the end of the previous subsection, no explicit
+random variables are given. They are inserted implicitly in \EfProb,
+namely as projection random variables. They can also be added 
+explicitly, as in:
+\begin{python}
+>>> def proj1_rv(joint_dom): return randvar_fromfun(lambda *x: x[0], joint_dom)
+>>> def proj2_rv(joint_dom): return randvar_fromfun(lambda *x: x[1], joint_dom)
+>>> w.covariance(proj1_rv(w.dom), proj2_rv(w.dom))
+0.25
+>>> w.correlation(proj1_rv(w.dom), proj2_rv(w.dom))
+0.707106781187
+\end{python}
 
 
 
@@ -2431,7 +2578,7 @@ the bias distribution:
 \noindent Alternatively we can ask for the expected value in
 this learned state, via the identity random variable:
 \begin{python}
->>> RandVar(bias_dom, bias_dom).exp(s)
+>>> s.expectation(RandVar(bias_dom, bias_dom))
 0.599974754805
 \end{python}
 
@@ -3296,8 +3443,31 @@ work for continuous states, via the same notation: product
 
 \section{Random variables}\label{sec:crandvar}
 
+\subsection{Expected value, variance, and standard deviation}\label{subsec:cexp}
+
+%% # Copied from: http://www.stankova.net/statistics_2012/lecture_9.pdf
+
+%% t = State(lambda x: 10/3 * x - 10/3 * x ** 4, R(0,1))
+
+%% print( t >= truth(R(0,1)) )
+
+%% print( t.expectation() )
+%% # 0.555555555556 = 5/9
+
+%% print( t.variance() )
+%% # 0.0485008818342 = 55/1134
+
+%% # own example
+
+%% w = State(lambda x,y: 4*x*y, [R(0,1), R(0,1)])
+
+%% print( w >= truth(R(0,1)) @ truth(R(0,1)) )
+
+%% print( w.covariance() )
+%% print( w.correlation() )
 
 
+\subsection{Covariance and correlation}\label{subsec:ccov}
 
 \section{Channels}\label{sec:cchannel}
 
@@ -3396,7 +3566,7 @@ above loop the best bias of the coin:
 \begin{python}
 >>> chan >> s
 0.6|True> + 0.4|False>
->>> randvar_fromfun(lambda r: r, bias_dom).exp(s)
+>>> s.expectation(randvar_fromfun(lambda r: r, bias_dom))
 0.6
 \end{python}
 
@@ -3598,6 +3768,20 @@ bloch_state(pi, 0)
 bloch_state(pi/2, 0)
 bloch_state(pi/2, pi)
 \end{python}
+
+%% x_test is
+%% 0 on bloch_state(pi/2, pi) = minus
+%% 1 on bloch_state(pi/2, 0) = plus
+%% sin(s/2) ** 2 ) on bloch_state(pi/2, s)
+
+%% y_test is
+%% 0 on bloch_state(pi/2, 3*pi/2)
+%% 1 on bloch_state(pi/2, pi/2)
+
+%% z_test is
+%% 0 on bloch_state(0, 0) = ket(0)
+%% 1 on bloch_state(pi, 0) = ket(1)
+%% cos(s/2) ** 2 on bloch_state(s, 0)
 
 \noindent The coordinates $(\theta,\phi)$ of the function
 \pythoninline{bloch\_state}$(\theta,\phi)$ have the ranges:
@@ -4444,7 +4628,9 @@ The Bell states are famous 2-qubit states which have been defined at
 the end of Section~\ref{sec:qstate}. Of these four states be use the
 one named \pythoninline{bell00}. We additionally use the following
 predicates, obtained from states.
-\begin{python}
+% A1 = x_min, so ~A1 = x_plus
+% A2 = phase_shift(pi/3) << A1
+\begin{python} 
 >>> A1 = vector_pred(1/sqrt(2), 1/sqrt(2))
 >>> B1 = A1
 >>> A2 = vector_pred(1/sqrt(2), 0.5/sqrt(2) * complex(1, sqrt(3)))
@@ -4736,6 +4922,7 @@ an entangled joint state. The analogous phenomenon in classical
 probability has already been described in Example~\ref{ex:dcrossover}
 --- with the same predicates, resulting in the same probabilities.
 
+% https://en.wikipedia.org/wiki/EPR_paradox#Mathematical_formulation
 
 \begin{example}
 \label{ex:qcrossover}
@@ -4760,17 +4947,19 @@ of this predicate in the second component.
 \noindent This is what Einstein called \emph{spukenhaften
   Fernwirkung} (spooky interaction at a distance).
 
-This same crossover influence is often illustrated with `X'
-predicates, arising from the eigenvectors of the X matrix
+This same crossover influence is often illustrated with `X' predicates
+\pythoninline{x\_pp} and \pythoninline{x\_mp}, where
+`\pythoninline{pp}' and `\pythoninline{mp}' stand for `plus predicate'
+and `min predicate'. They arise via the eigenvectors of the X matrix
 $\left(\begin{smallmatrix} 0 & 1 \\ 1 & 0 \end{smallmatrix}\right)$.
 \begin{python}
->>> x_plus = vector_pred(-1/sqrt(2), 1/sqrt(2))
->>> x_min = vector_pred(1/sqrt(2), 1/sqrt(2))
+>>> x_pp = vector_pred(-1/sqrt(2), 1/sqrt(2))
+>>> x_mp = vector_pred(1/sqrt(2), 1/sqrt(2))
 >>> bell00 >= truth(2) @ x_plus
 0.5
->>> bell00 / (x_plus @ truth(2)) >= truth(2) @ x_plus
+>>> bell00 / (x_pp @ truth(2)) >= truth(2) @ x_pp
 1.0
->>> bell00 / (x_min @ truth(2)) >= truth(2) @ x_plus
+>>> bell00 / (x_mp @ truth(2)) >= truth(2) @ x_pp
 0.0
 \end{python}
 
@@ -4778,6 +4967,16 @@ $\left(\begin{smallmatrix} 0 & 1 \\ 1 & 0 \end{smallmatrix}\right)$.
 \pythoninline{bell01} instead of \pythoninline{bell00}. For
 the states \pythoninline{bell10} and \pythoninline{bell11} the
 last two probabilities are exchanged.
+
+This `crossover' influence can be described more explicitly via
+conditioning in one coordinate and then projecting (marginalising)
+that coordinate away:
+\begin{python}
+>>> (bell00 / (point_pred(0,2) @ truth(2))) % [0,1] == point_state(0,2)
+True
+>>> (bell00 / (point_pred(1,2) @ truth(2))) % [0,1] == point_state(1,2) 
+True
+\end{python}
 \end{example}
 
 
@@ -4897,7 +5096,7 @@ it for an ordinary dice, incorporated into the quantum world.
 ...          + 4 * point_pred(3,6) + 5 * point_pred(4,6) + 6 * point_pred(5,6)
 >>> dice >= points
 3.5
->>> points.variance(dice)
+>>> dice.variance(points)
 2.91666666667
 \end{python}
 
@@ -4906,7 +5105,8 @@ predicates \pythoninline{unit\_pred} are cast to random variables, via
 scalar multiplication and addition.
 
 (The expectation and variance values computed above in the quantum
-framework coincide with the probabilistic ones.)
+framework coincide with the classical ones, see the end of
+Subsection~\ref{subsec:dexp}.)
 
 
 \section{Channels}\label{sec:qchannel}
@@ -5716,7 +5916,18 @@ corresponds to predicate transformation with a projection channel.
 can cross. There is a \pythoninline{swap}
 channel\index{swap~channel!quantum~---}\index{channel!quantum~swap~--}
 that can do this, but only for qubits. Its type is \pythoninline{[2,2]
-  -> [2,2]}.
+  -> [2,2]}. Here are some simple examples.
+\begin{python}
+>>> s = random_state(2)
+>>> t = random_state(2)
+>>> swap >> (s @ t) == t @ s
+True
+>>> swap >> bell00 == bell00 
+True
+\end{python}
+
+\noindent The other Bell states \pythoninline{bell01} \etc are
+also `symmetric'.
 
 Here is where swapping is useful. In the \EfProb library
 the control bit in the \pythoninline{cnot} channel is the

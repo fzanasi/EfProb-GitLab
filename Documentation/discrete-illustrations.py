@@ -248,6 +248,15 @@ def conditioning():
 
     print("\n===\n")
 
+    print("* Crossover conditioning")
+    print( (w / (point_pred(0, range(2)) @ truth(range(2)))) % [0,1], "  ",
+           point_state(0, range(2)) )
+    print( (w / (point_pred(1, range(2)) @ truth(range(2)))) % [0,1], "  ",
+           point_state(1, range(2)) )
+
+
+    print("\n===\n")
+
     print("* Law of total probability")
     s = random_state(range(4))
     p = random_pred(range(4))
@@ -265,20 +274,32 @@ def conditioning():
 
 
 
-def random_variables():
+def expectation():
 
-    print("\nSection: Random Variables\n")
+    print("\nSubsection: Expected value, variance, and standard deviation\n")
 
     print("* umbrella sales expectation")
     rain_state = flip(0.3)
     umbrella_sales_rv = RandVar([100, -20], [True,False])
-    print( umbrella_sales_rv.exp(rain_state) )
+    print( rain_state >= umbrella_sales_rv )
+    print( rain_state.expectation(umbrella_sales_rv) )
 
     print("\n===\n")
 
     print("* alternative umbrella sales expectation")
-    umbrella_sales_alt_rv = 100 * Predicate([1,0], [True,False]) + (-20) * Predicate([0,1], [True,False])
-    print( umbrella_sales_alt_rv.exp(rain_state) )
+    umbrella_sales_alt_rv = 100 * yes_pred + (-20) * no_pred
+    print( rain_state.expectation(umbrella_sales_alt_rv) )
+
+    print("\n===\n")
+
+    print("* Average of sample data")
+    data = [2, 6, 4, 1, 10]
+    dom = range(len(data))
+    rv = RandVar(data, dom)
+    s = uniform_state(dom)
+    print( s.expectation(rv) )
+    print( s.variance(rv) )
+    print( s.st_deviation(rv) )
 
     print("\n===\n")
 
@@ -286,21 +307,21 @@ def random_variables():
     fdice = uniform_state([1,2,3,4,5,6])
     twodice = fdice @ fdice
     sum_rv = RandVar.fromfun(lambda x,y: x+y, twodice.dom)
-    print( sum_rv.exp(twodice) )
+    print( twodice.expectation(sum_rv) )
 
     print("\n===\n")
 
     print("* Even-odd expectation")
     even = Predicate([0,1,0,1,0,1], [1,2,3,4,5,6])
     odd = ~even
-    print( sum_rv.exp( twodice / (even @ even) ) )
-    print( sum_rv.exp( twodice / (odd @ odd) ) )
+    print( (twodice / (even @ even)).expectation(sum_rv) )
+    print( (twodice / (odd @ odd)).expectation(sum_rv) )
 
     print("\n===\n")
 
     print("* Dice sums expectation")
-    def sums_exp(n): return RandVar.fromfun(lambda *xs: sum(xs),
-                                            (fdice ** n).dom).exp(fdice ** n)
+    def sums_exp(n): return (fdice ** n).expectation(
+            RandVar.fromfun(lambda *xs: sum(xs), (fdice ** n).dom))
     print( sums_exp(1) )
     print( sums_exp(2) )
     print( sums_exp(3) )
@@ -309,14 +330,59 @@ def random_variables():
     print("\n===\n")
 
     print("* Dice even sums expectation")
-    def even_sums_exp(n): return RandVar.fromfun(lambda *xs: sum(xs),
-                                                 (fdice ** n).dom).exp( (fdice ** n) / (even ** n) )
+    def even_sums_exp(n): return ((fdice ** n) / (even ** n)).expectation(
+            RandVar.fromfun(lambda *xs: sum(xs), (fdice ** n).dom))
     print( even_sums_exp(1) )
     print( even_sums_exp(2) )
     #print( even_sums_exp(8) )
 
+    print("\n===\n")
+
+    print("* Dice statistics")
+    print( fdice.expectation() )
+    print( fdice.variance() )
+    print( fdice.st_deviation() )
+
+def covariance():
+
+    print("\nSubsection: Covariance and correlation\n")
+
+    print("* Covariance and correlation of samples")
+    Xs = [5, 10, 15, 20, 25]
+    Ys = [10,  8, 10, 15, 12]
+    N = len(Xs)
+    dom = range(N)
+    s = uniform_state(dom)
+    X_rv = RandVar(Xs, dom)
+    Y_rv = RandVar(Ys, dom)
+    print("X expectation ", s.expectation(X_rv) )
+    print("Y expectation ", s.expectation(Y_rv) )
+    print("X variance ", s.variance(X_rv) )
+    print("Y variance ", s.variance(Y_rv) )
+    print("X,Y covariance ", s.covariance(X_rv, Y_rv) )
+    print("X,Y correlation ", s.correlation(X_rv, Y_rv) )
 
     print("\n===\n")
+
+    print("* Covariance of a joint state")
+    X = [1,2]
+    Y = [1,2,3]
+    w = State([1/4, 1/4, 0, 0, 1/4, 1/4], [X, Y])
+    print( w )
+    print( w.covariance() )
+    print( w.correlation() )
+
+    print("\n===\n")
+
+    print("* Covariance of a joint state, with explicit projections")
+    def proj1_rv(joint_dom):
+        return randvar_fromfun(lambda *x: x[0], joint_dom)
+    def proj2_rv(joint_dom):
+        return randvar_fromfun(lambda *x: x[1], joint_dom)
+    print( w.covariance(proj1_rv(w.dom), proj2_rv(w.dom)) )
+    print( w.correlation(proj1_rv(w.dom), proj2_rv(w.dom)) )
+    
+
 
 
 def channels():
@@ -431,7 +497,7 @@ def state_pred_transformation():
     print("Associated coin")
     print( chan >> s )
     print("Expected value")
-    print( RandVar(bias_dom, bias_dom).exp(s) )
+    print( s.expectation(RandVar(bias_dom, bias_dom)) )
 
 
     
@@ -573,7 +639,8 @@ def all():
     excursion()
     validity()
     conditioning()
-    random_variables()
+    expectation()
+    covariance()
     channels()
     state_pred_transformation()
     structural_channels()
@@ -586,7 +653,8 @@ def main():
     #excursion()
     #validity()
     # conditioning()
-    #random_variables()
+    # expectation()
+    # covariance()
     #channels()
     #state_pred_transformation()
     #structural_channels()

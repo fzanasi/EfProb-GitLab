@@ -42,11 +42,11 @@ yellow_domain = range(2*N+1)
 unif_prior = uniform_disc_state(2*N+1)
 halfway_prior = unit_disc_state(2*N+1, N)
 #
-# Own addition: compensation for risc aversion; puttig them at 0 means
+# Own addition: compensation for risc aversion; putting them at 0 means
 # no compensation
 #
-a=0.344
-b=0.377
+a=0.344   # 19/59 = 0.3220338983050847
+b=0.377   # 18/59 = 0.3050847457627119
 
 #
 # Domains for Red and Yellow balls

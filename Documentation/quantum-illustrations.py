@@ -273,6 +273,17 @@ def validity():
            bell00 / (truth(2) @ B1) >= A2 @ truth(2),
            bell00 / (truth(2) @ B2) >= A2 @ truth(2) )
 
+    print("\nphi's")
+    phi1 = A1 @ B1 + ~A1 @ ~B1
+    phi2 = A1 @ B2 + ~A1 @ ~B2
+    phi3 = A2 @ B1 + ~A2 @ ~B1
+    phi4 = A2 @ ~B2 + ~A2 @ B2
+
+    print( bell00 >= phi4 & phi1 & phi3 & phi2 )
+
+    print( (bell00 >= phi1) + (bell00 >= phi2) + (bell00 >= phi3) + (bell00 >= phi4) )
+
+
 
 
 
@@ -344,24 +355,32 @@ def conditioning():
     print("\n===\n")
 
     print("* Crossover via the x predicates")
-    x_plus = vector_pred(-1/sqrt(2), 1/sqrt(2))
-    x_min = vector_pred(1/sqrt(2), 1/sqrt(2))
-    print( bell00 >= truth(2) @ x_plus )
-    print( bell00 / (x_plus @ truth(2)) >= truth(2) @ x_plus )
-    print( bell00 / (x_min @ truth(2)) >= truth(2) @ x_plus )
+    x_pp = vector_pred(-1/sqrt(2), 1/sqrt(2))
+    x_mp = vector_pred(1/sqrt(2), 1/sqrt(2))
+    print( bell00 >= truth(2) @ x_pp )
+    print( bell00 / (x_pp @ truth(2)) >= truth(2) @ x_pp )
+    print( bell00 / (x_mp @ truth(2)) >= truth(2) @ x_pp )
     print("Similar outcomes for the other Bell states")
     print( "bell01 ", 
-           bell01 >= truth(2) @ x_plus,
-           bell01 / (x_plus @ truth(2)) >= truth(2) @ x_plus,
-           bell01 / (x_min @ truth(2)) >= truth(2) @ x_plus )
+           bell01 >= truth(2) @ x_pp,
+           bell01 / (x_pp @ truth(2)) >= truth(2) @ x_pp,
+           bell01 / (x_mp @ truth(2)) >= truth(2) @ x_pp )
     print( "bell10 ", 
-           bell10 >= truth(2) @ x_plus,
-           bell10 / (x_plus @ truth(2)) >= truth(2) @ x_plus,
-           bell10 / (x_min @ truth(2)) >= truth(2) @ x_plus )
+           bell10 >= truth(2) @ x_pp,
+           bell10 / (x_pp @ truth(2)) >= truth(2) @ x_pp,
+           bell10 / (x_mp @ truth(2)) >= truth(2) @ x_pp )
     print( "bell11 ", 
-           bell11 >= truth(2) @ x_plus,
-           bell11 / (x_plus @ truth(2)) >= truth(2) @ x_plus,
-           bell11 / (x_min @ truth(2)) >= truth(2) @ x_plus )
+           bell11 >= truth(2) @ x_pp,
+           bell11 / (x_pp @ truth(2)) >= truth(2) @ x_pp,
+           bell11 / (x_mp @ truth(2)) >= truth(2) @ x_pp )
+
+    print("\n===\n")
+
+    print("* Crossover conditioning")
+    print( (bell00 / (point_pred(0,2) @ truth(2))) % [0,1] == point_state(0,2),
+           (bell00 / (point_pred(1,2) @ truth(2))) % [0,1] == point_state(1,2) )
+    print( (bell00 / (x_pp @ truth(2))) % [0,1] == x_plus,
+           (bell00 / (x_mp @ truth(2))) % [0,1] == x_min )
 
 
 def random_variables():
@@ -386,7 +405,7 @@ def random_variables():
     points = 1 * point_pred(0,6) + 2 * point_pred(1,6) + 3 * point_pred(2,6) \
              + 4 * point_pred(3,6) + 5 * point_pred(4,6) + 6 * point_pred(5,6)
     print( dice >= points )
-    print( points.variance(dice) )
+    print( dice.variance(points) )
 
 
 def state_transformation():
@@ -463,6 +482,17 @@ def structural_channels():
     print( ((idn(2) @ discard(2)) * cnot) >> (s @ t) )
     print( (cnot >> (s @ t)) % [1,0] )
     print( ((idn(2) @ discard(2)) * cnot) >> (s @ t) == (cnot >> (s @ t)) % [1,0] )
+
+    print("\n===\n")
+
+    print("* Swap examples")
+    s = random_state(2)
+    t = random_state(2)
+    print( swap >> (s @ t) == t @ s )
+    print( swap >> bell00 == bell00,
+           swap >> bell01 == bell01,
+           swap >> bell10 == bell10,
+           swap >> bell11 == bell11 )
 
     print("\n===\n")
 

@@ -21,6 +21,54 @@ import efprob_dc as dc
 print("\nEllsberg Paradox")
 print("================\n")
 
+
+print("\nQuantum version")
+print("===============\n")
+
+v = 1/sqrt(3) * np.array([complex(1,0), complex(1,0), complex(1,0)])
+vc = vector_state(*v)
+
+# states from (the end of) section 2)
+
+v12 = vector_state(1/(2*sqrt(3)) * complex(1, sqrt(3)),
+                   1/(2*sqrt(3)) * complex(0, sqrt(6)),
+                   1/(2*sqrt(3)) * complex(sqrt(2),0))
+
+v34 = vector_state(1/(2*sqrt(3)) * complex(sqrt(3),1),
+                   1/(2*sqrt(3)) * complex(0, sqrt(2)),
+                   1/(2*sqrt(3)) * complex(sqrt(6),0))
+
+# color predicates: red, yellow, black
+
+R = point_pred(0,3)
+Y = point_pred(1,3)
+B = point_pred(2,3)
+
+print("R, Y, B in v12 ", v12 >= R, v12 >= Y, v12 >= B)
+print("R, Y, B in v34 ", v34 >= R, v34 >= Y, v34 >= B)
+
+print("")
+
+# random variables
+
+F1 = 12 * R
+F2 = 12 * B
+F3 = 12 * R + 12 * Y
+F4 = 12 * R + 12 * B
+
+print("F1, F2, F3, F4 in v12 ", v12 >= F1, v12 >= F2, v12 >= F3, v12 >= F4)
+print("F1, F2, F3, F4 in v34 ", v34 >= F1, v34 >= F2, v34 >= F3, v34 >= F4)
+
+
+th = random.uniform(0,pi)
+ph = random.uniform(0,2*pi)
+print( bloch_state(th, ph) >= point_pred(0, 2) )
+print( bloch_state(th, ph) >= point_pred(1, 2) )
+print( bloch_vector(th, ph) )
+
+
+"""
+
 # Approximation of the underlying state. Really what is needed is
 # "dependent" version.
 
@@ -238,44 +286,7 @@ print("Expected values of 1 and 3: ",
 
 
 
-"""
 
-print("\nQuantum version")
-print("===============\n")
-
-v = 1/sqrt(3) * np.array([complex(1,0), complex(1,0), complex(1,0)])
-vc = vector_state(*v)
-
-# states from (the end of) section 2)
-
-v12 = vector_state(1/(2*sqrt(3)) * complex(1, sqrt(3)),
-                   1/(2*sqrt(3)) * complex(0, sqrt(6)),
-                   1/(2*sqrt(3)) * complex(sqrt(2),0))
-
-v34 = vector_state(1/(2*sqrt(3)) * complex(sqrt(3),1),
-                   1/(2*sqrt(3)) * complex(0, sqrt(2)),
-                   1/(2*sqrt(3)) * complex(sqrt(6),0))
-
-# color predicates: red, yellow, black
-
-R = unit_pred(3,0)
-Y = unit_pred(3,1)
-B = unit_pred(3,2)
-
-print("R, Y, B in v12 ", v12 >= R, v12 >= Y, v12 >= B)
-print("R, Y, B in v34 ", v34 >= R, v34 >= Y, v34 >= B)
-
-print("")
-
-# random variables
-
-F1 = 12 * R
-F2 = 12 * B
-F3 = 12 * R + 12 * Y
-F4 = 12 * R + 12 * B
-
-print("F1, F2, F3, F4 in v12 ", v12 >= F1, v12 >= F2, v12 >= F3, v12 >= F4)
-print("F1, F2, F3, F4 in v34 ", v34 >= F1, v34 >= F2, v34 >= F3, v34 >= F4)
 
 print("")
 
@@ -306,8 +317,8 @@ print( P2 >= P2 )
 print( P4 >= P4 )
 print( P2 >= P4 )
 
-
 """
+
 
 """
 

@@ -1,7 +1,13 @@
 #
+# EfProb
+#
 # Quantum probability library, prototype version
 #
 # Started by Bart Jacobs, nov. 2016
+# 
+# Copyright: Bart Jacobs, Kenta Cho; 
+# Radboud University Nijmegen
+# efprob.cs.ru.nl
 #
 #
 from functools import reduce
@@ -307,14 +313,6 @@ class RandVar:
             raise Exception('Power of a random variable must be at least 1')
         return reduce(lambda r1, r2: r1 @ r2, [self] * n)
 
-    def variance(self, state):
-        """ Variance """
-        if not isinstance(state, State):
-            raise Exception('Variance of a random variable requires a state argument')
-        v = state >= self
-        w = state >= RandVar(np.dot(self.array, self.array), self.dom)
-        return w - (v ** 2)
-
     def evolution(self, state):
         if not isinstance(state, State):
             raise Exception('Evolution of a random variable requires a state as first argument')
@@ -530,6 +528,14 @@ class State:
         return Channel(self.array.reshape(self.dom.size, self.dom.size, 1, 1), 
                        Dom([]),
                        self.dom)
+
+    def variance(self, randvar):
+        """ Variance """
+        if not isinstance(randvar, RandVar):
+            raise Exception('Variance of a state requires a random variable argument')
+        v = self >= randvar
+        w = self >= RandVar(np.dot(randvar.array, randvar.array), self.dom)
+        return w - (v ** 2)
 
     def purify(self):
         v = purify(self.array)
@@ -892,9 +898,12 @@ def random_probabilistic_state(n):
 #
 # 0 <= theta <= pi, 0 <= phi <= 2*pi
 #
+def bloch_vector(theta, phi):
+    return np.array([math.cos(theta/2), 
+                     math.sin(theta/2) * math.e ** (phi * complex(0,1))])
+
 def bloch_state(theta, phi):
-    return vector_state(math.cos(theta/2), 
-                        math.sin(theta/2) * math.e ** (phi * complex(0,1)))
+    return vector_state(*bloch_vector(theta, phi))
 
 #
 # Truth predicate, for arbitrary dims
@@ -1211,6 +1220,14 @@ x_matrix = np.array([[0,1],
 x_chan = channel_from_unitary(x_matrix, [2], [2])
 
 #
+# Eigen vectors of x_matrix and test
+#
+x_plus = vector_state(-1/math.sqrt(2), 1/math.sqrt(2))
+x_min = vector_state(1/math.sqrt(2), 1/math.sqrt(2))
+x_pred = x_plus.as_pred()
+x_test = [x_pred, ~x_pred]
+
+#
 # cnot channel 2 @ 2 -> 2 @ 2
 #
 # This should be the same as quantum-control(x_chan)
@@ -1227,6 +1244,15 @@ y_matrix = np.array([[0,-complex(0, 1)],
 y_chan = channel_from_unitary(y_matrix, [2], [2])
 
 
+#
+# Test given by eigen vectors of y_matrix
+#
+y_plus = vector_state(1/math.sqrt(2), complex(0,-1)/math.sqrt(2))
+y_min = vector_state(1/math.sqrt(2), complex(0,1)/math.sqrt(2))
+y_pred = y_plus.as_pred()
+y_test = [ y_pred, ~y_pred ]
+
+
 z_matrix = np.array([[1,0],
                      [0,-1]])
 
@@ -1234,6 +1260,13 @@ z_matrix = np.array([[1,0],
 # Pauli-Z channel 2 -> 2
 #
 z_chan = channel_from_unitary(z_matrix, [2], [2])
+
+
+#
+# Test given by eigen vectors of z_matrix
+#
+z_pred = point_pred(0,2)
+z_test = [z_pred, ~z_pred]
 
 
 hadamard_matrix = (1/math.sqrt(2)) * np.array([ [1, 1],
@@ -1581,6 +1614,20 @@ def ccase(*chans):
 
 ########################################################################
 # 
+# Distance between states
+#
+########################################################################
+
+#
+# Trace distance
+#
+def trdist(s,t):
+    diff = s.array - t.array
+    prod = np.dot(diff, conjugate_transpose(diff))
+    return 0.5 * np.trace(matrix_square_root(prod))
+
+########################################################################
+# 
 # Leifer-Spekkens style operations; experimental
 #
 ########################################################################
@@ -1782,8 +1829,7 @@ def validity():
           - ((chadamard >> s1 @ s3) >= (p1 @ truth(2))) )
     print("* weakening is the same as predicate transformation by a projection:", 
           p3 @ truth(2) == (idn(2) @ discard(2)) << p3 )
-    r1 = random_randvar(4)
-    r2 = random_randvar(4)
+    
 
 def marginals():
     print("\nMarginal tests")
@@ -1797,6 +1843,13 @@ def marginals():
           a == discard(2) @ idn(2) >> (swap >> (a @ b)) )
 
 def measurement():
+    print("\nTests of predicates")
+    print( ~x_pred == x_min.as_pred(),
+           ~y_pred == y_min.as_pred() )
+    print("\nXYZ non-commutation of tests")
+    print( x_pred & y_pred != y_pred & x_pred,
+           x_pred & z_pred != z_pred & x_pred,
+           y_pred & z_pred != z_pred & y_pred )
     print("\nMeasurement and control tests")
     s = random_state(2)
     p = random_pred(2)
@@ -1821,7 +1874,6 @@ def measurement():
            convex_state_sum( (r, y_chan >> s), (1-r, x_chan >> s) ) )
 
 def instrument():
-    # sometimes this fails because the matrix_square_root function fails
     print("\nInstrument tests")
     p = random_pred(2)
     q = random_pred(2)
@@ -2013,15 +2065,15 @@ def transition():
 
 def experiment():
     print("Experiments")
-    c = (chadamard * swap * cnot * swap) @ ket(0).as_chan()
-    print( c.dom, c.cod )
-    print( c.purify() )
+    # c = (chadamard * swap * cnot * swap) @ ket(0).as_chan()
+    # print( c.dom, c.cod )
+    # print( c.purify() )
 
 
 def main():
     # validity()
     # marginals()
-    # measurement()
+    #measurement()
     # instrument()
     # conditioning()
     # channel()
