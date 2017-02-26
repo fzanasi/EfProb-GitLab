@@ -3600,7 +3600,8 @@ case~\eqref{eqn:cvalidity}. It gives the expected value of $p$ in
 state $\omega$.
 
 In \EfProb / \Python the validity sign $\models$ is written as
-\pythoninline{>=}. For instance, for the above predicate
+\pythoninline{>=}. It is computed via integration from the
+\pythoninline{scipy} library. For instance, for the above predicate
 \pythoninline{q} we have:
 \begin{python}
 >>> u = uniform_state(R(-1,1))
@@ -3655,10 +3656,10 @@ from\cite{JacobsWW15}\cite{JacobsZ16}.
 \begin{example}
 \label{ex:archeology}
 Imagine a tomb at an archeological site of which we already know that
-it is from the interval 0 − 100 AD. We like to learn its year of
+it is from the interval 0 -- 100 AD. We like to learn its year of
 origin more precisely. This will be done by searching at the tomb site
-for three kinds of objects, labelled 1, 2, 3 of which we know the time
-of use more precisely. They are used to infer the age of the
+for three kinds of objects, labelled 1, 2, 3, of which we know the
+time of use more precisely. They are used to infer the age of the
 tomb. This knowledge is represented by three predicates given by the
 formulas:
 \begin{python}
