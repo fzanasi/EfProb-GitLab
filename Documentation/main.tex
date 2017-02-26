@@ -53,6 +53,10 @@
 %  - Interesting lecture slides at: 
 %    https://www.cs.umd.edu/class/fall2016/cmsc858K/
 %
+%  - Quantum fourier in Python/Examples/Bart
+%
+%  - Infer.net intro at: http://infernet.azurewebsites.net/default.aspx
+%
 % Literature
 % ==========
 %
@@ -460,7 +464,7 @@ showstringspaces=false            %
 
 
 \cleardoublepage
-\chapter{Introduction} 
+\chapter{Introduction}\label{chap:intro}
 
 This text gives a hands-on introduction to the \EfProb library.  The
 latter is an embbeded language in \Python, for probability.  The
@@ -2162,8 +2166,10 @@ variables as argument:
 % From wikipedia, or from:
 % https://onlinecourses.science.psu.edu/stat414/node/109
 
-In the next example the covariance and correlation of a joint
-state are computed. Now the random variables are left implicit.
+In the next example the covariance and correlation of a joint state
+are computed. Now the random variables are left implicit.  This works
+when the product domain $D_{1} * D_{2}$ consists of of subdomains
+$D_{i} \hookrightarrow \RN$ of the real numbers.
 \begin{python}
 >>> X = [1,2]
 >>> Y = [1,2,3]
@@ -3323,9 +3329,11 @@ of the $n$-fold cartesian product $\RN^{n}$ of the real numbers $\RN$,
 for some number $n$. Moreover, the probability measures $\omega$
 defined on (the $\sigma$-algebra associated with) the subset $D$ are
 typically given a \emph{probability density function} $f\colon D
-\rightarrow \RN$, so that $\omega(U) = \int_{U} f \intd \mu$, where
-$\mu$ is the standard measure on the real numbers and $U$ is a
-measurable subset $U\subseteq D$.
+\rightarrow \RNpos$, where $\RNpos \subseteq \RN$ is the subset of
+non-negative real numbers $r\in\RN$ with $r\geq 0$. The resulting
+probability distribution is then given by $\omega(U) = \int_{U} f
+\intd \mu$, where $\mu$ is the standard measure on the real numbers
+and $U$ is a measurable subset $U\subseteq D$.
 
 Given this situation, the \EfProb library uses a restricted class of
 probability measures. Such a measure consists of:
@@ -3366,8 +3374,10 @@ one or the other, we will speak of a `discrete state' or a
 
 \section{States}\label{sec:cstate}
 
-In order to gain familiarity with continuous states --- and their
-combination with discrete ones --- we go through a series of examples.
+A continuous probability distribution (or: state) is given by a domain
+and a probability density function (pdf) from that domain to the
+positive real numbers. This will be illustrated in a series of
+examples.
 
 The most elementary continuous distribution is the continuous one,
 given on an interval, say $[0,5] \subseteq \RNext$. It is defined as:
@@ -3405,6 +3415,113 @@ essential for a probability distribution.\sidenote{A pdf $f\colon D
   $f$ bounded by $U$. We shall describe this in probability in terms
   of validity later on.}
 
+The probability density functions (pdf's) in states can be defined
+via \Python's lambda notation, as in:
+\begin{python}
+>>> s = State(lambda x: 0.5 * x, R(0,2))
+\end{python}
+
+\noindent Such a pdf must satisfy one crucial property: the integral
+over the whole domain must be equal to one. Predicates and validity
+will be describe systematically below, but here we already use them to
+perform this check, by testing the validity of the truth predicate on
+this domain.\sidenote{This validity test involves integration over the
+  domain and could take some time. For that reason it is not
+  automatically tested in \EfProb upon state formation. Another
+  reason, as discusssed in the introduction chapter is that such
+  outcomes may be imprecise.} For the state \pythoninline{s} that we
+just defined we get:
+\begin{python}
+>>> s >= truth(R(0,2))
+1.0
+\end{python}
+
+\noindent With user-defined states it is the responsability of the
+user that this condition is satisfied.
+
+Domains may also be infinite, in one direction, or both, via the
+expression \pythoninline{inf}, as in:
+\begin{python}
+>>> u = State(lambda x: e ** -x, R(0, inf))
+>>> u >= truth(u.dom) 
+1.0
+>>> v = State(lambda x: e ** x, R(-inf, 0))
+>>> v >= truth(v.dom)
+1.0
+>>> w = State(lambda x: 1/sqrt(pi) * e ** (-x*x), R)
+>>> w >= truth(w.dom)
+1.0
+\end{python}
+
+\noindent The latter state \pythoninline{w} is an example of a
+Gaussian distribution, see Subsection~\ref{subsec:gaussian} below for
+more information.
+
+One can also define states on product domains, via multiple lambda
+abstractions, see for instance:
+\begin{python}
+>>> s = State(lambda x,y: 4 * x * y, [R(0,1), R(0,1)])
+>>> s >= truth(s.dom)
+1.0
+>>> t = State(lambda x,y,z: 8/15 * x * y * z, [R(0,1), R(1,2), R(2,3)])
+>>> t >= truth(t.dom)
+1.0
+\end{python}
+
+The \EfProb library contains functions for random states in discrete
+and quantum probability. Such random states do not exist in the
+continuous case. But there are several predefined standard
+distributions, which will be described below.
+
+
+\subsection{Gaussian distributions}\label{subsec:gaussian}
+
+A Gaussian distribution has a pdf $g$ of the form:
+$$\begin{array}{rcl}
+g(x)
+& = &
+\displaystyle\frac{1}{\sqrt{2\pi\sigma^2}}\, e^{-\frac{(x-\mu)^{2}}{2\sigma^{2}}},
+\end{array}$$
+
+\noindent where $\mu$ is the `mean' and $\sigma$ is the standard
+deviation --- so that $\sigma^{2}$ is the variance.
+
+In \EfProb this distribution is predefined as:
+\begin{python}
+>>> g = gaussian_state(2,1)
+>>> g
+State on R
+\end{python}
+
+\noindent The first argument is the mean $\mu$ and the second one
+the standard deviation. 
+
+In \EfProb it is possible to restrict the gaussian distribution to a
+bounded domain. This may be practical in certain situations. The
+library then automatically adds a `compensation' factor, so that the
+integral over the domain still equals one. This domain is added as
+optional\marginnote{The default value for this domain parameter is
+  \pythoninline{R}, for the whole real line.} third parameter, as in:
+\begin{python}
+>>> t = gaussian_state(2, 1, R(-10,10))
+>>> t >= truth(t.dom)
+1.0
+>>> t.plot()
+\end{python}
+
+\noindent Such bounded gaussian states can be plotted, as shown
+in the margin.\marginnote[-3\baselineskip]{\includegraphics[width=\marginparwidth]{Pictures/gaussian_2_1.png}}
+
+
+
+
+\subsection{Operations on states}\label{subsec:cstate:operations}
+
+The operations that are described in
+Subsection~\ref{subsec:dstate:operations} for discrete states also
+work for continuous states, via the same notation: product
+\pythoninline{@}, convex sum, and marginal \pythoninline{\%}.
+
 With the \EfProb libarary one can form joint distributions via
 products \pythoninline{@}, also of discrete and continous
 probabilities.
@@ -3418,32 +3535,204 @@ State on [True, False] * R(-1, 1) * R(5, 10)
 \end{python}
 
 \noindent We see that printing such states gives information about
-their domains. Only 1-dimensional continuous states can be plotted.
+their domains. Only 1-dimensional continuous states with a bounded
+domain can be plotted.
 
 
 
-\subsection{Operations on states}\label{subsec:cstate:operations}
+\section{Predicates and validity}\label{sec:cpred}
 
-The operations that are described in
-Subsection~\ref{subsec:dstate:operations} for discrete states also
-work for continuous states, via the same notation: product
-\pythoninline{@}, convex sum, and marginal \pythoninline{\%}.
+A continuous predicate on a domain $D$ is a (measurable) function
+$p\colon D \rightarrow [0,1]$. Predicates can be defined just
+like states, as in:
+\begin{python}
+>>> q = Predicate(lambda x: 1 if x < 0 else 0.5, R(-1,1))
+\end{python}
 
-\section{Predicates}\label{sec:cpred}
+\noindent Printing a predicate only shows its domain. But a predicate
+can be plotted, like a state --- when its domain is 1-dimensional and
+bounded.
+
+Continuous predicates in \EfProb are closed under the same operations
+as discrete predicates: partial
+sum\index{partial~sum!of~discrete~predicates} \pythoninline{+},
+orthosupplement\index{orthosupplement!continuous~--}
+\pythoninline{\~}, scalar
+multiplication\index{scalar~multiplication!continuous~--}
+\pythoninline{*}, sequential
+conjunction\index{sequential~conjunction!of~continuous~predicates}
+\pythoninline{\&}, and parallel
+conjunction\index{parallel~conjunction!of~continuous~predicates}
+\pythoninline{\@}. The binary operations \pythoninline{+} and
+\pythoninline{\&} only work for predicates with the same domain, but
+\pythoninline{\@} also works for predicates of different domains ---
+even a mixture of discrete and continuous --- and produces a predicate
+on the product domain.
+
+Sequential conjunction \pythoninline{\&} is commutative, like in
+discrete probability, but unlike in quantum probability. There is an
+associated sequential
+disjuntion\index{sequential~disjunction!of~continuous~predicates}
+operation \pythoninline{|}, defined via De Morgan rules.
+
+In addition there there predicates \pythoninline{truth(dom)} and
+\pythoninline{falsity(dom)} which are constantly 1, resp.\ 0, 
+on the whole domain. These truth and falsity functions work
+both for discrete and continuous domains \pythoninline{dom}.
+
+Consider a predicate $p$ and a state $\omega$, with the same domain
+$D$. Thus $p$ is a function $D \rightarrow [0,1]$, and $\omega$ is
+(identified with) a pdf $D \rightarrow \RNpos$. The
+\emph{validity}\index{validity!continuous~--} $\omega\models p$ in
+$[0,1]$ is in the continuous case defined as integral over the domain
+$D$ of the product of the two functions::
+\begin{equation}
+\label{eqn:cvalidity}
+\begin{array}{rcl}
+\omega\models p
+\;=\;
+\displaystyle \int_{D} \omega(x)\cdot p(x) \intd x.
+\end{array}
+\end{equation}
+
+\noindent This generalises the sum used in the discrete
+case~\eqref{eqn:cvalidity}. It gives the expected value of $p$ in
+state $\omega$.
+
+In \EfProb / \Python the validity sign $\models$ is written as
+\pythoninline{>=}. For instance, for the above predicate
+\pythoninline{q} we have:
+\begin{python}
+>>> u = uniform_state(R(-1,1))
+>>> u >= q
+0.75
+>>> s = u @ flip(0.4)
+>>> s >= ~q @ yes_pred
+0.1
+\end{python}
+
+We can now see why we have checked the validities \pythoninline{s >=
+  truth(s.dom)} several times in Section~\ref{sec:cstate}: they amount
+to the requirement that the integral $\int_{D}$ over the domain $D$ of
+(the pdf of) \pythoninline{s} is one, see~\eqref{eqn:cvalidity}.
 
 
-\subsection{Operations on predicates}\label{subsec:cpred:operations}
-
-
-\subsection{Validity}\label{subsec:cpred:validity}
 
 
 \subsection{Conditioning}\label{subsec:cpred:conditioning}
+
+We recall that conditioning involves updating (revising) a state
+$\omega$ in the light of certain evidence in the form of a predicate
+$p$. The result is a conditional state, `$\omega$ given $p$', written
+as $\omega|_{p}$. This new state is defined only when $\omega$ and $p$
+have the same domain $D$ and have non-zero validity $\omega\models p$.
+The resulting probability density function $\omega|_{p} \colon D
+\rightarrow \RNpos$\index{conditional!state!continuous~--} is defined
+as:
+\begin{equation}
+\label{eqn:cconditiong}
+\begin{array}{rcl}
+\omega|_{p}(x)
+& = &
+\displaystyle\frac{\omega(x)\cdot p(x)}{\omega\models p}.
+\end{array}
+\end{equation}
+
+\noindent Thus, $\omega|_{p}$ is a normalised product of $\omega$ and
+$p$. The normalisation ensures that the integral
+$\int_{D}\omega|_{p}(x)\intd x$ equals one.
+
+Bayes' rule\index{Bayes'~rule!continuous~--} holds in the continuous
+case in precisely the form~\eqref{eqn:dbayes} described for discrete
+probability. 
+
+In \EfProb / \Python the update of a state \pythoninline{s} with
+predicate \pythoninline{p} is written as \pythoninline{s / p}.  The
+following archeological example is taken
+from\cite{JacobsWW15}\cite{JacobsZ16}.
+
+
+\begin{example}
+\label{ex:archeology}
+Imagine a tomb at an archeological site of which we already know that
+it is from the interval 0 − 100 AD. We like to learn its year of
+origin more precisely. This will be done by searching at the tomb site
+for three kinds of objects, labelled 1, 2, 3 of which we know the time
+of use more precisely. They are used to infer the age of the
+tomb. This knowledge is represented by three predicates given by the
+formulas:
+\begin{python}
+>>> dom = R(0,100)
+>>> p1 = Predicate(lambda x: 0.6 * e ** (-1/2000 * (x - 20) ** 2), dom)
+>>> p2 = Predicate(lambda x: 0.9 * e ** (-1/1500 * (x - 50) ** 2), dom)
+>>> p3 = Predicate(lambda x: 0.8 * e ** (-1/1000 * (x - 90) ** 2), dom)
+\end{python}
+
+\noindent These three predicates look as follows.
+\begin{center}
+\begin{tabular}{ccc}
+\includegraphics[width=15em]{Pictures/tomb_pred1.png} 
+&
+\includegraphics[width=15em]{Pictures/tomb_pred2.png} 
+&
+\includegraphics[width=15em]{Pictures/tomb_pred3.png} 
+\end{tabular}
+\end{center}
+
+\noindent Initially each age of the tomb within the interval $[0,100]$
+is equally likely. Hence our prior is a uniform state
+\pythoninline{u}. This state is updated after each finding of object
+$i\in\{1,2,3\}$. For instance, after discovering an object of type 1,
+we change our state to \pythoninline{u / p1}. If we next find an object
+of type 3, our state becomes \pythoninline{u / p1 / p3}, 
+\etc\sidenote{The state \pythoninline{u / p1 / p3} is the same
+as \pythoninline{u / p1 & p3}, and as \pythoninline{u / p3 & p1},
+and as \pythoninline{u / p3 / p1}.}
+
+We do this more systematically for a list of 5 successive objects.
+\begin{python}
+>>> findings = [1, 3, 2, 1, 1]
+>>> u = uniform_state(dom)
+>>> def pred(f): return p1 if f==1 else p2 if f==2 else p3
+>>> for f in findings: u = u / pred(f)
+\end{python}
+
+This leads to the following successive states.
+\begin{center}
+\begin{tabular}{ccc}
+\includegraphics[width=15em]{Pictures/tomb_state-0.png} 
+&
+\includegraphics[width=15em]{Pictures/tomb_state-1.png} 
+&
+\includegraphics[width=15em]{Pictures/tomb_state-2.png} 
+\\
+\includegraphics[width=15em]{Pictures/tomb_state-3.png} 
+&
+\includegraphics[width=15em]{Pictures/tomb_state-4.png} 
+&
+\includegraphics[width=15em]{Pictures/tomb_state-5.png} 
+\end{tabular}
+\end{center}
+
+\noindent As will be described more systematically in the next section,
+the expected age value in the final state can be computed as:
+\begin{python}
+>>> u.expectation()
+48.4229427188
+\end{python}
+\end{example}
+
+
+
 
 
 \section{Random variables}\label{sec:crandvar}
 
 \subsection{Expected value, variance, and standard deviation}\label{subsec:cexp}
+
+    %% print( g.expectation() )
+    %% print( g.st_deviation() )
+
 
 %% # Copied from: http://www.stankova.net/statistics_2012/lecture_9.pdf
 
