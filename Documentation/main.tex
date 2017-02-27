@@ -1965,7 +1965,7 @@ correlation. This will be illustrated below.
 
 \subsection{Expected value, variance, and standard deviation}\label{subsec:dexp}
 
-Given a state on the domain, one can then comppute the expected value,
+Given a state on the domain, one can then compute the expected value,
 or variance. Here is a simple example where this is useful.
 \begin{quote}
 If it rains, an umbrella sales person can earn \euro{100} per day. If
@@ -1990,14 +1990,14 @@ to \pythoninline{100} and the domain element \pythoninline{False} to
 
 \noindent We see that a random variable is defined by a list and a
 domain (also a list). The first list gives the real number values
-corresponding to the elements of the domain. A random variable has an
+corresponding to the elements of the domain. A state has an
 expectation\index{expectation!discrete~--} method
-\pythoninline{expectation}, which takes a state as argument. This
+\pythoninline{expectation}, which takes a random variable as argument. This
 state must have the same domain as the random variable. In the above
 example the validity of the random variable is printed first, giving
 the expected value (expectation).  In \EfProb there is also an
-\pythoninline{expectation} method on states that computes the expected
-value, taking a random variable as argument.
+\pythoninline{expectation} method on random variables that computes the expected
+value, taking a state as argument.
 
 The above random variable can also be obtained by suitably
 multiplying yes/no point predicates with a scalar, as in:
@@ -3510,7 +3510,8 @@ optional\marginnote{The default value for this domain parameter is
 \end{python}
 
 \noindent Such bounded gaussian states can be plotted, as shown
-in the margin.\marginnote[-3\baselineskip]{\includegraphics[width=\marginparwidth]{Pictures/gaussian_2_1.png}}
+in the margin.\mycomment[K]{Please add \texttt{gaussian\_2\_1.png}}
+%\marginnote[-3\baselineskip]{\includegraphics[width=\marginparwidth]{Pictures/gaussian_2_1.png}}
 
 
 
