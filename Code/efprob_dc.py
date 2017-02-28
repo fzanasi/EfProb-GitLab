@@ -9,21 +9,6 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Notes for coding
-#
-# - Follow Python Style Guide "PEP 8"
-#     https://www.python.org/dev/peps/pep-0008/
-#   See also Google Python Style Guide
-#     https://google.github.io/styleguide/pyguide.html
-# - Use docstrings when appropriate
-#   See: https://www.python.org/dev/peps/pep-0257/
-#        https://google.github.io/styleguide/pyguide.html#Comments
-#
-# Naming conventions specific to this module (tentative)
-#
-# - Names of functions that return states and predicates start with
-#   'stat' and 'pred', respectively.
-#
 
 from functools import reduce
 import functools
