@@ -511,22 +511,29 @@ class StateLike:
         return preargs, interval, postargs
 
     def plot(self, *args, **kwargs):
-        """Plot a certain axis of the state-like.
+        """Plot some axes of the state-like.
 
-        Suppose self is a state/predicate on domain A * B * C and B is
-        continuous type. The method can be called as
+        Let `s` be a state/predicate on domain A * B * C. If B is
+        discrete type, then
 
-            self.plot(a, R(r1, r2), c)
+            s.plot(a, ..., c)
 
-        with arguments a, c and an interval R(r1, r2). It plots the
-        function by varying the second argument from r1 to r2. We may
-        use '...' (Ellipsis) instead of the interval as
+        plots a bar chart by varying the second argument. If B is
+        continuous type, then it plots a graph instead. We can
+        restrict the plot to a certain interval R(r1, r2) by
 
-            self.plot(a, ..., c)
+            s.plot(a, R(r1, r2), c)
 
-        In this case the interval is set from its domain.
+        This is necessary when the sencod axis has an unbounded
+        domain. We can plot multiple axes as
 
-        TODO: Now it works also for discrete. Explain it.
+            s.plot(a, ..., ...)
+
+        only when both B and C are discrete. If we call the method
+        without argument as `s.plot()`, it is interpreted as
+
+            s.plot(..., ..., ...)
+
         """
         if not args:
             args = (...,) * len(self.dom)
