@@ -1268,10 +1268,8 @@ class DetChan:
         self.shape = tuple(len(s) for s in self.dom.disc)
 
     def _pred_trans_getelm(self, pred, disc_funs, cont_funs, disc_args):
-        if not pred.dom.iscont:
-            return pred.getvalue(
-                disc_args=[f(*disc_args) for f in self.funs],
-                cont_args=[])
+        if not self.dom.iscont:
+            return pred.getvalue(*[f(*disc_args) for f in self.funs])
         def fun(*cont_args):
             args = self.dom.merge(disc_args, cont_args)
             p_disc_args = [df(*args) for df in disc_funs]
