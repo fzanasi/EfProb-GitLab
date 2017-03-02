@@ -3729,35 +3729,73 @@ the expected age value in the final state can be computed as:
 
 \section{Random variables}\label{sec:crandvar}
 
-\subsection{Expected value, variance, and standard deviation}\label{subsec:cexp}
+Where continuous predicates on a domain $D$ are (measurable) functions
+$p\colon D \rightarrow [0,1]$, random variable are more general
+functions $D \rightarrow \RN$. These random variables are closed under
+more operations than predicates, in particular unrestricted addition
+and scalar multiplication.
 
-    %% print( g.expectation() )
-    %% print( g.st_deviation() )
+Random variables are defined like predicates, via a function and
+a domain. The validity of a random variable in a state is defined
+in basically the same way as the validity of a predicate.
+\begin{python}
+>>> s = uniform_state(R(0,5))
+>>> rv = RandVar(lambda x: x, R(0,5))
+>>> s >= rv
+2.5
+\end{python}
+
+Random variable play an important role in the concept of expected
+value (expectation), variance, standard deviation, and also of
+covariance and correlaion. This works precisely as in the discrete
+case, and will be illustrated here via a few examples.
+
+Expectation, variance \etc are methods on states, taking a random
+variable as argument. When the domain $D$ of the state is subspace of
+the real numbers, then the random variable can be ommitted; the
+inclusion $D \hookrightarrow \RN$ is then used implicitly.  When we
+take a Gaussian state, the `$\mu$' and `$\sigma$' arguments reappear
+of course as via the expectation and standard deviation methods:
+\begin{python}
+>>> g = gaussian_state(-1.4, 2.9)
+>>> g.expectation()
+-1.4
+>>> g.st_deviation()
+2.9
+\end{python}
+
+% Copied from: http://www.stankova.net/statistics_2012/lecture_9.pdf
+
+One can compute that the expected value for the next state
+is $\frac{5}{9}$ and that its variance is $\frac{55}{1134}$.
+\begin{python}
+>>> t = State(lambda x: 10/3 * x - 10/3 * x ** 4, R(0,1))
+>>> t >= truth(R(0,1))
+>>> t.expectation()
+0.555555555556
+>>> t.variance()
+0.0485008818342
+\end{python}
+
+We turn to covariance of a joint state, where the domains are
+subsets of the real numbers. Again, the random variables are
+provided implicitly, as projections.
+\begin{python}
+>>> w = State(lambda x,y: 4*x*y, [R(0,1), R(0,1)])
+>>> w >= truth(R(0,1)) @ truth(R(0,1))
+1.0
+>>> w.covariance()
+2.68546700673e-19
+>>> w.correlation()
+4.83384061211e-18
+\end{python}
+
+\noindent These outcomes are very small, through rounding errors.
+Mathematically they should be 0, since the state \pythoninline{w} is a
+product state, namely of \pythoninline{State(lambda x: 2*x, R(0,1))}
+with itself.
 
 
-%% # Copied from: http://www.stankova.net/statistics_2012/lecture_9.pdf
-
-%% t = State(lambda x: 10/3 * x - 10/3 * x ** 4, R(0,1))
-
-%% print( t >= truth(R(0,1)) )
-
-%% print( t.expectation() )
-%% # 0.555555555556 = 5/9
-
-%% print( t.variance() )
-%% # 0.0485008818342 = 55/1134
-
-%% # own example
-
-%% w = State(lambda x,y: 4*x*y, [R(0,1), R(0,1)])
-
-%% print( w >= truth(R(0,1)) @ truth(R(0,1)) )
-
-%% print( w.covariance() )
-%% print( w.correlation() )
-
-
-\subsection{Covariance and correlation}\label{subsec:ccov}
 
 \section{Channels}\label{sec:cchannel}
 

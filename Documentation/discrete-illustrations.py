@@ -1,3 +1,12 @@
+#
+# Example file for the EfProb Manual
+# with discrete classical probability examples.
+#
+# Copyright Bart Jacobs, Kenta Cho
+# efprob.cs.ru.nl
+#
+# Date: 2017-03-03
+#
 from efprob_dc import *
 from math import *
 

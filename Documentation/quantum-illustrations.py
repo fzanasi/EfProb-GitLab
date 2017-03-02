@@ -1,7 +1,11 @@
 #
-# All illustration used in the Quantum chapters, organised per
-# subsection, see the main method at the end.
+# Example file for the EfProb Manual
+# with quantum classical probability examples.
 #
+# Copyright Bart Jacobs, Kenta Cho
+# efprob.cs.ru.nl
+#
+# Date: 2017-03-03
 #
 from efprob_qu import *
 from math import *

@@ -1,3 +1,12 @@
+#
+# Example file for the EfProb Manual
+# with continous classical probability examples.
+#
+# Copyright Bart Jacobs, Kenta Cho
+# efprob.cs.ru.nl
+#
+# Date: 2017-03-03
+#
 from efprob_dc import *
 from math import *
 
@@ -44,6 +53,17 @@ def states():
     #t.plot()
 
 
+def operations_on_states():
+
+    print("\nSubsection: Operations on states\n")
+
+    print("* print product of states")
+    s = uniform_state(R(-1,1)) @ uniform_state(R(5,10))
+    print( s )
+    t = flip(0.3) @ s
+    print( t )
+
+
 def predicates():
 
     print("\nSection: Predicates\n")
@@ -72,15 +92,38 @@ def conditioning():
         #u.plot()
     print("Expected age: ", u.expectation() )
 
-def operations_on_states():
 
-    print("\nSubsection: Operations on states\n")
+def random_variables():
 
-    print("* print product of states")
-    s = uniform_state(R(-1,1)) @ uniform_state(R(5,10))
-    print( s )
-    t = flip(0.3) @ s
-    print( t )
+    print("\nSection: Random Variables\n")
+
+    print("* Random variable validity")
+    s = uniform_state(R(0,5))
+    rv = RandVar(lambda x: x, R(0,5))
+    print( s >= rv )
+
+    print("\n===\n")
+
+    print("* Gaussian expectation and standard deviation")
+    g = gaussian_state(-1.4, 2.9)
+    print( g.expectation() )
+    print( g.st_deviation() )
+
+    print("\n===\n")
+
+    print("* Expectation and variance")
+    t = State(lambda x: 10/3 * x - 10/3 * x ** 4, R(0,1))
+    print( t >= truth(R(0,1)) )
+    print( t.expectation(), 5/9 )
+    print( t.variance(), 55/1134 )
+
+    print("\n===\n")
+
+    print("* Covariance of a product state")
+    w = State(lambda x,y: 4*x*y, [R(0,1), R(0,1)])
+    print( w >= truth(R(0,1)) @ truth(R(0,1)) )
+    print( w.covariance() )
+    print( w.correlation() )
 
 
 def state_pred_transformation():
@@ -110,16 +153,18 @@ def all():
     operations_on_states()
     predicates()
     conditioning()
+    random_variables()
     state_pred_transformation()
 
 
 
 def main():
-    #all()
+    all()
     #states()
     #operations_on_states()
     #predicates()
-    conditioning()
+    #conditioning()
+    #random_variables()
     #state_pred_transformation()
 
 
