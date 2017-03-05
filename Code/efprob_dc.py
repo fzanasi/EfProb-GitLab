@@ -1,15 +1,12 @@
 #
-# EfProb
-#
 # Discrete and continuous probability library, prototype version
 #
-# Started by Kenta Cho, nov. 2016
-# 
 # Copyright: Bart Jacobs, Kenta Cho; 
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-
+# Date: 2017-03-03
+#
 from functools import reduce
 import functools
 import itertools
@@ -1223,6 +1220,10 @@ def graph(c):
     return (idn(c.dom) @ c) * copy(c.dom)
 
 
+def instr(p):
+    return (p.as_chan() @ idn(p.dom)) * copy(p.dom)
+
+
 def case_channel(*channels, case_dom=None):
     if not channels:
         raise ValueError("Number of channels must be > 0")
@@ -1407,6 +1408,8 @@ def point_pred(point, dom):
 
 yes_pred = point_pred(True, bool_dom)
 no_pred = point_pred(False, bool_dom)
+or_pred = Predicate([1,1,1,0], [bool_dom,bool_dom])
+and_pred = Predicate([1,0,0,0], [bool_dom,bool_dom])
 
 def truth(dom):
     return event(dom, dom)
@@ -1468,6 +1471,12 @@ def gaussian_pred(mu, sigma, supp=R, scaling=True):
             return stats.norm.pdf(x, loc=mu, scale=sigma)
     return Predicate(Fun(fun, supp), [supp])
 
+
+or_chan = chan_from_states([flip(1), flip(1), flip(1), flip(0)], 
+                           [bool_dom, bool_dom])
+and_chan = chan_from_states([flip(1), flip(0), flip(0), flip(0)], 
+                            [bool_dom, bool_dom])
+ortho_chan = chan_from_states([flip(0), flip(1)], bool_dom)
 
 def id_rv(dom):
     return RandVar(lambda x: x, dom)
@@ -1573,24 +1582,6 @@ def cpt(*ls):
     return Channel([ls, [1-r for r in ls]], bnd * log, bnd)
 
 
-#
-# Convex sum of states: the input list contains pairs (ri, si) where
-# the ri are in [0,1] and add up to 1, and the si are states
-#
-def convex_state_sum(*ls):
-    if len(ls) == 0:
-        raise ValueError('Convex sum cannot be empty')
-    dom = ls[0][1].dom
-    if any([s.dom != dom for r,s in ls[1:]]):
-        raise ValueError('Convex sum requires that states have the same domain')
-    if any([r < 0 or r > 1 for (r,s) in ls]):
-        raise ValueError('Convex sum requires numbers in the unit interval')
-    ar = np.array([r for r,s in ls])
-    if not np.isclose(sum(ar), np.array([1])):
-        raise ValueError('Scalars must add up to 1 in convex sum')
-    return reduce(operator.add, [r * s for r,s in ls])
-
-
 def _shannon_ic(x):
     return -math.log2(x) if x != 0 else 0
 
@@ -1611,6 +1602,12 @@ def shannon_entropy(s):
     else:
         rv = RandVar(_shannon_ic(s.array), s.dom)
     return s >= rv
+
+def mutual_information(js):
+    s1 = js % [1,0]
+    s2 = js % [0,1]
+    return shannon_entropy(s1) + shannon_entropy(s2) - shannon_entropy(js)
+
 
 
 ##############################################################
@@ -1702,7 +1699,7 @@ def test_chan():
 
 def main():
     #dice()
-    #sporter()
+    sporter2()
     print( convex_state_sum((0.2,flip(0.3)), (0.8, flip(0.8))))
 
 

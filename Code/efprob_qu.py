@@ -1,14 +1,11 @@
 #
-# EfProb
-#
 # Quantum probability library, prototype version
 #
-# Started by Bart Jacobs, nov. 2016
-# 
 # Copyright: Bart Jacobs, Kenta Cho; 
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
+# Date: 2017-03-03
 #
 from functools import reduce
 import functools
@@ -83,6 +80,10 @@ def matrix_square_root(mat):
                        np.sqrt(np.diag(rounded_eigenvalues))), 
                 np.linalg.inv(E[1]))
     return sq
+
+def matrix_absolute_value(mat):
+    M = np.dot(mat, conjugate_transpose(mat))
+    return matrix_square_root(M)
 
 #
 # Produce the list of eigenvectors vi, with (roots of )eigenvalues
@@ -1614,7 +1615,7 @@ def ccase(*chans):
 
 ########################################################################
 # 
-# Distance between states
+# Distance between states, entropy, mutual information
 #
 ########################################################################
 
@@ -1625,6 +1626,18 @@ def trdist(s,t):
     diff = s.array - t.array
     prod = np.dot(diff, conjugate_transpose(diff))
     return 0.5 * np.trace(matrix_square_root(prod))
+
+def shannon_entropy(s):
+    """Shannon entropy"""
+    eigen_values = np.linalg.eigh(s.array)[0]
+    def f(x): return -math.log2(x)*x if x != 0 else 0
+    return sum(np.vectorize(f)(eigen_values))
+
+def mutual_information(js):
+    s1 = js % [1,0]
+    s2 = js % [0,1]
+    return shannon_entropy(s1) + shannon_entropy(s2) - shannon_entropy(js)
+
 
 ########################################################################
 # 

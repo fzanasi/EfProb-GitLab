@@ -9,20 +9,12 @@ from efprob_dc import *
 #
 # Domains for booleans and numbers
 #
-bdom = [True,False]
 maxnum = 10
 ndom = range(maxnum)
 
-#
-# Basic "logical" predicates
-#
-fst_pred = Predicate([1,0], bdom)
-snd_pred = ~fst_pred
-or_pred = Predicate([1,1,1,0], [bdom,bdom])
-and_pred = Predicate([1,0,0,0], [bdom,bdom])
 
 #
-# Basic random variables
+# Basic random variables; same as id_rv(ndom)
 #
 nrv = randvar_fromfun(lambda i: i, ndom)
 
@@ -34,7 +26,7 @@ init = State([1], [])
 #
 # Random variable turning Booleans into numbers
 #
-bool_as_num = RandVar([1,0], bdom)
+bool_as_num = RandVar([1,0], bool_dom)
 
 #
 # Example 1a
@@ -47,8 +39,8 @@ ex1a = c1 @ c2 >> init
 
 print("Output distribution: ", ex1a )
 print("Output expectations: ", 
-      (bool_as_num @ truth(bdom)).exp(ex1a),
-      (truth(bdom) @ bool_as_num).exp(ex1a) )
+      ex1a.expectation(bool_as_num @ truth(bool_dom)),
+      ex1a.expectation(truth(bool_dom) @ bool_as_num) )
 
 
 #
@@ -61,17 +53,31 @@ print("\n* Example 1(b)")
 # internally. We need to apply it externally. It works in the examples
 # below since the channel c has empty domain [] in each case.
 #
-def observe(p, c):
-    return chan_fromklmap(lambda *args: c.get_state(*args) / p,
-                          c.dom,
-                          c.cod)
+# def observe(p, c):
+#     return chan_fromklmap(lambda *args: c.get_state(*args) / p,
+#                           c.dom,
+#                           c.cod)
 
-ex1b = observe(or_pred, c1 @ c2) >> init
+ex1b = ((c1 @ c2) >> init) / or_pred
 
-print("Distirbution: ", ex1b )
+print("Distribution: ", ex1b )
 print("Expectations: ", 
-      (bool_as_num @ truth([True, False])).exp(ex1b),
-      (truth([True, False]) @ bool_as_num).exp(ex1b) )
+      ex1b.expectation(bool_as_num @ truth(bool_dom)),
+      ex1b.expectation(truth(bool_dom) @ bool_as_num) )
+
+print("\nAlternative construction")
+ex1b_alt = (instr(or_pred) * (c1 @ c2)) >> init
+#print( ((ex1b_alt >> init) / (yes_pred @ truth([bool_dom, bool_dom]))) % [0,1,1] )
+print( enforce(ex1b_alt) )
+
+
+"""
+
+#
+# Redefinition of a channel; result is equal to the original
+#
+def rechan(c):
+    return chan_fromklmap(lambda *args: c.get_state(*args), c.dom, c.cod)
 
 
 #
@@ -79,12 +85,10 @@ print("Expectations: ",
 #
 print("\n* Example 2")
 
-def instr(p):
-    return (p.as_chan() @ idn(p.dom)) * copy(p.dom)
-
 bton = Channel.from_states([State([1,0], range(2)), 
                             State([0,1], range(2))],
-                           bdom)
+                           bool_dom)
+
 
 def ifthenelse(pred, chan1, chan2):
     if pred.dom != chan1.dom or pred.dom != chan2.dom or chan1.cod != chan2.cod:
@@ -95,19 +99,18 @@ inc_chan = chan_fromklmap(lambda i: point_state(i+1, ndom) if i+1 < maxnum
                           else point_state(i, ndom), ndom, ndom)
 
 ex2 = (observe(truth(ndom) @ or_pred,
-               ifthenelse(truth(ndom) @ truth(bdom) @ fst_pred,
-                          inc_chan @ idn(bdom) @ idn(bdom),
-                          idn(ndom) @ idn(bdom) @ idn(bdom)) \
-               * (ifthenelse(truth(ndom) @ fst_pred, 
-                             inc_chan @ idn(bdom),
-                             idn(ndom) @ idn(bdom)) @ flip(0.5).as_chan()) \
+               ifthenelse(truth(ndom) @ truth(bool_dom) @ yes_pred,
+                          inc_chan @ idn(bool_dom) @ idn(bool_dom),
+                          idn(ndom) @ idn(bool_dom) @ idn(bool_dom)) \
+               * (ifthenelse(truth(ndom) @ yes_pred, 
+                             inc_chan @ idn(bool_dom),
+                             idn(ndom) @ idn(bool_dom)) @ flip(0.5).as_chan()) \
                * (point_state(0, ndom).as_chan() @ flip(0.5).as_chan())) \
        >> init) % [1, 0, 0]
 
 
 print("Distribution: ", ex2 )
-print("Expectation: ", nrv.exp(ex2) )
-
+print("Expectation: ", ex2.expectation(nrv) )
 
 print("\n* Example 4")
 
@@ -118,10 +121,8 @@ def iterate_while(pred, chan, upper):
                       iterate_while(pred, chan, upper-1) * chan,
                       idn(pred.dom))
 
-ortho_chan = Channel.from_states([flip(0), flip(1)], bdom)
-
-ex4 = iterate_while(truth(bdom) @ fst_pred,
-                    ortho_chan @ idn(bdom),
+ex4 = iterate_while(truth(bool_dom) @ yes_pred,
+                    ortho_chan @ idn(bool_dom),
                     3)
 #
 # It is unclear what is happening here...
@@ -170,4 +171,4 @@ print(s)
 # http://users.ices.utexas.edu/~njansen/files/publications/katoen-et-al-olderog-2015.pdf
 
 
-
+"""

@@ -3,6 +3,7 @@
 # with continous classical probability examples.
 #
 # Copyright Bart Jacobs, Kenta Cho
+# Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
 # Date: 2017-03-03
