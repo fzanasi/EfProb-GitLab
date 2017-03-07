@@ -705,6 +705,21 @@ class State(StateLike):
         sd2 = self.st_deviation(randvar2)
         return cov / (sd1 * sd2)
 
+    def disintegration(self, i):
+        """Disintegration of the joint state"""
+        if not 0 <= i < len(self.dom):
+            raise ValueError("Invalid i")
+        dom = Dom(self.dom[i])
+        cod = Dom(self.dom[:i] + self.dom[i+1:])
+        s = self % [1 if j == i else 0 for j, _ in enumerate(self.dom)]
+        return Channel.fromklmap(lambda x:
+                                 State.fromfun(lambda *y:
+                                               self.getvalue(*(y[:i]
+                                                                + (x,)
+                                                                + y[i:]))
+                                               / s.getvalue(x),
+                                               cod),
+                                 dom, cod)
 
 
 def _var_integral(rvfun, sfun, exp):
@@ -1683,6 +1698,26 @@ def dice():
     print("St.Dev.", stat2.st_deviation(rv_sum))
     print("Var. by formula:",
           stat2.expectation(rv_sum & rv_sum) - stat2.expectation(rv_sum) ** 2)
+
+
+def disintegration_test():
+    X = ['x', 'y']
+    A = ['a', 'b']
+    s = State([0.1, 0.2, 0.3, 0.4], [X, A])
+    d0 = s.disintegration(0) # X --> A
+    d1 = s.disintegration(1) # A --> X
+    print(((idn(X) @ d0) * copy(X)) >> (s % [1, 0]))
+    print(((d1 @ idn(A)) * copy(A)) >> (s % [0, 1]))
+
+    prior = flip(0.5)
+    c = chan_from_states([gaussian_state(2,1,R(-10,10)),
+                          gaussian_state(-2,1,R(-10,10))],
+                         bool_dom)
+    d = (((idn(bool_dom) @ c) * copy(bool_dom))
+         >> prior).disintegration(1)
+    print(d.get_state(2))
+    print(d.get_state(0))
+    print(d.get_state(-1))
 
 
 def test_chan():
