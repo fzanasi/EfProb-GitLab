@@ -1735,10 +1735,11 @@ follows.
 \end{python}
 
 \noindent We see that the `middle' two cases, where the results of the
-two coins differ, have equal probability. Hence if we concentrate
-on those two cases via conditioning we get a fair coin:
+two coins differ, have equal probability, given by $r \cdot (1-r)$
+where $r$ is the bias. Hence if we concentrate on those two cases via
+conditioning we get a fair coin:
 \begin{python}
->>> (s @ s / ((yes_pred @ no_pred) + (no_pred @ yes_pred))) % [1,0]
+>>> (s @ s / (yes_pred @ no_pred + no_pred @ yes_pred)) % [1,0]
 0.5|True> + 0.5|False>
 \end{python}
 \end{example}

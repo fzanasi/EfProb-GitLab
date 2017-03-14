@@ -225,7 +225,7 @@ def conditioning():
     s = flip(r)
     print( s )
     print( s @ s)
-    print( (s @ s / ((yes_pred @ no_pred) + (no_pred @ yes_pred))) % [1,0] )
+    print( (s @ s / (yes_pred @ no_pred + no_pred @ yes_pred)) % [1,0] )
 
 
     print("\n===\n")
