@@ -1711,6 +1711,41 @@ $$\begin{array}{rcl}
 
 
 \begin{example}
+\label{ex:vonneumancoin}
+There is a trick to turn an unfair coin into a fair, due to von
+Neumann.\index{von~Neumann~fair~coin} It is usually described
+as\sidenote{The three steps are as on
+  \url{https://en.wikipedia.org/wiki/Fair_coin}}
+\begin{enumerate}
+\item Toss the coin twice.
+\item If the results match, start over, forgetting both results.
+\item If the results differ, use the first result, forgetting the second.
+\end{enumerate}
+
+\noindent Here we describe this idea not via repetition, but by
+discarding the matching results via conditioning. This works as
+follows.
+\begin{python}
+>>> r = random.uniform(0,1)
+>>> s = flip(r)
+>>> s
+0.539|True> + 0.461|False>
+>>> s @ s
+0.29|True,True> + 0.248|True,False> + 0.248|False,True> + 0.213|False,False>
+\end{python}
+
+\noindent We see that the `middle' two cases, where the results of the
+two coins differ, have equal probability. Hence if we concentrate
+on those two cases via conditioning we get a fair coin:
+\begin{python}
+>>> (s @ s / ((yes_pred @ no_pred) + (no_pred @ yes_pred))) % [1,0]
+0.5|True> + 0.5|False>
+\end{python}
+\end{example}
+
+
+
+\begin{example}
 \label{ex:churchmedical}
 The following example\sidenote{\label{note:churchmedical}See
   \url{https://probmods.org/conditioning.html\#example-causal-inference-in-medical-diagnosis}

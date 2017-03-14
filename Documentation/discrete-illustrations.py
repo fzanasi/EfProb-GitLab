@@ -220,6 +220,16 @@ def conditioning():
 
     print("\n===\n")
 
+    print("* Von Neumann fair coin trick")
+    r = random.uniform(0,1)
+    s = flip(r)
+    print( s )
+    print( s @ s)
+    print( (s @ s / ((yes_pred @ no_pred) + (no_pred @ yes_pred))) % [1,0] )
+
+
+    print("\n===\n")
+
     print("* Church medical example")
     prior = flip(0.01) @ flip(0.005) @ flip(0.2) @ flip(0.1) @ flip(0.1)
     up = Predicate([1,0], [True,False])
@@ -657,12 +667,12 @@ def all():
     bayesian_networks()
 
 def main():
-    all()
+    #all()
     #states()
     #operations_on_states()
     #excursion()
     #validity()
-    # conditioning()
+    conditioning()
     # expectation()
     # covariance()
     #channels()
