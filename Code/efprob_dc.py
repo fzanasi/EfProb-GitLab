@@ -431,6 +431,9 @@ class StateLike:
                 StateLike._fromfun_getelm(fun, dom, disc_args))
         return cls(array, dom)
 
+    def __call__(self, *args, **kwargs):
+        return self.getvalue(*args, **kwargs)
+
     def __add__(self, other):
         """Pointwise addition."""
         check_dom_match(self.dom, other.dom)
@@ -705,23 +708,8 @@ class State(StateLike):
         sd2 = self.st_deviation(randvar2)
         return cov / (sd1 * sd2)
 
-    def disintegration(self, i):
+    def disintegration(self, selectors):
         """Disintegration of the joint state"""
-        if not 0 <= i < len(self.dom):
-            raise ValueError("Invalid i")
-        dom = Dom(self.dom[i])
-        cod = Dom(self.dom[:i] + self.dom[i+1:])
-        s = self % [1 if j == i else 0 for j, _ in enumerate(self.dom)]
-        return Channel.fromklmap(lambda x:
-                                 State.fromfun(lambda *y:
-                                               self.getvalue(*(y[:i]
-                                                                + (x,)
-                                                                + y[i:]))
-                                               / s.getvalue(x),
-                                               cod),
-                                 dom, cod)
-
-    def disintegration_sel(self, selectors):
         dom, cod = [], []
         for d, s in zip(self.dom, selectors):
             if s:
@@ -1070,6 +1058,9 @@ class Channel:
                 a = Fun.u_asfun2(a)
             array[(...,)+(i,)] = a
         return Channel(array, dom, cod)
+
+    def __call__(self, *args, **kwargs):
+        return self.get_state(*args, **kwargs)
 
     def __repr__(self):
         return "Channel of type: {} --> {}".format(self.dom, self.cod)
@@ -1722,8 +1713,8 @@ def disintegration_test():
     X = ['x', 'y']
     A = ['a', 'b']
     s = State([0.1, 0.2, 0.3, 0.4], [X, A])
-    d0 = s.disintegration(0) # X --> A
-    d1 = s.disintegration(1) # A --> X
+    d0 = s.disintegration([1, 0]) # X --> A
+    d1 = s.disintegration([0, 1]) # A --> X
     print(((idn(X) @ d0) * copy(X)) >> (s % [1, 0]))
     print(((d1 @ idn(A)) * copy(A)) >> (s % [0, 1]))
 
@@ -1732,7 +1723,7 @@ def disintegration_test():
                           gaussian_state(-2,1,R(-10,10))],
                          bool_dom)
     d = (((idn(bool_dom) @ c) * copy(bool_dom))
-         >> prior).disintegration(1)
+         >> prior).disintegration([0, 1])
     print(d.get_state(2))
     print(d.get_state(0))
     print(d.get_state(-1))
