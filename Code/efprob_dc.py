@@ -721,6 +721,24 @@ class State(StateLike):
                                                cod),
                                  dom, cod)
 
+    def disintegration_sel(self, selectors):
+        dom, cod = [], []
+        for d, s in zip(self.dom, selectors):
+            if s:
+                dom.append(d)
+            else:
+                cod.append(d)
+        dom = Dom(dom)
+        cod = Dom(cod)
+        s = self % selectors
+        def f(*x):
+            def g(*y):
+                xi, yi = iter(x), iter(y)
+                args = [next(xi) if s else next(yi) for s in selectors]
+                return self.getvalue(*args) / s.getvalue(*x)
+            return State.fromfun(g, cod)
+        return Channel.fromklmap(f, dom, cod)
+
 
 def _var_integral(rvfun, sfun, exp):
     def integrand(*xs):
