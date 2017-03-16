@@ -1,3 +1,6 @@
+#
+# See paper Dan Ghica https://arxiv.org/abs/1702.01695
+#
 from efprob_dc import *
 
 t = random_state(range(2))
@@ -22,20 +25,46 @@ class CC:
     def unit(self, chan_without_cond):
         return CC( point_state(True, bool_dom).as_chan() @ chan_without_cond )
 
+    @classmethod
+    def idn(self, dom):
+        return CC.unit(idn(dom))
+
+    @classmethod
+    def discard(self, dom):
+        return CC.unit(discard(dom))
+
+    @classmethod
+    def new(self, state):
+        return CC.unit(state.as_chan())
+
     def __repr__(self):
         return repr(self.chan)
 
     def __mul__(self, other):
-        # Compute the Kleisli composition (self after other).
-        return CC( (and_chan @ idn(self.chan.cod[1:])) \
-                   * (idn(bool_dom) @ self.chan) \
-                   * other.chan )
+        # Compute the Kleisli composition (other ; self).
+        # NOTE: this is the reversed order of functional composition *
+        # of channels.
+        return CC( (and_chan @ idn(other.chan.cod[1:])) \
+                   * (idn(bool_dom) @ other.chan) \
+                   * self.chan )
 
-    def __add__(self, other):
-        return CC(self.chan + other.chan)
+    def __matmul__(self, other):
+        # parallel composition self @ other
+        return CC( (and_chan @ \
+                    idn(self.chan.cod[1:]) @ \
+                    idn(other.chan.cod[1:])) \
+                   * \
+                   (idn(bool_dom) @ \
+                    swap(self.chan.cod[1:], bool_dom) @ \
+                    idn(other.chan.cod[1:])) \
+                   * \
+                   (self.chan @ other.chan) )
 
     def smul(self, scalar):
         return CC(self.chan.smul(scalar))
+
+    def __add__(self, other):
+        return CC(self.chan + other.chan)
 
     def enforce(self, state):
         out = self.chan >> state
@@ -44,23 +73,30 @@ class CC:
             >> (out / (yes_pred @ truth(out_dom)))
 
 
-def assign_val(point, dom):
+IDN = CC.idn
+UNIT = CC.unit
+CONVEX_SUM = convex_sum
+DISCARD = CC.discard
+OBSERVE = CC.observe
+NEW = CC.new
+
+def ASSIGN_VAL(point, dom):
     dom = asdom(dom)
     if dom.iscont:
         raise Exception("Cannot assing for continuous domains")
-    return chan_fromklmap(lambda x: point_state(point, dom), dom, dom)
+    return CC.unit(chan_fromklmap(lambda x: point_state(point, dom), dom, dom))
 
-def assign_state(point, stat):
+def ASSING_STATE(point, stat):
     dom = asdom(stat.dom)
     if dom.iscont:
         raise Exception("Cannot assing for continuous domains")
-    return chan_fromklmap(lambda x: stat, dom, dom)
+    return CC.unit(chan_fromklmap(lambda x: stat, dom, dom))
 
 bool_to_num = Channel.from_states([State([1,0], range(2)), 
                                    State([0,1], range(2))],
                                   bool_dom)
 
-def ifthenelse(pred, cond_chan1, cond_chan2):
+def IFTHENELSE(pred, cond_chan1, cond_chan2):
     if pred.dom != cond_chan1.chan.dom \
        or pred.dom != cond_chan2.chan.dom \
         or cond_chan1.chan.cod != cond_chan2.chan.cod:
@@ -69,17 +105,32 @@ def ifthenelse(pred, cond_chan1, cond_chan2):
               * (bool_to_num @ idn(pred.dom)) \
               * instr(pred))
 
-# print( (instr(Predicate([0,1], range(2))) \
-#                >> uniform_state(range(2))) )
+def REPEAT(n):
+    def rep(cc, m):
+        if m < 1:
+            raise Exception('Repeating must be done at least once')
+        if m == 1:
+            return cc
+        return cc * rep(cc, m-1)
+    return lambda cond_chan : rep(cond_chan, n)
+        
 
-# print( case_channel(assign_val(0, range(2)), assign_val(1, range(2))) \
-#        >> ((bool_to_num @ idn(range(2))) \
-#            >> (instr(Predicate([0,1], range(2))) \
-#                >> uniform_state(range(2)))) )
-
-# print( ifthenelse(Predicate([0,0], range(2)),
-#                   CC.unit(assign_val(0, range(2))),
-#                   CC.unit(assign_val(1, range(2)))).chan >> uniform_state(range(2)) )
+def REPEATED_OBSERVE(preds, obs_to_pred_fun=None, pre_chan=None, post_chan=None):
+    n = len(preds)
+    if n < 1:
+        raise Exception('Repeated observation must be done at least once')
+    pred = preds[0] if obs_to_pred_fun is None else obs_to_pred_fun(preds[0])
+    cr = OBSERVE(pred)
+    if not pre_chan is None:
+        cr = pre_chan * cr
+    if not post_chan is None:
+        cr = cr * post_chan
+    if n == 1:
+        return cr
+    return cr * REPEATED_OBSERVE(preds[1:], 
+                                 obs_to_pred_fun = obs_to_pred_fun,
+                                 pre_chan = pre_chan,
+                                 post_chan = post_chan)
 
 
 #
@@ -95,10 +146,10 @@ print("\nSuccessive observation and transformation test")
 
 print( d >> ((c >> ((s1 / p1) @ s2)) / p2) )
 
-prog = CC.unit(d) \
-       * CC.observe(p2) \
-       * CC.unit(c) \
-       * CC.observe(p1 @ truth(bnd))
+prog = OBSERVE(p1 @ truth(bnd)) * \
+       UNIT(c) * \
+       OBSERVE(p2) * \
+       UNIT(d) 
 
 print( prog.enforce(s1 @ s2) )
 
@@ -107,20 +158,23 @@ print("\nExamples from JKKOGM\'15")
 
 s0 = random_state(range(2))
 
-prog1 = CC.observe(point_pred(1, range(2))) \
-        * convex_sum([(0.4, 
-                       CC.unit(assign_val(0, range(2)))),
-                      (0.6, 
-                       CC.unit(assign_val(1, range(2))))])
+prog1 = CONVEX_SUM([(0.4, 
+                     ASSIGN_VAL(0, range(2))),
+                    (0.6, 
+                     ASSIGN_VAL(1, range(2)))]) \
+        * \
+        OBSERVE(point_pred(1, range(2)))
 
 print( prog1.enforce(s0) )
 
-prog2 = convex_sum([(0.4, 
-                     CC.observe(point_pred(1, range(2))) \
-                     * CC.unit(assign_val(0, range(2)))),
+prog2 = CONVEX_SUM([(0.4, 
+                     ASSIGN_VAL(0, range(2)) \
+                     * \
+                     OBSERVE(point_pred(1, range(2)))),
                     (0.6, 
-                     CC.observe(point_pred(1, range(2))) \
-                     * CC.unit(assign_val(1, range(2))))])
+                     ASSIGN_VAL(1, range(2)) \
+                     * \
+                     OBSERVE(point_pred(1, range(2))))])
 
 print( prog2.enforce(s0) )
 
@@ -131,10 +185,86 @@ disease_dom = ['D', '~D']
 mood_dom = ['M', '~M']
 w = State([0.05, 0.5, 0.4, 0.05], [disease_dom, mood_dom])
 
-prog3 = CC.unit(discard(disease_dom) @ idn(mood_dom) @ discard(bool_dom)) \
-        * CC.observe(truth(disease_dom) @ truth(mood_dom) @ yes_pred) \
-        * ifthenelse(point_pred('D', disease_dom) @ truth(mood_dom),
-                     CC.unit(idn(disease_dom) @ idn(mood_dom) @ flip(9/10).as_chan()),
-                     CC.unit(idn(disease_dom) @ idn(mood_dom) @ flip(1/20).as_chan()))
 
-print( prog3.enforce(w) )
+p3 = IFTHENELSE(point_pred('D', disease_dom) @ truth(mood_dom),
+                IDN(disease_dom) @ IDN(mood_dom) @ NEW(flip(9/10)),
+                IDN(disease_dom) @ IDN(mood_dom) @ NEW(flip(1/20))) \
+        * \
+        OBSERVE(truth(disease_dom) @ truth(mood_dom) @ yes_pred) \
+        * \
+        (DISCARD(disease_dom) @ IDN(mood_dom) @ DISCARD(bool_dom))
+
+print( p3.enforce(w) )
+
+
+print("\nCoin-bias learning in discrete form")
+N = 20
+precision = 3
+bias_dom = [math.floor((10 ** precision) * (i+1)/(N+1) + 0.5) / (10 ** precision)
+            for i in range(N)]
+prior = uniform_state(bias_dom)
+chan = chan_fromklmap(lambda r: flip(r), bias_dom, bool_dom)
+
+#
+# listing all the predicates is possible, but this can be done easier,
+# see below
+#
+p4 = REPEATED_OBSERVE([chan << no_pred, 
+                       chan << yes_pred, 
+                       chan << yes_pred, 
+                       chan << yes_pred, 
+                       chan << no_pred, 
+                       chan << no_pred, 
+                       chan << yes_pred, 
+                       chan << yes_pred])
+
+posterior = p4.enforce(prior)
+#posterior.plot()
+
+print( posterior.expectation() )
+
+def pf(b):
+    return chan << yes_pred if b == 1 else chan << no_pred
+
+p5 = REPEATED_OBSERVE([0,1,1,1,0,0,1,1], 
+                      obs_to_pred_fun = pf,
+                      pre_chan = IDN(bias_dom),
+                      post_chan = IDN(bias_dom))
+
+print( p5.enforce(prior).expectation() )
+
+
+print("\nMarkov chain model")
+
+ACGT = ['A', 'C', 'G', 'T']
+s0 = State([0.3, 0.2, 0.1, 0.4], ACGT)
+A = Predicate([1,0,0,0], ACGT)
+C = Predicate([0,1,0,0], ACGT)
+G = Predicate([0,0,1,0], ACGT)
+T = Predicate([0,0,0,1], ACGT)
+
+trs = Channel([[0.1, 0.3, 0.3, 0.3],
+               [0.3, 0.1, 0.3, 0.3],
+               [0.3, 0.3, 0.1, 0.3],
+               [0.3, 0.3, 0.3, 0.1]], ACGT, ACGT)
+obs = Channel([[0.85, 0.05, 0.05, 0.05],
+               [0.05, 0.85, 0.05, 0.05],
+               [0.05, 0.05, 0.85, 0.05],
+               [0.05, 0.05, 0.05, 0.85]], ACGT, ACGT)
+
+# s1 = trs >> (s0 / (obs << C))
+# print( s1 )
+# s2 = trs >> (s1 / (obs << A))
+# print( s2 )
+# s3 = trs >> (s2 / (obs << A))
+# print( s3 )
+# s4 = trs >> (s3 / (obs << A))
+# print( s4  )
+# s5 = trs >> (s4 / (obs << G))
+# print( s5 )
+
+p6 = REPEATED_OBSERVE([C,A,A,A,G], 
+                      obs_to_pred_fun = lambda x: obs << x,
+                      post_chan = UNIT(trs))
+
+print( p6.enforce(s0) )
