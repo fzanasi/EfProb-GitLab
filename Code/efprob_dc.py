@@ -1628,10 +1628,16 @@ def shannon_entropy(s):
     return s >= rv
 
 def mutual_information(js):
-    s1 = js % [1,0]
-    s2 = js % [0,1]
-    return shannon_entropy(s1) + shannon_entropy(s2) - shannon_entropy(js)
-
+    n = len(js.dom)
+    if n < 2:
+        raise Exception('Mutual information is defined only for joint states')
+    selectors = []
+    for i in range(n):
+        ls = [0] * n
+        ls[i] = 1
+        selectors = selectors + [ls]
+    marginals = [ js % sel for sel in selectors ]
+    return sum(np.vectorize(shannon_entropy)(marginals)) - shannon_entropy(js)
 
 
 ##############################################################
@@ -1743,8 +1749,8 @@ def test_chan():
 
 def main():
     #dice()
-    sporter2()
-    print( convex_state_sum((0.2,flip(0.3)), (0.8, flip(0.8))))
+    #sporter2()
+    print( convex_sum([(0.2,flip(0.3)), (0.8, flip(0.8))]) )
 
 
 if __name__ == "__main__":

@@ -978,7 +978,7 @@ def choi(u):
 #
 # Channel obtained from a unitary matrix. The key properties are:
 # 
-#   chan(u) >> s  =  u * s.array * conj_trans(u)
+#   chan(u) >> s  =  conj_trans(u) * s.array * u
 #
 #   chan(u) << p  =  u * p.array * conj_trans(u)
 #
@@ -1634,9 +1634,16 @@ def shannon_entropy(s):
     return sum(np.vectorize(f)(eigen_values))
 
 def mutual_information(js):
-    s1 = js % [1,0]
-    s2 = js % [0,1]
-    return shannon_entropy(s1) + shannon_entropy(s2) - shannon_entropy(js)
+    n = len(js.dom.dims)
+    if n < 2:
+        raise Exception('Mutual information is defined only for joint states')
+    selectors = []
+    for i in range(n):
+        ls = [0] * n
+        ls[i] = 1
+        selectors = selectors + [ls]
+    marginals = [ js % sel for sel in selectors ]
+    return sum(np.vectorize(shannon_entropy)(marginals)) - shannon_entropy(js)
 
 
 ########################################################################

@@ -66,7 +66,7 @@ class CC:
     def __add__(self, other):
         return CC(self.chan + other.chan)
 
-    def enforce(self, state):
+    def run(self, state):
         out = self.chan >> state
         out_dom = out.dom[1:]
         return (discard(bool_dom) @ idn(out_dom)) \
@@ -86,7 +86,7 @@ def ASSIGN_VAL(point, dom):
         raise Exception("Cannot assing for continuous domains")
     return CC.unit(chan_fromklmap(lambda x: point_state(point, dom), dom, dom))
 
-def ASSING_STATE(point, stat):
+def ASSING_STATE(stat):
     dom = asdom(stat.dom)
     if dom.iscont:
         raise Exception("Cannot assing for continuous domains")
@@ -151,7 +151,7 @@ prog = OBSERVE(p1 @ truth(bnd)) * \
        OBSERVE(p2) * \
        UNIT(d) 
 
-print( prog.enforce(s1 @ s2) )
+print( prog.run(s1 @ s2) )
 
 
 print("\nExamples from JKKOGM\'15")
@@ -165,7 +165,7 @@ prog1 = CONVEX_SUM([(0.4,
         * \
         OBSERVE(point_pred(1, range(2)))
 
-print( prog1.enforce(s0) )
+print( prog1.run(s0) )
 
 prog2 = CONVEX_SUM([(0.4, 
                      ASSIGN_VAL(0, range(2)) \
@@ -176,7 +176,7 @@ prog2 = CONVEX_SUM([(0.4,
                      * \
                      OBSERVE(point_pred(1, range(2))))])
 
-print( prog2.enforce(s0) )
+print( prog2.run(s0) )
 
 
 print("\nDisease-mood example")
@@ -184,6 +184,7 @@ print("\nDisease-mood example")
 disease_dom = ['D', '~D']
 mood_dom = ['M', '~M']
 w = State([0.05, 0.5, 0.4, 0.05], [disease_dom, mood_dom])
+print(w)
 
 
 p3 = IFTHENELSE(point_pred('D', disease_dom) @ truth(mood_dom),
@@ -194,7 +195,7 @@ p3 = IFTHENELSE(point_pred('D', disease_dom) @ truth(mood_dom),
         * \
         (DISCARD(disease_dom) @ IDN(mood_dom) @ DISCARD(bool_dom))
 
-print( p3.enforce(w) )
+print( p3.run(w) )
 
 
 print("\nCoin-bias learning in discrete form")
@@ -218,7 +219,7 @@ p4 = REPEATED_OBSERVE([chan << no_pred,
                        chan << yes_pred, 
                        chan << yes_pred])
 
-posterior = p4.enforce(prior)
+posterior = p4.run(prior)
 #posterior.plot()
 
 print( posterior.expectation() )
@@ -231,7 +232,7 @@ p5 = REPEATED_OBSERVE([0,1,1,1,0,0,1,1],
                       pre_chan = IDN(bias_dom),
                       post_chan = IDN(bias_dom))
 
-print( p5.enforce(prior).expectation() )
+print( p5.run(prior).expectation() )
 
 
 print("\nMarkov chain model")
@@ -267,4 +268,14 @@ p6 = REPEATED_OBSERVE([C,A,A,A,G],
                       obs_to_pred_fun = lambda x: obs << x,
                       post_chan = UNIT(trs))
 
-print( p6.enforce(s0) )
+print( p6.run(s0) )
+
+print("\nFabio")
+
+s = random_state(range(5))
+p = random_pred(range(5))
+q = random_pred(range(5))
+
+print( s / p / q )
+
+print( REPEATED_OBSERVE([p,q]).run(s) )
