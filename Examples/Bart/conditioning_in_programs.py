@@ -153,6 +153,16 @@ prog = OBSERVE(p1 @ truth(bnd)) * \
 
 print( prog.run(s1 @ s2) )
 
+def asrt(p):
+    return chan_fromklmap(lambda x: p(x) * point_state(x, p.dom),
+                          p.dom,
+                          p.dom)
+
+subprog = d * asrt(p2) * c * (asrt(p1) @ idn(bnd))
+
+print( (subprog >> (s1 @ s2)) / truth(bnd) )
+
+
 
 print("\nExamples from JKKOGM\'15")
 
@@ -279,3 +289,5 @@ q = random_pred(range(5))
 print( s / p / q )
 
 print( REPEATED_OBSERVE([p,q]).run(s) )
+
+
