@@ -26,6 +26,10 @@ use_lru_cache = True
 float_format_spec = ".3g"
 
 
+class NormalizationError(Exception):
+    """Raised when normalization fails"""
+
+
 def _prod(iterable):
     return reduce(operator.mul, iterable, 1)
 
@@ -597,23 +601,29 @@ class State(StateLike):
     def __ge__(self, pred):
         return self.validity(pred)
 
+    def normalize(self):
+        """Normalize the improper state."""
+        if self.dom.iscont:
+            v = Fun.vect_integrate(self.array).sum()
+        else:
+            v = self.array.sum()
+        if v == 0:
+            raise NormalizationError("Total mass is zero")
+        if math.isinf(v) and v > 0:
+            raise NormalizationError("Total mass is infinite")
+        if v < 0 or math.isnan(v):
+            raise NormalizationError("Total mass is invalid (negative or NaN)")
+        if self.dom.iscont:
+            return State(Fun.u_sdiv(array, v), self.dom)
+        return State(self.array / v, self.dom)
+
     def conditional(self, pred):
         """Return a conditional state."""
         check_dom_match(self.dom, pred.dom)
-        array = self.array * pred.array
-        if self.dom.iscont:
-            v = Fun.vect_integrate(array).sum()
-        else:
-            v = array.sum()
-        if v == 0:
-            raise ValueError("Zero validity")
-        if math.isinf(v) and v > 0:
-            raise ValueError("Infinite validity")
-        if v < 0 or math.isnan(v):
-            raise ValueError("Validity is invalid (negative or NaN)")
-        if self.dom.iscont:
-            return State(Fun.u_sdiv(array, v), self.dom)
-        return State(array / v, self.dom)
+        try:
+            return State(self.array * pred.array, self.dom).normalize()
+        except NormalizationError as e:
+            raise NormalizationError("Conditioning failed: {}".format(e))
 
     def __truediv__(self, pred):
         return self.conditional(pred)
