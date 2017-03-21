@@ -623,7 +623,7 @@ class State(StateLike):
         try:
             return State(self.array * pred.array, self.dom).normalize()
         except NormalizationError as e:
-            raise NormalizationError("Conditioning failed: {}".format(e))
+            raise NormalizationError("Conditioning failed: {}".format(e)) from None
 
     def __truediv__(self, pred):
         return self.conditional(pred)
