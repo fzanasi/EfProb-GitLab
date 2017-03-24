@@ -1,0 +1,161 @@
+\RequirePackage[l2tabu,orthodox]{nag}
+\documentclass[a4paper]{article}
+
+\input{mysettings}
+
+\newcommand{\Pskip}{\mathtt{skip}}
+\newcommand{\Pabort}{\mathtt{abort}}
+\newcommand{\Passign}[2]{#1\coloneqq #2}
+\newcommand{\Pdiscard}[1]{\mathtt{discard}\; #1}
+\newcommand{\Pnewassign}[2]{\mathtt{new}\; #1\coloneqq #2}
+\newcommand{\Pseq}[2]{#1; #2}
+\newcommand{\Pifthenelse}[3]{\mathtt{if}\,
+(#1)\,\{#2\}\,\mathtt{else}\,\{#3\}}
+\newcommand{\Pobserve}[1]{\mathtt{observe}\,(#1)}
+\newcommand{\Ppchoice}[3]{\{#1\}\,[#2]\,\{#3\}}
+
+\newcommand{\Ptrue}{\mathtt{true}}
+\newcommand{\Pfalse}{\mathtt{false}}
+
+\newcommand{\Pjudge}[3]{\langle#1\rangle
+\;#2\;\langle#3\rangle}
+
+\DeclarePairedDelimiter{\sem}{\llbracket}{\rrbracket}
+
+\begin{document}
+
+Notes on formulation of language
+
+\section{Formulation 1}
+
+Language without allocation/discard of variable.
+Variables are fixed in advance.
+
+\begin{align*}
+C\Coloneqq {}&
+\Pskip
+\\
+\mid {}&
+\Pabort
+\\
+\mid {}&
+\Passign{x}{E}
+\\
+\mid {}&
+\Pseq{C}{C}
+\\
+\mid {}&
+\Pifthenelse{\xi}{C}{C}
+\\
+\mid {}&
+\Pobserve{\xi}
+\end{align*}
+
+Here $E$ is an expression and $\xi$ is a predicate.
+
+Probabilistic choice is not necessary if we allow predicates to be `fuzzy'.
+$\Ppchoice{C_1}{p}{C_2}$
+is the same as $\Pifthenelse{p\cdot \Ptrue
++(1-p)\cdot\Pfalse}{C_1}{C_2}$
+
+We fix variables with types $\Gamma = x_1:t_1, \dotsc, x_n:t_n$,
+and call it a context.
+Let $C$ be a program defined in the context $\Gamma$.
+We interpret $C$ as
+an endomap $\sem{C}\colon\sem{\Gamma}\to\sem{\Gamma}$,
+where $\sem{\Gamma}=\sem{t_1}\times\dotsb\times\sem{t_n}$.
+
+Normalised semantics is defined when an initial state $\omega$
+on $\sem{\Gamma}$ is given.
+It is a normalisation of the composite $\sem{C}\circ\omega$.
+
+\section{Formulation 2}
+
+Language with allocation/discard of variables.
+
+\begin{align*}
+C\Coloneqq {}&
+\Pskip
+\\
+\mid {}&
+\Pabort
+\\
+\mid {}&
+\Pnewassign{x}{E}
+\\
+\mid {}&
+\Pdiscard{x}
+\\
+\mid {}&
+\Passign{x}{E}
+\\
+\mid {}&
+\Pseq{C}{C}
+\\
+\mid {}&
+\Pifthenelse{\xi}{C}{C}
+\\
+\mid {}&
+\Pobserve{\xi}
+\end{align*}
+
+We have only ground types $t$.
+
+Contexts are $\Gamma=x_1:t_1, \dotsc, x_n:t_n$.
+
+Typing rules
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\Pjudge{\Gamma}{\Pskip}{\Gamma}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\Pjudge{\Gamma}{\Pabort}{\Gamma}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{($E$ is an expression in $\Gamma$ of type $t$)}
+\UnaryInfC{$\Pjudge{\Gamma}{\Pnewassign{x}{E}}{x:t, \Gamma}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\Pjudge{x:t,\Gamma}{\Pdiscard{x}}{\Gamma}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{($x:t\in\Gamma$ and $E$ is an expression in $\Gamma$ of type $t$)}
+\UnaryInfC{$\Pjudge{\Gamma}{\Passign{x}{E}}{\Gamma}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\Pjudge{\Gamma}{C_1}{\Gamma'}$}
+\AxiomC{$\Pjudge{\Gamma'}{C_2}{\Gamma''}$}
+\BinaryInfC{$\Pjudge{\Gamma}{\Pseq{C_1}{C_2}}{\Gamma''}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\Pjudge{\Gamma}{C_1}{\Gamma'}$}
+\AxiomC{$\Pjudge{\Gamma}{C_2}{\Gamma'}$}
+\RightLabel{($\xi$ is a predicate in $\Gamma$)}
+\BinaryInfC{$\Pjudge{\Gamma}{\Pifthenelse{\xi}{C_1}{C_2}}{\Gamma'}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{($\xi$ is a predicate in $\Gamma$)}
+\UnaryInfC{$\Pjudge{\Gamma}{\Pobserve{\xi}}{\Gamma}$}
+\end{prooftree}
+
+We interpret
+typing judgements $\Pjudge{\Gamma}{C}{\Gamma'}$
+as endomaps $\sem{C}\colon\sem{\Gamma}\to\sem{\Gamma'}$.
+
+Normalised semantics is defined for `closed' program
+$\Pjudge{}{C}{\Gamma}$.
+
+
+\end{document}
