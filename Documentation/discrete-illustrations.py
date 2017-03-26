@@ -451,9 +451,14 @@ def state_pred_transformation():
     print( fish_domain )
     prior = uniform_state(fish_domain)
     def catch5prob(fish_num):
-        r = 20 / fish_num 
-        return (r ** 5) * ((1-r) ** 15)
-    chan = chan_fromklmap(lambda x: flip(catch5prob(x)), fish_domain, bool_dom)
+        p = 20 / fish_num 
+        return 15504 * (p ** 5) * ((1-p) ** 15)
+    chan = chan_fromklmap(lambda d: flip(catch5prob(d)), fish_domain, bool_dom)
+    # Alternatively, using the predefined binomial distribution
+    # chan = chan_fromklmap(lambda x: flip(binomial(20, 20/x).getvalue(5)),
+    #                       fish_domain,
+    #                       bool_dom)
+
     print( chan )
     posterior = prior / (chan << yes_pred)
     print( posterior.expectation() )

@@ -2476,13 +2476,23 @@ the probability of finding 5 marked fish when 20 of them are
 caught. In order not to complicate the calculations too much, we catch
 these 20 fish one by one, check if they are marked, and then throw
 them back. This means that the probability of catching a marked fish
-remains the same. We first define the probability function, and then
+remains the same, and is described by a binomial distribution with
+parameters $N=20$ and probability $p = \frac{d}{20}$, where $d$ is a
+domain value. The probability of finding $5$ marked fishes among
+$20$ is then given by:
+$$\begin{array}{rcl}
+{{20}\choose{5}}\cdot p^{5}\cdot (1-p)^{20-5}
+& = &
+15504 \cdot p^{5} \cdot (1-p)^{15}.
+\end{array}$$
+
+We first define the probability function, and then
 use it to form a channel, from the fish domain to the boolean domain.
 \begin{python}
 >>> def catch5prob(fish_num):
-...     r = 20 / fish_num 
-...     return (r ** 5) * ((1-r) ** 15)
->>> chan = chan_fromklmap(lambda x: flip(catch5prob(x)), fish_domain, bool_dom)
+...     p = 20 / fish_num 
+...     return 15504 * (p ** 5) * ((1-p) ** 15)
+>>> chan = chan_fromklmap(lambda d: flip(catch5prob(d)), fish_domain, bool_dom)
 >>> chan
 Channel of type: [20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300] --> [True, False]
 \end{python}
@@ -2498,10 +2508,19 @@ a transformed predicate, as below.
 >>> posterior.plot()
 \end{python}
 
-\noindent This last line gives the diagram below.
+\noindent This last line generates the diagram below, describing the
+likelihoods of the various numbers of fish in the pond.
 \begin{center}
-\includegraphics[width=15em]{Pictures/capture_recapture.png} 
+\includegraphics[width=30em]{Pictures/capture-recapture.png} 
 \end{center}
+
+\noindent Finally, a more systematic way to define the above channel
+is to use the pre-defined binomial state, and extract its value
+at $5$, via the \pythoninline{getvalue} method, as in:
+\begin{python}
+>>> chan = chan_fromklmap(lambda d: flip(binomial(20, 20/d).getvalue(5)),
+...                       fish_domain, bool_dom)
+\end{python}
 \end{example}
 
 
