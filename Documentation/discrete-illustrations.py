@@ -6,7 +6,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-03-03
+# Date: 2017-03-20
 #
 from efprob_dc import *
 from math import *
@@ -682,7 +682,7 @@ def all():
     bayesian_networks()
 
 def main():
-    #all()
+    all()
     #states()
     #operations_on_states()
     #excursion()
