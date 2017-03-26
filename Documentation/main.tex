@@ -800,6 +800,20 @@ it gives a different answer.
 0.252|0> + 0.25|1> + 0.452|2> + 0.035|3> + 0.0103|4>
 \end{python}
 
+The binomial distribution\index{binomial~distribution} with parameters
+$N\in\NN$ and $p\in[0,1]$ describes for each $k\in\{0,1,\ldots,N\}$
+the probability of getting $k$ successes out of $N$
+attempts. Formally, this distribution is given by the formal convex
+sum:
+$$\sum_{0\leq k\leq N} {\textstyle{N\choose{k}}}\cdot p^{k} \cdot 
+   (1-p)^{N-k}\,\bigket{k}.$$
+
+\noindent These binomial distributions are predefined as a discrete
+(parametrised) state in $\EfProb$, giving for instance:
+\begin{python}
+>>> binomial(6, 0.3)
+0.118|0> + 0.303|1> + 0.324|2> + 0.185|3> + 0.0595|4> + 0.0102|5> + 0.000729|6>
+\end{python}
 
 
 \begin{remark}
@@ -2453,12 +2467,12 @@ tables\index{conditional!probability~table} (CPTs).
 
 \begin{example}
 \label{ex:capture}
-Capture and recapture is a methodology used in ecology to estimate the
-size of a population. So imagine we are looking at a pond and we wish
-to learn the number of fish. We catch twenty of them, mark them, and
-throw them back. Subsequently we catch another twenty, and find out
-that five of them are marked. What do we learn about the number of
-fish?
+Capture and recapture\index{capture-recapture} is a methodology used
+in ecology to estimate the size of a population. So imagine we are
+looking at a pond and we wish to learn the number of fish. We catch
+twenty of them, mark them, and throw them back. Subsequently we catch
+another twenty, and find out that five of them are marked. What do we
+learn about the number of fish?
 
 The number of fish in the pond must be at least 20. Let's assume the
 maximal number is 300. We will be considering units of 20 fish. Hence
@@ -2486,8 +2500,8 @@ $$\begin{array}{rcl}
 15504 \cdot p^{5} \cdot (1-p)^{15}.
 \end{array}$$
 
-We first define the probability function, and then
-use it to form a channel, from the fish domain to the boolean domain.
+\noindent We first define the probability function, and then use it to
+form a channel, from the fish domain to the boolean domain.
 \begin{python}
 >>> def catch5prob(fish_num):
 ...     p = 20 / fish_num 
@@ -2515,8 +2529,9 @@ likelihoods of the various numbers of fish in the pond.
 \end{center}
 
 \noindent Finally, a more systematic way to define the above channel
-is to use the pre-defined binomial state, and extract its value
-at $5$, via the \pythoninline{getvalue} method, as in:
+is to use the pre-defined binomial\index{binomial~distribution} state,
+and extract its value at $5$, via the \pythoninline{getvalue} method,
+as in:
 \begin{python}
 >>> chan = chan_fromklmap(lambda d: flip(binomial(20, 20/d).getvalue(5)),
 ...                       fish_domain, bool_dom)
@@ -2524,7 +2539,7 @@ at $5$, via the \pythoninline{getvalue} method, as in:
 \end{example}
 
 
-We include another example illustrating how to incorporate hidden
+We include another example, illustrating how to incorporate hidden
 Markov models\index{hidden~Markov~model} as channels.  This example is
 adapted from the reference manual of the probabilistic language
 BLOG\cite{MilchMRSOK07}.\index{BLOG}

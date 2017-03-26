@@ -69,7 +69,12 @@ def states():
 
     print("\n===\n")
 
-    print("* poisson state example, length 20")
+    print("* Binomial state example, length 6")
+    print( binomial(6, 0.3) )
+
+    print("\n===\n")
+
+    print("* Poisson state example, length 20")
     print( poisson(3,20) )
 
 
@@ -696,7 +701,7 @@ def main():
     # expectation()
     #covariance()
     #channels()
-    state_pred_transformation()
+    #state_pred_transformation()
     #structural_channels()
     #bayesian_networks()
 
