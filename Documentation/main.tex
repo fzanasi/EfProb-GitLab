@@ -57,6 +57,12 @@
 %
 %  - Infer.net intro at: http://infernet.azurewebsites.net/default.aspx
 %
+%  - Explain that pip3 must be installed, via:
+%    sudo apt-get install python3-pip
+%    and then:
+%    sudo pip3 install numpy
+%    and similarly for 
+%
 % Literature
 % ==========
 %
@@ -2443,6 +2449,61 @@ Later on, in Example~\ref{ex:paperacceptance} we shall see more
 examples of Bayesian networks, also with \EfProb support for defining
 the relevant channels from conditional probability
 tables\index{conditional!probability~table} (CPTs).
+
+
+\begin{example}
+\label{ex:capture}
+Capture and recapture is a methodology used in ecology to estimate the
+size of a population. So imagine we are looking at a pond and we wish
+to learn the number of fish. We catch twenty of them, mark them, and
+throw them back. Subsequently we catch another twenty, and find out
+that five of them are marked. What do we learn about the number of
+fish?
+
+The number of fish in the pond must be at least 20. Let's assume the
+maximal number is 300. We will be considering units of 20 fish. Hence
+the domain we are looking at, with the uniform `prior' state, is:
+\begin{python}
+>>> fish_domain = [20 * (i+1) for i in range(15)]
+>>> fish_domain
+[20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300]
+>>> prior = uniform_state(fish_domain)
+\end{python}
+
+\noindent We now assume that 20 of the fish in the pond are marked. We
+can then compute for each value $20, 40, \ldots$ in the fish domain
+the probability of finding 5 marked fish when 20 of them are
+caught. In order not to complicate the calculations too much, we catch
+these 20 fish one by one, check if they are marked, and then throw
+them back. This means that the probability of catching a marked fish
+remains the same. We first define the probability function, and then
+use it to form a channel, from the fish domain to the boolean domain.
+\begin{python}
+>>> def catch5prob(fish_num):
+...     r = 20 / fish_num 
+...     return (r ** 5) * ((1-r) ** 15)
+>>> chan = chan_fromklmap(lambda x: flip(catch5prob(x)), fish_domain, bool_dom)
+>>> chan
+Channel of type: [20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300] --> [True, False]
+\end{python}
+
+\noindent Once this is set up, the action can start. We construct
+a posterior state by updating the prior with the information that
+five marked fish have been found. The latter is expressed via
+a transformed predicate, as below.
+\begin{python}
+>>> posterior = prior / (chan << yes_pred)
+>>> posterior.expectation()
+116.933797653
+>>> posterior.plot()
+\end{python}
+
+\noindent This last line gives the diagram below.
+\begin{center}
+\includegraphics[width=15em]{Pictures/capture_recapture.png} 
+\end{center}
+\end{example}
+
 
 We include another example illustrating how to incorporate hidden
 Markov models\index{hidden~Markov~model} as channels.  This example is

@@ -446,6 +446,21 @@ def state_pred_transformation():
 
     print("\n===\n")
 
+    print("* Capture recapture example")
+    fish_domain = [20 * (i+1) for i in range(15)]
+    print( fish_domain )
+    prior = uniform_state(fish_domain)
+    def catch5prob(fish_num):
+        r = 20 / fish_num 
+        return (r ** 5) * ((1-r) ** 15)
+    chan = chan_fromklmap(lambda x: flip(catch5prob(x)), fish_domain, bool_dom)
+    print( chan )
+    posterior = prior / (chan << yes_pred)
+    print( posterior.expectation() )
+    posterior.plot()
+
+    print("\n===\n")
+
     print("* Genetic hidden Markov model")
     ACGT = ['A', 'C', 'G', 'T']
     s0 = State([0.3, 0.2, 0.1, 0.4], ACGT)
@@ -672,11 +687,11 @@ def main():
     #operations_on_states()
     #excursion()
     #validity()
-    conditioning()
+    #conditioning()
     # expectation()
-    # covariance()
+    #covariance()
     #channels()
-    #state_pred_transformation()
+    state_pred_transformation()
     #structural_channels()
     #bayesian_networks()
 
