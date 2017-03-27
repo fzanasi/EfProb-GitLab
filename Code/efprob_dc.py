@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-03-16
+# Date: 2017-03-27
 #
 from functools import reduce
 import functools
@@ -1554,11 +1554,6 @@ def cross_infl(pred, joint_state):
 
 
 
-def factorial(n):
-    if n == 0:
-        return 1
-    return n * factorial(n-1)
-
 #
 # Poisson distribution with rate parameter `lam' and upperbound
 # ub. The distribution is restricted to the interval [0, ub-1]; hence
@@ -1566,10 +1561,21 @@ def factorial(n):
 # interval.
 #
 def poisson(lam, ub):
-    probabilities = [(lam ** k) * (math.e ** -lam) / factorial(k) 
+    probabilities = [(lam ** k) * (math.e ** -lam) / math.factorial(k) 
                      for k in range(ub)]
     s = sum(probabilities)
     return State([p/s for p in probabilities], range(ub))
+
+#
+# Binomial distribution on {0,1,2,...,N} with probability p in [0,1]
+#
+def binomial(N, p):
+    Nfac = math.factorial(N)
+    def binom_coeff(k):
+        return Nfac / (math.factorial(k) * math.factorial(N-k))
+    return State([binom_coeff(k) * (p ** k) * ((1-p) ** (N-k)) 
+                  for k in range(N+1)],
+                 range(N+1))
 
 
 # Bayesian network auxiliaries
