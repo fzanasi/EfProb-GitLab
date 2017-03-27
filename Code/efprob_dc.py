@@ -614,7 +614,7 @@ class State(StateLike):
         if v < 0 or math.isnan(v):
             raise NormalizationError("Total mass is invalid (negative or NaN)")
         if self.dom.iscont:
-            return State(Fun.u_sdiv(array, v), self.dom)
+            return State(Fun.u_sdiv(self.array, v), self.dom)
         return State(self.array / v, self.dom)
 
     def conditional(self, pred):
