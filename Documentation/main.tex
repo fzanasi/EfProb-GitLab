@@ -815,6 +815,7 @@ $$\sum_{0\leq k\leq N} {\textstyle{N\choose{k}}}\cdot p^{k} \cdot
 0.118|0> + 0.303|1> + 0.324|2> + 0.185|3> + 0.0595|4> + 0.0102|5> + 0.000729|6>
 \end{python}
 
+\noindent Its domain is \pythoninline{range(N+1)}.
 
 \begin{remark}
 \label{rem:poisson}
@@ -2465,6 +2466,13 @@ the relevant channels from conditional probability
 tables\index{conditional!probability~table} (CPTs).
 
 
+%
+% Inspiration for the next example comes from:
+%
+% http://www.sumsar.net/files/academia/user_2015_tutorial_bayesian_data_analysis_short_version.pdf
+%
+% http://rpubs.com/rasmusab/live_coding_user_2015_bayes_tutorial
+
 \begin{example}
 \label{ex:capture}
 Capture and recapture\index{capture-recapture} is a methodology used
@@ -2879,7 +2887,7 @@ swap, but also `ancilla' and measure.
 
 \paragraph{Identity channels}
 For each domain \pythoninline{dom} there is an identity
-channel\index{identity~channel!discrete~---}\index{channel!discrete~identity~--}
+channel\index{identity~channel!discrete~--}\index{channel!discrete~identity~--}
 \pythoninline{idn(dom) : dom -> dom}. It is given by the identity
 matrix. For an arbitrary channel \pythoninline{c : dom -> cod} the
 following three channels are the same.
@@ -2899,7 +2907,7 @@ identity channels in parallel forms itself an identity channel.
 
 \paragraph{Discard channel} For each domain \pythoninline{dom}
 there is discard
-channel\index{discard~channel!discrete~---}\index{channel!discrete~discard~--}
+channel\index{discard~channel!discrete~--}\index{channel!discrete~discard~--}
 \pythoninline{discard(dom) : dom -> []}.  It throws away its
 input. Again this looks silly. But discard channels, in parallel with
 identity channels, give us projection channels. This is illustrated
@@ -2964,7 +2972,7 @@ the previous example.
 
 \paragraph{Copy and swap channels} For each domain \pythoninline{dom}
 there is a copy
-channel\index{copy~channel!discrete~---}\index{channel!discrete~copy~--}
+channel\index{copy~channel!discrete~--}\index{channel!discrete~copy~--}
 \pythoninline{copy(dom) : dom -> dom + dom}. It duplicates its input.
 Such copying exists in classical (discrete and continuous)
 probability, but not in quantum probability, because of the so-called
@@ -2981,7 +2989,7 @@ def graph(c):
 
 For each pair of domains \pythoninline{dom1}
 and \pythoninline{dom2} there is a swap
-channel:\index{swap~channel!discrete~---}\index{channel!discrete~swap~--}
+channel:\index{swap~channel!discrete~--}\index{channel!discrete~swap~--}
 $$\mbox{\pythoninline{swap(dom1,dom2) : dom1 + dom2 -> dom2 + dom1}}$$
 
 \noindent It behaves in the obvious manner. These copy and swap
@@ -4054,10 +4062,85 @@ the discrete case in Example~\ref{ex:dcoinparameter}.
     %% for ob in observations:
     %%     pred = yes_pred if ob==1 else no_pred
     %%     t = t / (chan << pred)
-    %%     # s.plot()
+    %%     # s.plotu()
     %% print( chan >> t )
 
 \end{example}
+
+
+
+We include a similar parameter learning example, in a different
+context.
+
+
+\begin{example}
+\label{ex:advertisement}
+Imagine a company that tries out two different advertisement
+campaigns, labeled~A and~B, for the same product. Both campaigns are
+tried out on $N=50$ individuals, with different success scores: 18
+people respond by buying the product for campaign~A, and 27 people for
+campaign~B.
+
+First we would like to learn the success rates for the two campaigns.
+These success rates are numbers $r\in[0,1]$ which are used to
+calculate the binomial probability of $k$ successes out of $N$.  This
+is done via the following channel from $[0,1]$ to $\{0,1,\ldots, N\}$.
+\begin{python}
+>>> N = 50
+>>> c = chan_fromklmap(lambda r: binomial(N, r), R(0,1), range(N+1))
+\end{python}
+
+\noindent Following standard Bayesian parameter learning, we start
+from a uniform prior, and update with the respective (transformed)
+score predicates:
+\begin{python}
+>>> prior = uniform_state(R(0,1))
+>>> scoreA = 18
+>>> scoreB = 27
+>>> postA = prior / (c << point_pred(scoreA, range(N+1)))
+>>> postB = prior / (c << point_pred(scoreB, range(N+1)))
+>>> postA.plot()
+>>> postB.plot()
+\end{python}
+
+\noindent The resulting plots for campaigns~A and~B are given
+below on the left and right.
+
+\includegraphics[width=20em]{Pictures/advertisement_scoreA.png}
+\includegraphics[width=20em]{Pictures/advertisement_scoreB.png}
+
+\noindent It is clear that campaign~B has a higher success rate. But
+now we wish to take the costs of the two campaigns into account.  Each
+acquired customer yields a profit of 100, Euro say. The advertisement
+cost per participant is 10 for campaign~A and 30 for campaign~B.
+Which campaign is more cost-effective?
+
+We compute this via two random variables on $\{0,1,\ldots,N\}$ that
+take these profits and costs into account:
+\begin{python}
+>>> profitA = randvar_fromfun(lambda x: x * 100 - N * 10, range(N+1))
+>>> profitB = randvar_fromfun(lambda x: x * 100 - N * 30, range(N+1))
+>>> (c >> postA).expectation(profitA)
+1326.92307692
+>>> (c >> postB).expectation(profitB)
+1192.30769231
+\end{python}
+
+\noindent We see that the net profit of campaign~A is expected to be
+higher than for campaign~B.
+
+As an aside: the latter two expected values can also be
+computed as validities of transformed random variables:
+\begin{python}
+>>> postA >= (c << profitA)
+1326.92307692
+>>> postB >= (c << profitB)
+1192.30769231
+\end{python}
+\end{example}
+
+
+
 
 
 
@@ -6202,7 +6285,7 @@ visually explain what these channels do.\sidenote{Wires in quantum
 \paragraph{Identity channels}
 For each domain \pythoninline{dom} (list of dimensions) there is an
 identity
-channel\index{identity~channel!quantum~---}\index{channel!quantum~identity~--}
+channel\index{identity~channel!quantum~--}\index{channel!quantum~identity~--}
 \pythoninline{dom -> dom} written as \pythoninline{idn(dom)}. This
 identity channel has no effect in sequential composition
 \pythoninline{*} of channels, but it is extremely useful in parallel
@@ -6284,7 +6367,7 @@ $$\mbox{\pythoninline{idn(2,2,2)}}
 \mbox{\pythoninline{idn(2) @ idn(2) @ idn(2)}}$$
 
 \paragraph{Discard channels} Recall that in quantum theory we can
-discard\index{discard~channel!quantum~---}\index{channel!quantum~discard~--}
+discard\index{discard~channel!quantum~--}\index{channel!quantum~discard~--}
 --- but not copy --- resources. That's why we can marginalise
 states. For these same reasons we have channels for discarding, and
 for projection, see below.
@@ -6373,7 +6456,7 @@ corresponds to predicate transformation with a projection channel.
 
 \paragraph{Swapping} Sometimes it is convenient when wires
 can cross. There is a \pythoninline{swap}
-channel\index{swap~channel!quantum~---}\index{channel!quantum~swap~--}
+channel\index{swap~channel!quantum~--}\index{channel!quantum~swap~--}
 that can do this, but only for qubits. Its type is \pythoninline{[2,2]
   -> [2,2]}. Here are some simple examples.
 \begin{python}

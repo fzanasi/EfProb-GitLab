@@ -6,7 +6,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-03-20
+# Date: 2017-03-27
 #
 from efprob_dc import *
 from math import *
@@ -147,6 +147,26 @@ def state_pred_transformation():
         # s.plot()
     print( chan >> s )
     print( s.expectation(randvar_fromfun(lambda r: r, bias_dom)) )
+
+    print("\n===\n")
+
+    print("* Advertisement analysis")
+    N = 50
+    c = chan_fromklmap(lambda r: binomial(N, r), R(0,1), range(N+1))
+    prior = uniform_state(R(0,1))
+    scoreA = 18
+    scoreB = 27
+    postA = prior / (c << point_pred(scoreA, range(N+1)))
+    postB = prior / (c << point_pred(scoreB, range(N+1)))
+    #postA.plot()
+    #postB.plot()
+    profitA = randvar_fromfun(lambda x: x * 100 - N * 10, range(N+1))
+    profitB = randvar_fromfun(lambda x: x * 100 - N * 30, range(N+1))
+    print("Profit for campaign A: ", (c >> postA).expectation(profitA))
+    print("Profit for campaign B: ", (c >> postB).expectation(profitB))
+    print( postA >= (c << profitA) )
+    print( postB >= (c << profitB) )
+
 
 
 def all():
