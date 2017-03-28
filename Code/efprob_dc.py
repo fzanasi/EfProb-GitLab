@@ -1258,6 +1258,12 @@ def instr(p):
     return (p.as_chan() @ idn(p.dom)) * copy(p.dom)
 
 
+def asrt(p):
+    if p.dom.iscont:
+        raise ValueError("Cannot make a continuous assert channel")
+    return Channel(np.diagflat(p.array), p.dom, p.dom)
+
+
 def case_channel(*channels, case_dom=None):
     if not channels:
         raise ValueError("Number of channels must be > 0")
