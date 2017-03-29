@@ -1218,7 +1218,7 @@ def discard(dom):
     dom_shape = tuple(len(s) for s in dom.disc)
     if dom.iscont:
         array = np.full(dom_shape,
-                        Fun2(lambda xs, _: 1.0, dom.cont, []),
+                        Fun2(lambda xs, *_: 1.0, dom.cont, []),
                         dtype=object)
     else:
         array = np.ones(dom_shape)
@@ -1233,9 +1233,11 @@ def swap(dom1, dom2):
     size1 = _prod(len(s) for s in dom1)
     size2 = _prod(len(s) for s in dom2)
     array = np.zeros((size2, size1, size1, size2))
-    for n1 in range(size1):
-        for n2 in range(size2):
-            array[n2, n1, n1, n2] = 1.0
+    np.einsum('ijji->ij', array)[:] = 1.0
+    # This is same as
+    # for j in range(size1):
+    #     for i in range(size2):
+    #         array[i,j,j,i] = 1.0
     return Channel(array, dom1+dom2, dom2+dom1)
 
 
@@ -1283,6 +1285,27 @@ def case_channel(*channels, case_dom=None):
         array[(slice(None),)*len(cod_shape)
               + (i,) + (...,)] = c.array
     return Channel(array, case_dom + dom, cod)
+
+
+def tuple_channel(chan1, chan2):
+    if chan1.dom != chan2.dom:
+        raise ValueError("Domains must be the same")
+    dom = chan1.dom
+    if not chan1.iscont and not chan2.iscont:
+        # `outer` for each column
+        array = np.einsum('ik,jk->ijk',
+                          chan1.array.reshape(chan1.cod_size,
+                                              chan1.dom_size),
+                          chan2.array.reshape(chan2.cod_size,
+                                              chan2.dom_size))
+        return Channel(array, dom, chan1.cod + chan2.cod)
+    # In other cases, we use `Channel.fromklmap`
+    return Channel.fromklmap(lambda *args: chan1(*args) @ chan2(*args),
+                             dom, chan1.cod + chan2.cod)
+
+
+def ifthenelse(pred, chan1, chan2):
+    return case_channel(chan1, chan2, case_dom=bool_dom) * instr(pred)
 
 
 def predicates_from_channel(c):
