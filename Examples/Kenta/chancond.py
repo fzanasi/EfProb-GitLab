@@ -37,8 +37,14 @@ class ChanCond:
 
     def run(self, state=ep.State(1, [])):
         s = self.chan >> state
-        s = s / (ep.yes_pred @ truth(self.cod))
-        return s % [0, 1]
+        s = s.totalmass() * (s / (ep.yes_pred @ truth(self.cod)))
+        return s % ([0] + [1] * len(self.cod))
+
+    def run2(self, state=ep.State(1, [])):
+        s = self.chan >> state
+        sp = ep.asrt(ep.yes_pred @ truth(self.cod)) >> s
+        sp = (1 /(sp.totalmass() + 1 - s.totalmass())) * sp
+        return sp % ([0] + [1] * len(self.cod))
 
 
 def embed(chan):
@@ -76,85 +82,109 @@ def prob_choice(r, cc1, cc2):
     dom = cc1.dom
     return ifthenelse(r * truth(dom), cc1, cc2)
 
+def abort(dom, cod):
+    return embed(ep.abort(dom, cod))
 
-# Examples
 
-bnd = ep.bnd
-c = ep.cpt(0.2, 0.5, 0.7, 1)
-d = ep.cpt(0.3, 0.9)
-s1 = random_state(bnd)
-s2 = random_state(bnd)
-p1 = random_pred(bnd)
-p2 = random_pred(bnd)
 
-print( d >> ((c >> ((s1 / p1) @ s2)) / p2) )
+def examples():
+    bnd = ep.bnd
+    c = ep.cpt(0.2, 0.5, 0.7, 1)
+    d = ep.cpt(0.3, 0.9)
+    s1 = random_state(bnd)
+    s2 = random_state(bnd)
+    p1 = random_pred(bnd)
+    p2 = random_pred(bnd)
 
-print(
-    seq(observe(p1 @ truth(bnd)),
-        embed(c),
-        observe(p2),
-        embed(d)
-    ).run(s1 @ s2)
-)
+    print( d >> ((c >> ((s1 / p1) @ s2)) / p2) )
 
-print(
-    seq(prob_choice(0.4,
-                    new(point_state(0, range(2))),
-                    new(point_state(1, range(2)))),
-        observe(point_pred(0, range(2)))
-    ).run()
-)
+    print(
+        seq(observe(p1 @ truth(bnd)),
+            embed(c),
+            observe(p2),
+            embed(d)
+        ).run(s1 @ s2)
+    )
 
-print(
-    seq(prob_choice(0.4,
-                    seq(new(point_state(0, range(2))),
-                        observe(point_pred(0, range(2)))),
-                    seq(new(point_state(1, range(2))),
-                        observe(point_pred(0, range(2))))),
-    ).run()
-)
+    print(
+        seq(prob_choice(0.4,
+                        new(point_state(0, range(2))),
+                        new(point_state(1, range(2)))),
+            observe(point_pred(0, range(2)))
+        ).run()
+    )
 
-disease_dom = ['D', '~D']
-mood_dom = ['M', '~M']
-inital_state = State([0.05, 0.5, 0.4, 0.05], [disease_dom, mood_dom])
+    print(
+        seq(prob_choice(0.4,
+                        seq(new(point_state(0, range(2))),
+                            observe(point_pred(0, range(2)))),
+                        seq(new(point_state(1, range(2))),
+                            observe(point_pred(0, range(2))))),
+        ).run()
+    )
 
-print(
+    disease_dom = ['D', '~D']
+    mood_dom = ['M', '~M']
+    inital_state = State([0.05, 0.5, 0.4, 0.05], [disease_dom, mood_dom])
+
+    print(
+        seq(
+            ifthenelse(point_pred('D', disease_dom) @ truth(mood_dom),
+                       idn([disease_dom, mood_dom]) @ new(flip(9/10)),
+                       idn([disease_dom, mood_dom]) @ new(flip(1/20))),
+            idn([disease_dom, mood_dom]) @ observe(point_pred(True, bool_dom)),
+            discard(disease_dom) @ idn(mood_dom) @ discard(bool_dom)
+        ).run(inital_state)
+    )
+
+    # Use prob_choice and point_state instead
+
+    # Syntax sugar
+    def newflip(r):
+        return prob_choice(r,
+                           new(point_state(True, bool_dom)),
+                           new(point_state(False, bool_dom)))
+
+    print(
+        seq(
+            ifthenelse(point_pred('D', disease_dom) @ truth(mood_dom),
+                       idn([disease_dom, mood_dom]) @ newflip(9/10),
+                       idn([disease_dom, mood_dom]) @ newflip(1/20)),
+            idn([disease_dom, mood_dom]) @ observe(point_pred(True, bool_dom)),
+            discard(disease_dom) @ idn(mood_dom) @ discard(bool_dom)
+        ).run(inital_state)
+    )
+
+    # Fish example
+
+    fish_dom = [20 * (i+1) for i in range(15)]
+
     seq(
-        ifthenelse(point_pred('D', disease_dom) @ truth(mood_dom),
-                   idn([disease_dom, mood_dom]) @ new(flip(9/10)),
-                   idn([disease_dom, mood_dom]) @ new(flip(1/20))),
-        idn([disease_dom, mood_dom]) @ observe(point_pred(True, bool_dom)),
-        discard(disease_dom) @ idn(mood_dom) @ discard(bool_dom)
-    ).run(inital_state)
-)
+        new(uniform_state(fish_dom)),
+        newsample(chan_fromklmap(lambda fish_num:
+                                 ep.binomial(20, 20 / fish_num),
+                                 fish_dom, range(21))),
+        idn(fish_dom) @ observe(point_pred(5, range(21))),
+        idn(fish_dom) @ discard(range(21))
+    ).run().plot()
 
-# Use prob_choice and point_state instead
 
-# Syntax sugar
-def newflip(r):
-    return prob_choice(r,
-                       new(point_state(True, bool_dom)),
-                       new(point_state(False, bool_dom)))
+# Example from Katoen's paper / slide
 
-print(
-    seq(
-        ifthenelse(point_pred('D', disease_dom) @ truth(mood_dom),
-                   idn([disease_dom, mood_dom]) @ newflip(9/10),
-                   idn([disease_dom, mood_dom]) @ newflip(1/20)),
-        idn([disease_dom, mood_dom]) @ observe(point_pred(True, bool_dom)),
-        discard(disease_dom) @ idn(mood_dom) @ discard(bool_dom)
-    ).run(inital_state)
-)
+cc = prob_choice(0.5,
+                 abort([], [0,1]),
+                 seq(prob_choice(0.5,
+                                 new(point_state(0, [0,1])),
+                                 new(point_state(1, [0,1]))),
+                     prob_choice(0.5,
+                                 idn([0,1]) @ new(point_state(0, [0,1])),
+                                 idn([0,1]) @ new(point_state(1, [0,1]))),
+                     observe(pred_fromfun(lambda x, y: x == 0 or y == 0,
+                                          [[0,1], [0,1]])),
+                     discard([0,1]) @ idn([0,1])))
 
-# Fish example
+# >>> cc.chan()
+# 0.25|True,0> + 0.125|True,1> + 0|False,0> + 0.125|False,1>
 
-fish_dom = [20 * (i+1) for i in range(15)]
-
-seq(
-    new(uniform_state(fish_dom)),
-    newsample(chan_fromklmap(lambda fish_num:
-                             ep.binomial(20, 20 / fish_num),
-                             fish_dom, range(21))),
-    idn(fish_dom) @ observe(point_pred(5, range(21))),
-    idn(fish_dom) @ discard(range(21))
-).run().plot()
+print(cc.run()) # gives 0.333|0> + 0.167|1>
+print(cc.run2()) # gives 0.286|0> + 0.143|1>

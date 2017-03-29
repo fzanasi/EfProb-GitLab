@@ -601,12 +601,15 @@ class State(StateLike):
     def __ge__(self, pred):
         return self.validity(pred)
 
+    def totalmass(self):
+        """Total mass of the (improper) state"""
+        if self.dom.iscont:
+            return Fun.vect_integrate(self.array).sum()
+        return self.array.sum()
+
     def normalize(self):
         """Normalize the improper state."""
-        if self.dom.iscont:
-            v = Fun.vect_integrate(self.array).sum()
-        else:
-            v = self.array.sum()
+        v = self.totalmass()
         if v == 0:
             raise NormalizationError("Total mass is zero")
         if math.isinf(v) and v > 0:
@@ -1218,10 +1221,27 @@ def discard(dom):
     dom_shape = tuple(len(s) for s in dom.disc)
     if dom.iscont:
         array = np.full(dom_shape,
-                        Fun2(lambda xs, *_: 1.0, dom.cont, []),
+                        Fun2(lambda xs, _: 1.0, dom.cont, []),
                         dtype=object)
     else:
         array = np.ones(dom_shape)
+    return Channel(array, dom, cod)
+
+
+def abort(dom, cod):
+    dom = asdom(dom)
+    cod = asdom(cod)
+    dom_shape = tuple(len(s) for s in dom.disc)
+    cod_shape = tuple(len(s) for s in cod.disc)
+    shape = cod_shape + dom_shape
+    if dom.iscont or cod.iscont:
+        array = np.full(shape,
+                        Fun2(lambda xs, ys: 0.0,
+                             [empty]*len(dom.cont),
+                             [empty]*len(cod.cont)),
+                        dtype=object)
+    else:
+        array = np.zeros(shape)
     return Channel(array, dom, cod)
 
 
