@@ -37,14 +37,8 @@ class ChanCond:
 
     def run(self, state=ep.State(1, [])):
         s = self.chan >> state
-        s = s.totalmass() * (s / (ep.yes_pred @ truth(self.cod)))
+        s = s.partial_conditional(ep.yes_pred @ truth(self.cod))
         return s % ([0] + [1] * len(self.cod))
-
-    def run2(self, state=ep.State(1, [])):
-        s = self.chan >> state
-        sp = ep.asrt(ep.yes_pred @ truth(self.cod)) >> s
-        sp = (1 /(sp.totalmass() + 1 - s.totalmass())) * sp
-        return sp % ([0] + [1] * len(self.cod))
 
 
 def embed(chan):
@@ -186,5 +180,4 @@ cc = prob_choice(0.5,
 # >>> cc.chan()
 # 0.25|True,0> + 0.125|True,1> + 0|False,0> + 0.125|False,1>
 
-print(cc.run()) # gives 0.333|0> + 0.167|1>
-print(cc.run2()) # gives 0.286|0> + 0.143|1>
+print(cc.run())

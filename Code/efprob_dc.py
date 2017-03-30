@@ -628,6 +628,19 @@ class State(StateLike):
         except NormalizationError as e:
             raise NormalizationError("Conditioning failed: {}".format(e)) from None
 
+    def partial_conditional(self, pred):
+        """Return a conditional state."""
+        check_dom_match(self.dom, pred.dom)
+        array = self.array * pred.array
+        if self.dom.iscont:
+            v = Fun.vect_integrate(array).sum()
+        else:
+            v = array.sum()
+        v = v + (1 - self.totalmass())
+        if v <= 0 or math.isinf(v) or math.isnan(v):
+            raise ValueError("Denominator for conditioning is invalid")
+        return State(array / v, self.dom)
+
     def __truediv__(self, pred):
         return self.conditional(pred)
 
