@@ -6,7 +6,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-03-27
+# Date: 2017-03-31
 #
 from efprob_dc import *
 from math import *
@@ -460,7 +460,7 @@ def state_pred_transformation():
     print( chan )
     posterior = prior / (chan << point_pred(5, range(N+1)))
     print( posterior.expectation() )
-    posterior.plot()
+    #posterior.plot()
 
     print("\n===\n")
 
@@ -685,7 +685,7 @@ def all():
     bayesian_networks()
 
 def main():
-    #all()
+    all()
     #states()
     #operations_on_states()
     #excursion()
@@ -694,7 +694,7 @@ def main():
     # expectation()
     #covariance()
     #channels()
-    state_pred_transformation()
+    #state_pred_transformation()
     #structural_channels()
     #bayesian_networks()
 

@@ -2524,15 +2524,6 @@ likelihoods of the various numbers of fish in the pond.
 \begin{center}
 \includegraphics[width=30em]{Pictures/capture-recapture.png} 
 \end{center}
-
-\noindent Finally, a more systematic way to define the above channel
-is to use the pre-defined binomial\index{binomial~distribution} state,
-and extract its value at $5$, via the \pythoninline{getvalue} method,
-as in:
-\begin{python}
->>> chan = chan_fromklmap(lambda d: flip(binomial(20, 20/d).getvalue(5)),
-...                       fish_domain, bool_dom)
-\end{python}
 \end{example}
 
 
