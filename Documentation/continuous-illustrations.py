@@ -146,7 +146,7 @@ def state_pred_transformation():
         s = s / (chan << pred)
         # s.plot()
     print( chan >> s )
-    print( s.expectation(randvar_fromfun(lambda r: r, bias_dom)) )
+    print( s.expectation() )
 
     print("\n===\n")
 
@@ -166,7 +166,8 @@ def state_pred_transformation():
     print("Profit for campaign B: ", (c >> postB).expectation(profitB))
     print( postA >= (c << profitA) )
     print( postB >= (c << profitB) )
-
+    print( scoreA * 100 - N * 10 )
+    print( scoreB * 100 - N * 30 )
 
 
 def all():

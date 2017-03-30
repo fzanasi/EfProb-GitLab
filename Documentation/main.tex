@@ -2483,40 +2483,29 @@ another twenty, and find out that five of them are marked. What do we
 learn about the number of fish?
 
 The number of fish in the pond must be at least 20. Let's assume the
-maximal number is 300. We will be considering units of 20 fish. Hence
+maximal number is 300. We will be considering units of 10 fish. Hence
 the domain we are looking at, with the uniform `prior' state, is:
 \begin{python}
->>> fish_domain = [20 * (i+1) for i in range(15)]
+>>> fish_domain = [10 * (i+2) for i in range(29)]
 >>> fish_domain
-[20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300]
+[20, 30, 40, 50, 60, 70, 80, ..., 280, 290, 300]
 >>> prior = uniform_state(fish_domain)
 \end{python}
 
 \noindent We now assume that 20 of the fish in the pond are marked. We
-can then compute for each value $20, 40, \ldots$ in the fish domain
-the probability of finding 5 marked fish when 20 of them are
+can then compute for each value $20, 30, 40, \ldots$ in the fish
+domain the probability of finding 5 marked fish when 20 of them are
 caught. In order not to complicate the calculations too much, we catch
 these 20 fish one by one, check if they are marked, and then throw
 them back. This means that the probability of catching a marked fish
 remains the same, and is described by a binomial distribution with
 parameters $N=20$ and probability $p = \frac{d}{20}$, where $d$ is a
-domain value. The probability of finding $5$ marked fishes among
-$20$ is then given by:
-$$\begin{array}{rcl}
-{{20}\choose{5}}\cdot p^{5}\cdot (1-p)^{20-5}
-& = &
-15504 \cdot p^{5} \cdot (1-p)^{15}.
-\end{array}$$
-
-\noindent We first define the probability function, and then use it to
-form a channel, from the fish domain to the boolean domain.
+domain value. This is incorporated in the following channel, from the
+fish domain to the boolean domain.
 \begin{python}
->>> def catch5prob(fish_num):
-...     p = 20 / fish_num 
-...     return 15504 * (p ** 5) * ((1-p) ** 15)
->>> chan = chan_fromklmap(lambda d: flip(catch5prob(d)), fish_domain, bool_dom)
+>>> chan = chan_fromklmap(lambda d: binomial(N, N/d), fish_domain, range(N+1))
 >>> chan
-Channel of type: [20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300] --> [True, False]
+Channel of type: [20, 30, 40, 50, 60, 70, 80, ..., 280, 290, 300] --> range(0, 21)
 \end{python}
 
 \noindent Once this is set up, the action can start. We construct
@@ -2524,9 +2513,9 @@ a posterior state by updating the prior with the information that
 five marked fish have been found. The latter is expressed via
 a transformed predicate, as below.
 \begin{python}
->>> posterior = prior / (chan << yes_pred)
+>>> posterior = prior / (chan << point_pred(5, range(N+1)))
 >>> posterior.expectation()
-116.933797653
+116.491929836
 >>> posterior.plot()
 \end{python}
 
@@ -4033,7 +4022,7 @@ above loop the best bias of the coin:
 \begin{python}
 >>> chan >> s
 0.6|True> + 0.4|False>
->>> s.expectation(randvar_fromfun(lambda r: r, bias_dom))
+>>> s.expectation()
 0.6
 \end{python}
 
@@ -4072,6 +4061,9 @@ the discrete case in Example~\ref{ex:dcoinparameter}.
 We include a similar parameter learning example, in a different
 context.
 
+%
+% Adapted from:
+% http://www.sumsar.net/blog/2017/02/introduction-to-bayesian-data-analysis-part-two/
 
 \begin{example}
 \label{ex:advertisement}
@@ -4127,7 +4119,10 @@ take these profits and costs into account:
 \end{python}
 
 \noindent We see that the net profit of campaign~A is expected to be
-higher than for campaign~B.
+higher than for campaign~B. Of course, we could have seen this
+difference by computing \pythoninline{scoreA*100-N*10} and
+\pythoninline{scoreB*100-N*30}; this yields 1300 and 1200,
+respectively.
 
 As an aside: the latter two expected values can also be
 computed as validities of transformed random variables:

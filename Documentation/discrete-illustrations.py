@@ -452,20 +452,13 @@ def state_pred_transformation():
     print("\n===\n")
 
     print("* Capture recapture example")
-    fish_domain = [20 * (i+1) for i in range(15)]
+    N = 20
+    fish_domain = [10 * (i+2) for i in range(29)]
     print( fish_domain )
     prior = uniform_state(fish_domain)
-    def catch5prob(fish_num):
-        p = 20 / fish_num 
-        return 15504 * (p ** 5) * ((1-p) ** 15)
-    chan = chan_fromklmap(lambda d: flip(catch5prob(d)), fish_domain, bool_dom)
-    # Alternatively, using the predefined binomial distribution
-    # chan = chan_fromklmap(lambda x: flip(binomial(20, 20/x).getvalue(5)),
-    #                       fish_domain,
-    #                       bool_dom)
-
+    chan = chan_fromklmap(lambda d: binomial(N, N/d), fish_domain, range(N+1))
     print( chan )
-    posterior = prior / (chan << yes_pred)
+    posterior = prior / (chan << point_pred(5, range(N+1)))
     print( posterior.expectation() )
     posterior.plot()
 
@@ -692,7 +685,7 @@ def all():
     bayesian_networks()
 
 def main():
-    all()
+    #all()
     #states()
     #operations_on_states()
     #excursion()
@@ -701,7 +694,7 @@ def main():
     # expectation()
     #covariance()
     #channels()
-    #state_pred_transformation()
+    state_pred_transformation()
     #structural_channels()
     #bayesian_networks()
 
