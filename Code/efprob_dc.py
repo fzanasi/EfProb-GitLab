@@ -598,6 +598,10 @@ class State(StateLike):
         """Return the validity of a predicate."""
         return self.expectation(pred)
 
+    def liberal_validity(self, pred):
+        """Return the liberal validity of a predicate."""
+        return self.validity(pred) + (1 - self.totalmass())
+
     def __ge__(self, pred):
         return self.validity(pred)
 
@@ -628,8 +632,8 @@ class State(StateLike):
         except NormalizationError as e:
             raise NormalizationError("Conditioning failed: {}".format(e)) from None
 
-    def partial_conditional(self, pred):
-        """Return a conditional state."""
+    def liberal_conditional(self, pred):
+        """Return a liberal conditional state."""
         check_dom_match(self.dom, pred.dom)
         array = self.array * pred.array
         if self.dom.iscont:
