@@ -15,6 +15,7 @@ from math import inf
 import math
 import collections
 import random
+import warnings
 
 import numpy as np
 import scipy.integrate as integrate
@@ -750,10 +751,17 @@ class State(StateLike):
         cod = Dom(cod)
         s = self % selectors
         def f(*x):
+            m = s.getvalue(*x)
+            if m < 0 or math.isinf(m) or math.isnan(m):
+                raise ValueError("Invalid value during disintegration")
+            if m == 0:
+                warnings.warn("Encountered 0 during disintegration; produces a subprobability channel",
+                              RuntimeWarning)
+                return const_state_or_pred(State, 0.0, cod)
             def g(*y):
                 xi, yi = iter(x), iter(y)
                 args = [next(xi) if s else next(yi) for s in selectors]
-                return self.getvalue(*args) / s.getvalue(*x)
+                return self.getvalue(*args) / m
             return State.fromfun(g, cod)
         return Channel.fromklmap(f, dom, cod)
 
