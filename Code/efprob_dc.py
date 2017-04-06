@@ -757,7 +757,7 @@ class State(StateLike):
             if m == 0:
                 warnings.warn("Encountered 0 during disintegration; produces a subprobability channel",
                               RuntimeWarning)
-                return const_state_or_pred(State, 0.0, cod)
+                return const_statelike(State, 0.0, cod)
             def g(*y):
                 xi, yi = iter(x), iter(y)
                 args = [next(xi) if s else next(yi) for s in selectors]
@@ -1448,7 +1448,7 @@ def flip(r, dom=bool_dom):
     return State([r, 1.0-r], [dom])
 
 
-def const_state_or_pred(cls, value, subdom, dom=None):
+def const_statelike(cls, value, subdom, dom=None):
     subdom = asdom(subdom)
     if dom is None:
         dom = subdom
@@ -1486,11 +1486,11 @@ def uniform_state(subdom, dom=None):
     if not math.isfinite(vol):
         raise ValueError("Unbounded domain")
     value = 1.0 / (size * vol)
-    return const_state_or_pred(State, value, subdom, dom)
+    return const_statelike(State, value, subdom, dom)
 
 
 def const_pred(value, subdom, dom=None):
-    return const_state_or_pred(Predicate, value, subdom, dom)
+    return const_statelike(Predicate, value, subdom, dom)
 
 
 def event(subdom, dom):
@@ -1502,9 +1502,9 @@ def point_state(point, dom):
     if dom.iscont:
         raise ValueError("Cannot create a continuous point state")
     if isinstance(point, tuple):
-        return const_state_or_pred(State, 1.0,
-                                   [[p] for p in point], dom)
-    return const_state_or_pred(State, 1.0, [point], dom)
+        return const_statelike(State, 1.0,
+                               [[p] for p in point], dom)
+    return const_statelike(State, 1.0, [point], dom)
 
 def point_pred(point, dom):
     dom = asdom(dom)
