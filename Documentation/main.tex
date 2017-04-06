@@ -2373,7 +2373,7 @@ pulled back predicate \pythoninline{c << p} has probabilities:
 \begin{equation}
 \label{eqn:discpredtransf}
 \begin{array}{rcl}
-$(p^{T}\cdot M)_{i} = \sum_{j} p_{j}\cdot M_{ij}.
+(p^{T}\cdot M)_{i} = \sum_{j} p_{j}\cdot M_{ij}.
 \end{array}
 \end{equation}
 
@@ -2581,7 +2581,13 @@ We check what the consequences of seeing another lime candy.
 \noindent Below we plot the prior bag probabilities, followed by the
 the updated probabilities after seeing one and two lime candies.
 \begin{center}
-\includegraphics[width=10em]{Pictures/figure_1.png} 
+\begin{tabular}{ccc}
+\includegraphics[width=14em]{Pictures/candybag1.png} 
+&
+\includegraphics[width=14em]{Pictures/candybag2.png} 
+&
+\includegraphics[width=14em]{Pictures/candybag3.png} 
+\end{tabular}
 \end{center}
 \end{example}
 
@@ -2599,7 +2605,7 @@ positive; but if someone does not have the disease, there is stil a
 $5\%$ chance that the test is positive.
 \begin{python}
 >>> disease_domain = ['D', '~D']
->>> prior = State([1/100, 99/100], disease_domain)
+>>> prior = flip(1/100, disease_domain)
 >>> disease_pred = Predicate([1,0], disease_domain)
 >>> prior
 0.01|D> + 0.99|~D>
@@ -2615,10 +2621,17 @@ $5\%$ chance that the test is positive.
 \end{python}
 
 \noindent The channel can be seen as a map \pythoninline{sensitivity :
-  disease\_domain -> test\_domain}. We first use the channel to
-compute the probability that a test for an arbitrary person is
-positive. This is done via \emph{state transformation}, using the
-operator \pythoninline{>>}, as in:
+  disease\_domain -> test\_domain}. Here we use the description of
+the channel via a stochastic matrix. The same channel, in the style
+of Example~\ref{ex:candy}, can be defined as:
+\begin{python}
+>>> sensitivity = chan_from_states([flip(9/10, test_domain),
+...                                 flip(1/20, test_domain)], disease_domain)
+\end{python}
+
+\noindent We first use the channel to compute the probability that a
+test for an arbitrary person is positive. This is done via \emph{state
+  transformation}, using the operator \pythoninline{>>}, as in:
 \begin{python}
 >>> sensitivity >> prior
 0.0585|T> + 0.942|~T>

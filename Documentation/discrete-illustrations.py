@@ -6,7 +6,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-03-31
+# Date: 2017-04-06
 #
 from efprob_dc import *
 from math import *
@@ -461,21 +461,24 @@ def state_pred_transformation():
     s2 = s1 / (chan << lime_pred)
     print( s2 )
     print( chan >> s2 )
-    prior.plot()
-    s1.plot()
-    s2.plot()
+    #prior.plot()
+    #s1.plot()
+    #s2.plot()
 
     print("\n===\n")
 
     print("* Disease-test")
     disease_domain = ['D', '~D']
-    prior = State([1/100, 99/100], disease_domain)
+    prior = flip(1/100, disease_domain)
     disease_pred = Predicate([1,0], disease_domain)
 
     test_domain = ['T', '~T']
     test_pred = Predicate([1,0], test_domain)
     sensitivity = Channel([[9/10, 1/20], 
                            [1/10, 19/20]], disease_domain, test_domain)
+    #sensitivity = chan_from_states([flip(9/10, test_domain),
+    #                                flip(1/20, test_domain)], disease_domain)
+
     print( sensitivity.dom )
     print( sensitivity.cod )
     print( sensitivity.array )
@@ -720,7 +723,7 @@ def all():
     bayesian_networks()
 
 def main():
-    #all()
+    all()
     #states()
     #operations_on_states()
     #excursion()
@@ -729,7 +732,7 @@ def main():
     # expectation()
     #covariance()
     #channels()
-    state_pred_transformation()
+    #state_pred_transformation()
     #structural_channels()
     #bayesian_networks()
 
