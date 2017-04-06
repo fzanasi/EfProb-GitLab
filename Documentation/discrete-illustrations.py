@@ -432,6 +432,41 @@ def state_pred_transformation():
 
     print("\nSubsection: State and predicate transformation\n")
 
+    print("* Candy example")
+    candy_dom = ['cherry', 'lime']
+    bag_dom = ['h1', 'h2', 'h3', 'h4', 'h5']
+    prior = State([0.1, 0.2, 0.4, 0.2, 0.1], bag_dom)
+    print( prior )
+    chan = chan_from_states([flip(1, candy_dom),
+                             flip(0.75, candy_dom),
+                             flip(0.5, candy_dom),
+                             flip(0.25, candy_dom),
+                             flip(0.0, candy_dom)], bag_dom)
+    print( chan )
+    print("State transformation")
+    print( chan >> prior )
+    print( chan >> point_state('h2', bag_dom) )
+    print( chan('h2') )
+    print( chan >> uniform_state(bag_dom) )
+    print("Predicate transformation")
+    lime_pred = point_pred('lime', candy_dom)
+    print( lime_pred )
+    print( chan << lime_pred )
+    print( chan << ~lime_pred )
+    print( chan << 0.5 * ~lime_pred + 0.2 * lime_pred )
+    print("Updating")
+    print( prior / (chan << lime_pred) )
+    s1 = prior / (chan << lime_pred)
+    print( chan >> s1 )
+    s2 = s1 / (chan << lime_pred)
+    print( s2 )
+    print( chan >> s2 )
+    prior.plot()
+    s1.plot()
+    s2.plot()
+
+    print("\n===\n")
+
     print("* Disease-test")
     disease_domain = ['D', '~D']
     prior = State([1/100, 99/100], disease_domain)
@@ -453,7 +488,7 @@ def state_pred_transformation():
 
     print("* Capture recapture example")
     N = 20
-    fish_domain = [10 * (i+2) for i in range(29)]
+    fish_domain = [10 * i for i in range(2, 31)]
     print( fish_domain )
     prior = uniform_state(fish_domain)
     chan = chan_fromklmap(lambda d: binomial(N, N/d), fish_domain, range(N+1))
@@ -685,7 +720,7 @@ def all():
     bayesian_networks()
 
 def main():
-    all()
+    #all()
     #states()
     #operations_on_states()
     #excursion()
@@ -694,7 +729,7 @@ def main():
     # expectation()
     #covariance()
     #channels()
-    #state_pred_transformation()
+    state_pred_transformation()
     #structural_channels()
     #bayesian_networks()
 

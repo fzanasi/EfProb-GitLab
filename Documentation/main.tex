@@ -2260,6 +2260,8 @@ There are several ways to understand
 channels,\index{channel!discrete~--} in discrete probability, namely
 as:
 \begin{itemize}
+\item indexed collections of states;
+
 \item stochastic matrices;
 
 \item probabilistic transition systems;
@@ -2348,7 +2350,15 @@ $\sum_{j}M_{ij} = 1$, for each $i$. Thus, if a state with a domain
 with $n$ elements is given by probabilities $s_{i}$, with
 $\sum_{i}s_{i} = 1$, then state transformation can be described as
 $M\cdot s$, that is, as application of the matrix $M$ to the state
-$s$. Explicitly, $(M\cdot s)_{j} = \sum_{i} M_{ij}\cdot s_{i}$.
+$s$. Explicitly, 
+\begin{equation}
+\label{eqn:discstatetransf}
+\begin{array}{rcl}
+(M\cdot s)_{j}
+& = &
+\sum_{i} M_{ij}\cdot s_{i}.
+\end{array}
+\end{equation}
 
 Predicate transformation works in the other direction. If a predicate
 \pythoninline{p} has a domain \pythoninline{p.dom} that is equal to
@@ -2359,8 +2369,13 @@ precondition\index{weakest~precondition!for~discrete~predicates} of
 \pythoninline{p} along \pythoninline{c}.  If the channel
 \pythoninline{c} has a matrix $M$ as in the previous paragraph, and
 predicate \pythoninline{p} involves probabilities $p_j$, then the
-pulled back predicate \pythoninline{c << p} has probabilities
-$(p^{T}\cdot M)_{i} = \sum_{j} p_{j}\cdot M_{ij}$.
+pulled back predicate \pythoninline{c << p} has probabilities:
+\begin{equation}
+\label{eqn:discpredtransf}
+\begin{array}{rcl}
+$(p^{T}\cdot M)_{i} = \sum_{j} p_{j}\cdot M_{ij}.
+\end{array}
+\end{equation}
 
 The following general result will be illustrated in
 Example~\ref{ex:diseasetest} below. It shows how state- and
@@ -2376,9 +2391,205 @@ s \models c \ll p.
 \end{equation}
 
 
+State and predicate transformation are extremely useful operations.
+This will be illustrated in a series of examples. The first example
+below describes in detail how this works, and is hopefully useful for
+readers who have not seen channels
+before.\marginnote{Example~\ref{ex:candy} is copied from a lecture
+  ``Learning Bayesian Networks'' of Peter Szolovits.}
+
+% Homepage Peter Szolovits:
+% http://groups.csail.mit.edu/medg/people/psz/home/Pete_MEDG_site/Home.html
+
+% Copied from
+% https://ocw.mit.edu/courses/health-sciences-and-technology/hst-950j-biomedical-computing-fall-2010/lectures-and-readings/MITHST_950JF10_lec17.pdf
+% on:
+% https://ocw.mit.edu/courses/health-sciences-and-technology/hst-950j-biomedical-computing-fall-2010/lectures-and-readings/
+
+% See also:
+% https://www.microsoft.com/en-us/research/publication/a-tutorial-on-learning-with-bayesian-networks/?from=http%3A%2F%2Fresearch.microsoft.com%2Fapps%2Fpubs%2Fdefault.aspx%3Fid%3D69588
+
+\begin{example}
+\label{ex:candy}
+Imagine a company to produces to flavours of candy, namely
+\textit{cherry} and \textit{lime}. They are sold together in bags
+with the following labels and mixtures:
+\begin{description}
+\item[\textbf{h1}] 100\% cherry
+\item[\textbf{h2}] 75\% cherry, 25\% lime
+\item[\textbf{h3}] 50\% cherry, 50\% lime
+\item[\textbf{h4}] 25\% cherry, 75\% lime
+\item[\textbf{h5}] 100\% lime.
+\end{description} 
+
+\noindent The prevalence of these five bags is $(0.1, 0.2, 0.4, 0.2,
+0.1)$ respectively.
+
+We will be interested in the probabilities of these bags, given
+certain candies. Before posing and answering such questions precisely,
+we first model the situation. It is important to recognise a prior
+distribution and a channel in the above data.
+
+First we formalise the domain and prior distribution for the bags.
+\begin{python}
+>>> candy_dom = ['cherry', 'lime']
+>>> bag_dom = ['h1', 'h2', 'h3', 'h4', 'h5']
+>>> prior = State([0.1, 0.2, 0.4, 0.2, 0.1], bag_dom)
+>>> prior
+0.1|h1> + 0.2|h2> + 0.4|h3> + 0.2|h4> + 0.1|h5>
+\end{python}
+
+\noindent The above listing h1 -- h5 gives for each bag a probability
+distribution over `cherry' and `lime'. For instance, for bag h1 it is
+\pythoninline{flip(1, candy\_dom)} and for h2 it is
+\pythoninline{flip(0.75, candy\_dom)}, \etc The above listing thus
+gives an bag-indexed collection of such states on
+\pythoninline{candy\_dom}. Such a collection of states, all with the
+same domain, can be represented as a channel \pythoninline{bag\_dom
+  --> candy\_dom}.  We can formalise this by simply listing these
+states as input for the function \pythoninline{chan\_from\_states}
+that produces a channel, which we call \pythoninline{chan}.
+\begin{python}
+>>> chan = chan_from_states([flip(1, candy_dom),
+...                          flip(0.75, candy_dom),
+...                          flip(0.5, candy_dom),
+...                          flip(0.25, candy_dom),
+...                          flip(0.0, candy_dom)], bag_dom)
+>>> chan
+Channel of type: ['h1', 'h2', 'h3', 'h4', 'h5'] --> ['cherry', 'lime']
+\end{python}
+
+We now ask ourselves the first question: if we pick an arbitrary
+candy, from an arbitrary bag, what is the probability of getting
+`cherry'?
+
+We solve this by taking the sum of the probability of each bag
+multiplied with the probability of getting a cherry in each bag.
+This becomes:
+$$\begin{array}{rcl}
+0.1\cdot 1 + 0.2 \cdot 0.75 + 0.4 \cdot 0.5 + 0.2 \cdot 0.25 + 0.1\cdot 0
+& = &
+0.5.
+\end{array}$$
+
+\noindent This is precisely what is computed in state transformation:
+\begin{python}
+>>> chan >> prior
+0.5|cherry> + 0.5|lime>
+\end{python}
+
+\noindent Thus, state transformation \pythoninline{chan >> prior} by
+the channel \pythoninline{chan} turns the state \pythoninline{prior}
+on \pythoninline{bag\_dom} into a state on
+\pythoninline{candy\_dom}. It does so by summing multiplied
+probabilities as in Equation~\eqref{eqn:discstatetransf}.
+
+We can recover indexed states of the channels via state transformation
+applied to a point state, as below. Alternatively, we can use that
+channels are `callable', and thus accept inputs from
+\pythoninline{bag\_dom} directly:
+\begin{python}
+>>> chan >> point_state('h2', bag_dom)
+0.75|cherry> + 0.25|lime>
+>>> chan('h2')
+0.75|cherry> + 0.25|lime>
+\end{python}
+
+\noindent The probability distribution for candies starting from
+the uniform distribution on bags is computed as:
+\begin{python}
+>>> chan >> uniform_state(bag_dom)
+0.5|cherry> + 0.5|lime>
+\end{python}
+
+\noindent It is thus the same as for the prior distribution.
+
+We now turn to predicate transformation, for the above channel
+\pythoninline{chan}. It transforms predicates on the domain
+\pythoninline{candy\_dom} to predicates on \pythoninline{bag\_dom}.
+Predicate transformation thus works in the opposite direction of the
+channel itself. Here is an example, using the point predicate on 
+\pythoninline{candy\_dom} for `lime'.
+\begin{python}
+>>> lime_pred = point_pred('lime', candy_dom)
+>>> lime_pred
+cherry: 0 | lime: 1
+>>> chan << lime_pred 
+h1: 0 | h2: 0.25 | h3: 0.5 | h4: 0.75 | h5: 1
+\end{python}
+
+\noindent Predicate transformation works like a weakest precondition
+calculation: given that we see, a lime, what is the probability for
+each of the bags from \pythoninline{bag\_dom}? Notice that bag h1
+is impossible, since it contains no lime candies.
+
+Similarly we can compute the likelihoods of the bags given that
+we saw a cherry.
+\begin{python}
+>>> chan << ~lime_pred 
+h1: 1 | h2: 0.75 | h3: 0.5 | h4: 0.25 | h5: 0
+\end{python}
+
+\noindent More interestingly, if we are 50\% sure that we have
+a cherry and 20\% sure that we have a lime, then the likelihoods
+of the bags is:
+we saw a cherry.
+\begin{python}
+>>> chan << 0.5 * ~lime_pred + 0.2 * lime_pred
+h1: 0.5 | h2: 0.425 | h3: 0.35 | h4: 0.275 | h5: 0.2
+\end{python}
+
+\noindent These probabilities are calculated as a sum of products,
+according to formula~\eqref{eqn:discpredtransf}. 
+
+Things really start to become interesting if we involving conditioning
+of states. This brings us into the world of Bayesian reasoning. We aks
+ourselves, into what does our prior distribution change if we see a
+lime candy? This new state is obtained by updating the prior with
+the transformed lime predicate:
+\begin{python}
+>>> prior / (chan << lime_pred)
+0|h1> + 0.1|h2> + 0.4|h3> + 0.3|h4> + 0.2|h5>
+\end{python}
+
+\noindent We see that bag h1 is impossible, h2 has become less likely,
+the probability of h3 is unchanged, and the probabilities of h4 and h5
+have increased. This make sense because h4 and h5 have more lime than
+cherry candies.
+
+We can ask next what the likelihoods of cherry and lime are in this
+new state, if we pick one from an arbitrary bag. For convenience, we
+give the new updated state a name first.
+\begin{python}
+>>> s1 = prior / (chan << lime_pred)
+>>> chan >> s1
+0.35|cherry> + 0.65|lime>
+\end{python}
+
+\noindent Thus, after incorporating the evidence of a lime candy, a
+next lime is more likely than a cherry.
+
+We check what the consequences of seeing another lime candy.
+\begin{python}
+>>> s2 = s1 / (chan << lime_pred)
+>>> s2
+0|h1> + 0.0385|h2> + 0.308|h3> + 0.346|h4> + 0.308|h5>
+>>> chan >> s2 
+0.269|cherry> + 0.731|lime>
+\end{python}
+
+\noindent Below we plot the prior bag probabilities, followed by the
+the updated probabilities after seeing one and two lime candies.
+\begin{center}
+\includegraphics[width=10em]{Pictures/figure_1.png} 
+\end{center}
+\end{example}
+
+
+
 \begin{example}
 \label{ex:diseasetest}
-We start with an illustration of the use of channels, which is typical
+We continue with an illustration of the use of channels, which is typical
 for Bayesian reasoning, taken from\cite{JacobsZ16}.  For explanatary
 reasons we shall be very explicit about the domains involved. The
 setting is given by some disease with a priori probability of
@@ -2486,7 +2697,7 @@ The number of fish in the pond must be at least 20. Let's assume the
 maximal number is 300. We will be considering units of 10 fish. Hence
 the domain we are looking at, with the uniform `prior' state, is:
 \begin{python}
->>> fish_domain = [10 * (i+2) for i in range(29)]
+>>> fish_domain = [10 * i for i in range(2, 31)]
 >>> fish_domain
 [20, 30, 40, 50, 60, 70, 80, ..., 280, 290, 300]
 >>> prior = uniform_state(fish_domain)
@@ -2503,6 +2714,7 @@ parameters $N=20$ and probability $p = \frac{d}{20}$, where $d$ is a
 domain value. This is incorporated in the following channel, from the
 fish domain to the boolean domain.
 \begin{python}
+>>> N = 20
 >>> chan = chan_fromklmap(lambda d: binomial(N, N/d), fish_domain, range(N+1))
 >>> chan
 Channel of type: [20, 30, 40, 50, 60, 70, 80, ..., 280, 290, 300] --> range(0, 21)
