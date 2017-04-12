@@ -114,12 +114,12 @@ def isR(obj):
 
 
 def _ensure_list(dom):
-    if isinstance(dom, (tuple, range, Interval)) or isR(dom):
+    if isinstance(dom, (range, Interval)) or isR(dom):
         return [dom]
     if not isinstance(dom, list):
         raise ValueError("Invalid domain or support")
     if dom and not (isinstance(dom[0],
-                               (list, tuple, range, Interval))
+                               (list, range, Interval))
                     or isR(dom[0])):
         return [dom]
     return dom
