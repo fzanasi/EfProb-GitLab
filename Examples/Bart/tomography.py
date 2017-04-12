@@ -58,7 +58,7 @@ z_tom = chan_fromklmap(lambda th, ph:
 #
 rv1 = randvar_fromfun(lambda x: x, bloch_dom[0]) @ truth(bloch_dom[1])
 rv2 = truth(bloch_dom[0]) @ randvar_fromfun(lambda x: x, bloch_dom[1])
-def exp_coord(s): return [rv1.exp(s), rv2.exp(s)]
+def exp_coord(s): return [s.expectation(rv1), s.expectation(rv2)]
 
 #
 # x/y/z coins in uniform (prior) state
@@ -89,12 +89,12 @@ pred = {
 }
 
 
-sample_size = 10
+sample_size = 15
 th = random.uniform(0,pi)
 ph = random.uniform(0,2*pi)
 
 print("\nArbitrary state, to be learned, with polar coordinates:")
-print(th, ph)
+print("[", th, ph, "]\n")
 
 rx = qu.bloch_state(th, ph) >= qu.x_pred
 ry = qu.bloch_state(th, ph) >= qu.y_pred
@@ -118,11 +118,12 @@ s = prior
 for ob in observations:
     s = s / pred[ob]
 
-print("Expected polar coordinates of the learned state: ", exp_coord(s) )
+print("\nExpected polar coordinates of the learned state:")
+print( exp_coord(s) )
 #print( qu.bloch_state(th, ph) )
 #print( qu.bloch_state(*exp_coord(s)) )
-print("Trace distance between original and learned state: ", 
-      qu.trdist(qu.bloch_state(th, ph), qu.bloch_state(*exp_coord(s))) )
+print("\nTrace distance between original and learned state:")
+print(qu.trdist(qu.bloch_state(th, ph), qu.bloch_state(*exp_coord(s))) )
 
 bloch_plot(s)
 

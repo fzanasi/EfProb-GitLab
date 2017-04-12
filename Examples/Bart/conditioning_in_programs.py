@@ -80,11 +80,15 @@ DISCARD = CC.discard
 OBSERVE = CC.observe
 NEW = CC.new
 
-def ASSIGN_VAL(point, dom):
+def assign_val(point, dom):
     dom = asdom(dom)
     if dom.iscont:
         raise Exception("Cannot assing for continuous domains")
-    return CC.unit(chan_fromklmap(lambda x: point_state(point, dom), dom, dom))
+    return chan_fromklmap(lambda x: point_state(point, dom), dom, dom)
+
+def ASSIGN_VAL(point, dom):
+    return CC.unit(assign_val(point, dom))
+
 
 def ASSING_STATE(stat):
     dom = asdom(stat.dom)
@@ -162,6 +166,41 @@ subprog = d * asrt(p2) * c * (asrt(p1) @ idn(bnd))
 
 print( (subprog >> (s1 @ s2)) / truth(bnd) )
 
+
+def abort(dom):
+    return chan_fromklmap(lambda x,y: 0 * uniform_state(dom), dom, dom)
+
+def ABORT(dom):
+    return CC(point_state(False, bool_dom).as_chan() @ idn(dom))
+
+dom = [range(2), range(2)]
+
+DIVERGE = CONVEX_SUM([(0.5,
+                       ABORT(dom)),
+                      (0.5,
+                       CONVEX_SUM([(0.5,
+                                    ASSIGN_VAL(0, range(2)) @ IDN(range(2))),
+                                   (0.5,
+                                    ASSIGN_VAL(1, range(2)) @ IDN(range(2)))]) \
+                       * \
+                       CONVEX_SUM([(0.5,
+                                    IDN(range(2)) @ ASSIGN_VAL(0, range(2))),
+                                   (0.5,
+                                    IDN(range(2)) @ ASSIGN_VAL(1, range(2)))]) \
+                       * \
+                       OBSERVE( (point_pred(0, range(2)) @ ~point_pred(0, range(2))) \
+                                + (~point_pred(0, range(2)) @ point_pred(0, range(2))) )
+                      )])
+
+t = random_state(range(2))
+
+print( DIVERGE.run(t @ t) )
+
+pred = truth(range(2)) @ point_pred(0,range(2))
+
+print( DIVERGE.chan << (yes_pred @ pred) )
+print( DIVERGE.chan << (yes_pred @ truth(dom)) )
+                      
 
 
 print("\nExamples from JKKOGM\'15")
