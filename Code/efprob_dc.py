@@ -161,6 +161,9 @@ class Dom:
                    disc=self.disc + other.disc,
                    cont=self.cont + other.cont)
 
+    def __matmul__(self, other):
+        return self + other
+
     def __mul__(self, n):
         return Dom(self._dom * n,
                    disc=self.disc * n,
