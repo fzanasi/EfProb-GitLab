@@ -1,5 +1,6 @@
 from functools import reduce
 import efprob_dc as ep
+from efprob_dc import flip
 
 
 class Program:
@@ -19,7 +20,8 @@ def skip(pre):
 
 
 def newsample(klmap, dom, pre):
-    post = pre + [dom]
+    dom = ep._ensure_list(dom)
+    post = pre + dom
     chan = ep.chan_fromklmap(lambda *args:
                              ep.point_state(args, pre) @ klmap(*args),
                              pre,
@@ -28,23 +30,23 @@ def newsample(klmap, dom, pre):
 
 
 def newassign(fun, dom, pre):
-    return newsample(lambda *args: ep.point_state(fun(*args), [dom]),
+    return newsample(lambda *args: ep.point_state(fun(*args), dom),
                      dom, pre)
 
 
 def sample(klmap, index, pre):
     post = pre
     chan = ep.chan_fromklmap(lambda *args:
-                             ep.point_state(args, pre[:index])
+                             ep.point_state(args[:index], pre[:index])
                              @ klmap(*args)
-                             @ ep.point_state(args, pre[index+1:]),
+                             @ ep.point_state(args[index+1:], pre[index+1:]),
                              pre,
                              post)
     return Program(chan, pre, post)
 
 
 def assign(fun, index, pre):
-    return sample(lambda *args: ep.point_state(fun(*args), [dom]),
+    return sample(lambda *args: ep.point_state(fun(*args), pre[index]),
                   index, pre)
 
 
@@ -152,4 +154,26 @@ test5 = do(
     observe(lambda fish_num, marked: marked == 5,
             [fish_dom, range(21)]),
     discard(1, [fish_dom, range(21)])
+).run()
+
+# Polya's urn
+
+Bn = [range(1,10)]
+Wn = [range(1,10)]
+col = [['B', 'W']]
+
+draw3 = do(
+    newassign(lambda *_: 1, Bn, []),
+    newassign(lambda *_: 1, Wn, Bn),
+    newsample(lambda b,w: flip(b/(b+w), col), col, Bn+Wn),
+    ifthenelse(lambda b,w,c1: c1 == 'B',
+               assign(lambda b,w,*_: b+1, 0, Bn+Wn+col),
+               assign(lambda b,w,*_: w+1, 1, Bn+Wn+col)),
+    newsample(lambda b,w,*_: flip(b/(b+w), col), col, Bn+Wn+col),
+    ifthenelse(lambda b,w,c1,c2: c2 == 'B',
+               assign(lambda b,w,*_: b+1, 0, Bn+Wn+col+col),
+               assign(lambda b,w,*_: w+1, 1, Bn+Wn+col+col)),
+    newsample(lambda b,w,*_: flip(b/(b+w), col), col, Bn+Wn+col+col),
+    discard(0,Bn+Wn+col+col+col),
+    discard(0,Wn+col+col+col)
 ).run()

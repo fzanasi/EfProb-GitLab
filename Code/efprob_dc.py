@@ -1448,7 +1448,7 @@ def andthen(iterable):
     return reduce(operator.and_, iterable)
 
 def flip(r, dom=bool_dom):
-    return State([r, 1.0-r], [dom])
+    return State([r, 1.0-r], dom)
 
 
 def const_statelike(cls, value, subdom, dom=None):
