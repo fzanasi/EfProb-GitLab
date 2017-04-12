@@ -1504,7 +1504,7 @@ def point_state(point, dom):
     dom = asdom(dom)
     if dom.iscont:
         raise ValueError("Cannot create a continuous point state")
-    if isinstance(point, tuple):
+    if len(dom) > 1:
         return const_statelike(State, 1.0,
                                [[p] for p in point], dom)
     return const_statelike(State, 1.0, [point], dom)
@@ -1513,7 +1513,7 @@ def point_pred(point, dom):
     dom = asdom(dom)
     if dom.iscont:
         raise ValueError("Cannot create a continuous point predicate")
-    if isinstance(point, tuple):
+    if len(dom) > 1:
         return event([[p] for p in point], dom)
     return event([point], dom)
 
