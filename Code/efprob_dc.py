@@ -1603,6 +1603,12 @@ def gamma_state(alpha, beta):
     return State(lambda x: stats.gamma.pdf(x, a = alpha, scale = 1/beta), 
                  R(0,inf))
 
+#
+# alpha > 0, beta > 0   
+#
+def beta_state(alpha, beta):
+    return State(lambda x: stats.beta.pdf(x, a = alpha, b = beta), R(0,1))
+
 
 or_chan = chan_from_states([flip(1), flip(1), flip(1), flip(0)], 
                            [bool_dom, bool_dom])
