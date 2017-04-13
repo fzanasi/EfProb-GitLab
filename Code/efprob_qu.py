@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-03-27
+# Date: 2017-04-06
 #
 from functools import reduce
 import functools

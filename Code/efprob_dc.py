@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-03-27
+# Date: 2017-04-06
 #
 from functools import reduce
 import functools
@@ -1371,6 +1371,13 @@ def predicates_from_channel(c):
 def channel_denotation(c, s):
     return [(s >= p, s/p) for p in predicates_from_channel(c)]
 
+def chan_from_test(*ts):
+    n = len(ts)
+    if n == 0:
+        raise Exception('Test must be non-empty to form a channel')
+    dom = ts[0].dom
+    return chan_fromklmap(lambda *x: State([p(*x) for p in ts], range(n)),
+                          dom, range(n))
 
 class DetChan:
     """Deterministic channels."""
@@ -1581,6 +1588,20 @@ def gaussian_pred(mu, sigma, supp=R, scaling=True):
         def fun(x):
             return stats.norm.pdf(x, loc=mu, scale=sigma)
     return Predicate(Fun(fun, supp), [supp])
+
+#
+# lamb > 0 rate parameter, inverse scale
+#
+def exponential_state(lamb):
+    return State(lambda x: stats.expon.pdf(x, scale = 1/lamb), R(0,inf))
+
+#
+# alpha > 0  shape parameter
+# beta > 0   rate parameter, or: inverse scale parameter
+#
+def gamma_state(alpha, beta):
+    return State(lambda x: stats.gamma.pdf(x, a = alpha, scale = 1/beta), 
+                 R(0,inf))
 
 
 or_chan = chan_from_states([flip(1), flip(1), flip(1), flip(0)], 
