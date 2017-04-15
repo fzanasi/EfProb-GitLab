@@ -502,36 +502,6 @@ def state_pred_transformation():
 
     print("\n===\n")
 
-    print("* Genetic hidden Markov model")
-    ACGT = ['A', 'C', 'G', 'T']
-    s0 = State([0.3, 0.2, 0.1, 0.4], ACGT)
-    A = Predicate([1,0,0,0], ACGT)
-    C = Predicate([0,1,0,0], ACGT)
-    G = Predicate([0,0,1,0], ACGT)
-    T = Predicate([0,0,0,1], ACGT)
-    print( s0 >= A )
-
-    trs = Channel([[0.1, 0.3, 0.3, 0.3],
-                   [0.3, 0.1, 0.3, 0.3],
-                   [0.3, 0.3, 0.1, 0.3],
-                   [0.3, 0.3, 0.3, 0.1]], ACGT, ACGT)
-    obs = Channel([[0.85, 0.05, 0.05, 0.05],
-                   [0.05, 0.85, 0.05, 0.05],
-                   [0.05, 0.05, 0.85, 0.05],
-                   [0.05, 0.05, 0.05, 0.85]], ACGT, ACGT)
-
-    s1 = trs >> (s0 / (obs << C))
-    print( s1 )
-    s2 = trs >> (s1 / (obs << A))
-    print( s2 )
-    s3 = trs >> (s2 / (obs << A))
-    print( s3 )
-    s4 = trs >> (s3 / (obs << A))
-    print( s4  )
-    s5 = trs >> (s4 / (obs << G))
-    print( s5 )
-
-    print("\n===\n")
 
     print("* Denotation of a channel")
     X = ['x1', 'x2', 'x2']
@@ -645,6 +615,62 @@ def structural_channels():
     print( joint_post % [0,1] )
 
 
+def markov_models():
+
+    print("\nSection: Hidden Markov models\n")
+
+    print("* Genetic hidden Markov model")
+    ACGT = ['A', 'C', 'G', 'T']
+    s0 = State([0.3, 0.2, 0.1, 0.4], ACGT)
+    A = Predicate([1,0,0,0], ACGT)
+    C = Predicate([0,1,0,0], ACGT)
+    G = Predicate([0,0,1,0], ACGT)
+    T = Predicate([0,0,0,1], ACGT)
+    print( s0 >= A )
+
+    trs = Channel([[0.1, 0.3, 0.3, 0.3],
+                   [0.3, 0.1, 0.3, 0.3],
+                   [0.3, 0.3, 0.1, 0.3],
+                   [0.3, 0.3, 0.3, 0.1]], ACGT, ACGT)
+    obs = Channel([[0.85, 0.05, 0.05, 0.05],
+                   [0.05, 0.85, 0.05, 0.05],
+                   [0.05, 0.05, 0.85, 0.05],
+                   [0.05, 0.05, 0.05, 0.85]], ACGT, ACGT)
+
+    s1 = trs >> (s0 / (obs << C))
+    print( s1 )
+    s2 = trs >> (s1 / (obs << A))
+    print( s2 )
+    s3 = trs >> (s2 / (obs << A))
+    print( s3 )
+    s4 = trs >> (s3 / (obs << A))
+    print( s4  )
+    s5 = trs >> (s4 / (obs << G))
+    print( s5 )
+
+    print("\n===\n")
+
+    print("* Polya urn")
+    N = 8
+    num_dom = Dom([range(1,N), range(1,N)])
+    prior = point_state((1,1), num_dom)
+    col_dom = Dom(['B', 'W'])
+
+    c = chan_fromklmap(lambda b,w:  b/(b+w) * (point_state('B', col_dom) 
+                                               @ point_state((b+1,w), num_dom))
+                       + w/(b+w) * (point_state('W', col_dom) 
+                                    @ point_state((b,w+1), num_dom)),
+                       num_dom, col_dom @ num_dom)
+
+    d = (idn(col_dom @ col_dom) @ c) * (idn(col_dom) @ c) * c
+    e = (idn(col_dom @ col_dom @ col_dom) @ discard(num_dom)) * d
+    print( e )
+
+    prior = point_state((1,1), num_dom)
+    print( e >> prior )
+    (e >> prior).plot()
+
+
 def bayesian_networks():
 
     print("\nSection: Bayesian networks\n")
@@ -720,10 +746,11 @@ def all():
     channels()
     state_pred_transformation()
     structural_channels()
+    markov_models()
     bayesian_networks()
 
 def main():
-    all()
+    #all()
     #states()
     #operations_on_states()
     #excursion()
@@ -734,6 +761,7 @@ def main():
     #channels()
     #state_pred_transformation()
     #structural_channels()
+    markov_models()
     #bayesian_networks()
 
 if __name__ == "__main__":

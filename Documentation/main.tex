@@ -2411,7 +2411,7 @@ before.\marginnote{Example~\ref{ex:candy} is copied from a lecture
 
 \begin{example}
 \label{ex:candy}
-Imagine a company to produces to flavours of candy, namely
+Imagine a company that produces two flavours of candy, namely
 \textit{cherry} and \textit{lime}. They are sold together in bags
 with the following labels and mixtures:
 \begin{description}
@@ -2443,7 +2443,7 @@ First we formalise the domain and prior distribution for the bags.
 distribution over `cherry' and `lime'. For instance, for bag h1 it is
 \pythoninline{flip(1, candy\_dom)} and for h2 it is
 \pythoninline{flip(0.75, candy\_dom)}, \etc The above listing thus
-gives an bag-indexed collection of such states on
+gives a bag-indexed collection of such states on
 \pythoninline{candy\_dom}. Such a collection of states, all with the
 same domain, can be represented as a channel \pythoninline{bag\_dom
   --> candy\_dom}.  We can formalise this by simply listing these
@@ -2601,7 +2601,7 @@ reasons we shall be very explicit about the domains involved. The
 setting is given by some disease with a priori probability of
 $1\%$. There is a test for the disease with the following
 `sensitivity'. If someone has the disease, then the test is $90\%$
-positive; but if someone does not have the disease, there is stil a
+positive; but if someone does not have the disease, there is still a
 $5\%$ chance that the test is positive.
 \begin{python}
 >>> disease_domain = ['D', '~D']
@@ -2752,77 +2752,6 @@ likelihoods of the various numbers of fish in the pond.
 \end{example}
 
 
-We include another example, illustrating how to incorporate hidden
-Markov models\index{hidden~Markov~model} as channels.  This example is
-adapted from the reference manual of the probabilistic language
-BLOG\cite{MilchMRSOK07}.\index{BLOG}
-
-
-\begin{example}
-\label{ex:genetic}
-We consider the four types of bases found in a DNA molecule: adenine
-(A), cytosine (C), guanine (G), and thymine (T). These four letters A,
-C, G, T will be used to form a domain, a prior distribution
-\pythoninline{s0} on that domain, and four predicates on
-\pythoninline{s0} for the different components.
-\begin{python}
->>> ACGT = ['A', 'C', 'G', 'T']
->>> s0 = State([0.3, 0.2, 0.1, 0.4], ACGT)
->>> A = Predicate([1,0,0,0], ACGT)
->>> C = Predicate([0,1,0,0], ACGT)
->>> G = Predicate([0,0,1,0], ACGT)
->>> T = Predicate([0,0,0,1], ACGT)
->>> s0 >= A
-0.3
-\end{python}
-
-\noindent The transition from one state to a next is given by a channel
-\pythoninline{trs}. There is also a channel \pythoninline{obs} that
-gives the probability of each predicate in a particular state.
-\begin{python}
->>> trs = Channel([[0.1, 0.3, 0.3, 0.3],
-...                [0.3, 0.1, 0.3, 0.3],
-...                [0.3, 0.3, 0.1, 0.3],
-...                [0.3, 0.3, 0.3, 0.1]], ACGT, ACGT)
->>> obs = Channel([[0.85, 0.05, 0.05, 0.05],
-...                [0.05, 0.85, 0.05, 0.05],
-...                [0.05, 0.05, 0.85, 0.05],
-...                [0.05, 0.05, 0.05, 0.85]], ACGT, ACGT)
-\end{python}
-
-\noindent The question that is addressed in the BLOG\index{BLOG}
-example is the following. Suppose we have consecutive observations: C,
-A, A, A, G; what is the resulting state/distribution?
-
-The dynamics of hidden Markov models is given by (1)~revise with
-observation, (2)~make a transition. This is done consecutively by
-using both predicate transformation and state transformation:
-\begin{python}
->>> s1 = trs >> (s0 / (obs << C))
->>> s1
-0.286|A> + 0.138|C> + 0.295|G> + 0.281|T>
->>> s2 = trs >> (s1 / (obs << A))
->>> s2
-0.126|A> + 0.295|C> + 0.289|G> + 0.29|T>
->>> s3 = trs >> (s2 / (obs << A))
->>> s3 
-0.148|A> + 0.284|C> + 0.284|G> + 0.284|T>
->>> s4 = trs >> (s3 / (obs << A))
->>> s4
-0.158|A> + 0.28|C> + 0.281|G> + 0.281|T>
->>> s5 = trs >> (s4 / (obs << G))
->>> s5
-0.295|A> + 0.29|C> + 0.126|G> + 0.29|T>
-\end{python}
-
-\noindent Of course, one may handle such a sequence of observations
-automatically by iteration.
-
-The above probabilities are the same as the ones in the BLOG reference
-manual. An important difference is that they are obtained here in an
-`exact' manner, via actual computations, where in BLOG they are
-obtained via iterated sampling.
-\end{example}
 
 
 Parameter learning is an important area in probability theory.  We
@@ -2830,10 +2759,10 @@ illustrate how to use channels in a structural way, via a simple
 example where the unkown bias of a coin is inferred from a series of
 consecutive `head' and `tail' observations. Here we learn the bias
 using discrete probabilitie distributions, which are iteratively
-updated with each observation, much like in the previous hidden Markov
-model. In the next chapter, in Example~\ref{ex:ccoinparameter}, we
-describe how this can be done using continuous
-distributions. Structurally, the approach remains the same.
+updated with each observation. In the next chapter, in
+Example~\ref{ex:ccoinparameter}, we describe how this can be done
+using continuous distributions. Structurally, the approach remains the
+same.
 
 
 \begin{example}
@@ -3298,6 +3227,203 @@ probability leads to a lower mood.
 
 
 
+\section{Hidden Markov models}\label{sec:Markov}
+
+We include two examples of hidden Markov
+models.\index{hidden~Markov~model} Such models consist of a state
+space, with two operations (channels), one for observation and one for
+moving on to a next state. We consider two versions.
+\begin{enumerate}
+\item In the `independent' version there are two separate channels
+  $\textrm{obs} \colon X \rightarrow A$ and $\textrm{trs} \colon X
+  \rightarrow X$ for observation and transition. They both act on the
+  state space/domain $X$. The observation channel produces
+  (distributions over) observable elements $a\in A$.
+
+\item In the `dependent' model there is a single channel $\textrm{ot}
+  \colon X \rightarrow A\times X$, which combines both observation and
+  transition.
+\end{enumerate}
+
+\noindent Given an indepent model $\textrm{obs}$, $\textrm{trs}$ we
+can form a dependent model, in the following way.
+$$\xymatrix@C+1.5pc{
+X\ar[r]^-{\textrm{copy}} & X\times X\ar[r]^-{\textrm{obs}\times\textrm{trs}} &
+  A\times X
+}$$
+
+\noindent In the other direction, a dependent model gives rise to an
+independent one via projections:
+$$\xymatrix@R-1.5pc@C+1pc{
+& & A
+\\
+X\ar[r]^-{\textrm{ot}} & A\times X\ar[ur]^-{\pi_1}\ar[dr]_-{\pi_2}
+\\
+& & X
+}$$
+
+\noindent Starting from an independent model, one can form a dependent
+one, and decompose it again; this yields the original model. But
+starting from a dependent model, one does not retrieve the original.
+
+In this section we look at two example, borrowed from other languages,
+namely BLOG\cite{MilchMRSOK07}\index{BLOG} and
+Church\cite{GoodmanMRBT08}.\index{Church} The first example is
+adapted from the reference manual of the probabilistic language
+BLOG\cite{MilchMRSOK07}.\index{BLOG}
+
+
+\begin{example}
+\label{ex:genetic}
+We consider the four types of bases found in a DNA molecule: adenine
+(A), cytosine (C), guanine (G), and thymine (T). These four letters A,
+C, G, T will be used to form a domain, a prior distribution
+\pythoninline{s0} on that domain, and four predicates on
+\pythoninline{s0} for the different components.
+\begin{python}
+>>> ACGT = ['A', 'C', 'G', 'T']
+>>> s0 = State([0.3, 0.2, 0.1, 0.4], ACGT)
+>>> A = Predicate([1,0,0,0], ACGT)
+>>> C = Predicate([0,1,0,0], ACGT)
+>>> G = Predicate([0,0,1,0], ACGT)
+>>> T = Predicate([0,0,0,1], ACGT)
+>>> s0 >= A
+0.3
+\end{python}
+
+\noindent The transition from one state to a next is given by a
+channel \pythoninline{trs}. There is also a separate channel
+\pythoninline{obs} that gives the probability of each predicate in a
+particular state.
+\begin{python}
+>>> trs = Channel([[0.1, 0.3, 0.3, 0.3],
+...                [0.3, 0.1, 0.3, 0.3],
+...                [0.3, 0.3, 0.1, 0.3],
+...                [0.3, 0.3, 0.3, 0.1]], ACGT, ACGT)
+>>> obs = Channel([[0.85, 0.05, 0.05, 0.05],
+...                [0.05, 0.85, 0.05, 0.05],
+...                [0.05, 0.05, 0.85, 0.05],
+...                [0.05, 0.05, 0.05, 0.85]], ACGT, ACGT)
+\end{python}
+
+\noindent The question that is addressed in the BLOG\index{BLOG}
+example is the following. Suppose we have consecutive observations: C,
+A, A, A, G; what is the resulting state/distribution?
+
+The dynamics of hidden Markov models is given by (1)~revise with
+observation, (2)~make a transition. This is done consecutively by
+using both predicate transformation and state transformation:
+\begin{python}
+>>> s1 = trs >> (s0 / (obs << C))
+>>> s1
+0.286|A> + 0.138|C> + 0.295|G> + 0.281|T>
+>>> s2 = trs >> (s1 / (obs << A))
+>>> s2
+0.126|A> + 0.295|C> + 0.289|G> + 0.29|T>
+>>> s3 = trs >> (s2 / (obs << A))
+>>> s3 
+0.148|A> + 0.284|C> + 0.284|G> + 0.284|T>
+>>> s4 = trs >> (s3 / (obs << A))
+>>> s4
+0.158|A> + 0.28|C> + 0.281|G> + 0.281|T>
+>>> s5 = trs >> (s4 / (obs << G))
+>>> s5
+0.295|A> + 0.29|C> + 0.126|G> + 0.29|T>
+\end{python}
+
+\noindent Of course, one may handle such a sequence of observations
+automatically by iteration.
+
+The above probabilities are the same as the ones in the BLOG reference
+manual. An important difference is that they are obtained here in an
+`exact' manner, via actual computations, where in BLOG they are
+obtained via iterated sampling.
+\end{example}
+
+
+The next `dependent' example use the P{\'o}lya
+urn\index{P{\'o}lya~urn} model, a standard example in probability
+theory. It consists of an urn with an unkown mixture of black (B) and
+white (W) balls. When a ball is taken from the urn, its colour is
+inspected, and \emph{two} balls of this same colour are added to the
+urn. Hence we see the combination of observation and state change that
+is typical for hidden Markov models.
+
+
+
+\begin{example}
+\label{ex:polya}
+We consider a P{\'o}lya urn with initially one black and one white
+ball in the urn and would like to know the distribution over all the
+possible observations after three step.\sidenote{like in the problem
+  description in the language Church
+  \url{https://probmods.org/chapters/05-observing-sequences.html}} It
+is natural to use pairs $(b,w)\in\NN^{2}$ of natural numbers as
+domain. Since we are interested in three steps only, we can limit the
+the domain to a finite set.
+\begin{python}
+>>> N = 8
+>>> num_dom = Dom(range(1,N)) @ Dom(range(1,N))
+>>> prior = point_state((1,1), num_dom)
+>>> col_dom = Dom(['B', 'W'])
+\end{python}
+
+\noindent We now define a `dependent' model as a channel
+\pythoninline{num\_dom --> col\_dom @ num\_dom}.
+\begin{python}
+>>> c = chan_fromklmap(lambda b,w:  b/(b+w) * (point_state('B', col_dom) 
+...                                            @ point_state((b+1,w), num_dom))
+...                    + w/(b+w) * (point_state('W', col_dom) 
+...                                 @ point_state((b,w+1), num_dom)),
+...                    num_dom, col_dom @ num_dom)
+\end{python}
+
+\noindent Let the pair of numbers $(b,w)$ describe the contents of the
+urn. The probability of choosing a black ball is then $\frac{b}{b+w}$.
+With this probability, the next state is a product state consisting of
+colour \pythoninline{B} and successor state $(b+1,w)$.  Similarly,
+with probability $\frac{w}{b+w}$ we move to the product state of
+\pythoninline{W} and $(b,w+1)$.
+
+Since the domain and codomain of the channel \pythoninline{c} are
+different, we cannot simply compose \pythoninline{c} with itself. We
+have to take the types into accout, as in:
+$$\xymatrix{
+\mbox{\pythoninline{num\_dom}}\ar[r]^-{\pythoninline{c}} &
+   \mbox{\pythoninline{col\_dom @ num\_dom}}
+   \ar[rrr]^-{\mbox{\pythoninline{idn(col\_dom) @ c}}} & & &
+   \mbox{\pythoninline{col\_dom @ col\_dom @ num\_dom}}
+}$$
+
+\noindent We do this another time, in a channel \pythoninline{d},
+and then discard the \pythoninline{num\_dom} part:
+\begin{python}
+>>> d = (idn(col_dom @ col_dom) @ c) * (idn(col_dom) @ c) * c
+>>> e = (idn(col_dom @ col_dom @ col_dom) @ discard(num_dom)) * d
+>>> e
+Channel of type: range(1, 8) * range(1, 8) --> ['B', 'W'] * ['B', 'W'] * ['B', 'W']
+\end{python}
+
+\noindent Hence now we are all set:
+\begin{python}
+>>> prior = point_state((1,1), num_dom)
+>>> e >> prior
+0.25|B,B,B> + 0.0833|B,B,W> + 0.0833|B,W,B> + 0.0833|B,W,W> + 
+0.0833|W,B,B> + 0.0833|W,B,W> + 0.0833|W,W,B> + 0.25|W,W,W>
+>>> (e >> prior).plot()
+\end{python}
+
+\noindent The latter line gives:
+\begin{center}
+\includegraphics[width=25em]{Pictures/polya-urn.png} 
+\end{center}
+
+\noindent This same picture emerges in the Church setting.
+\end{example}
+
+
+
+
 \section{Bayesian networks}\label{sec:bayesiannetwork}
 
 The \EfProb library offers support for modeling Bayesian networks and
@@ -3758,6 +3884,12 @@ essential for a probability distribution.\sidenote{A pdf $f\colon D
   in the unit interval $[0,1]$. It is the size of the surface under
   $f$ bounded by $U$. We shall describe this in probability in terms
   of validity later on.}
+
+One can restrict the domain that is plotting by passing an argument
+to the \pythoninline{plot} function, as in
+\begin{python}
+>>> u.plot(R(1,4))
+\end{python}
 
 The probability density functions (pdf's) in states can be defined
 via \Python's lambda notation, as in:
