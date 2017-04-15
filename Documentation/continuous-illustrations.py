@@ -81,6 +81,21 @@ def predicates():
     s = u @ flip(0.4)
     print( s >= ~q @ yes_pred )
 
+    print("\n===\n")
+
+    print("* Fires on a ship")    
+    fires = exponential_state(1) @ exponential_state(1)
+    saved = Predicate(lambda t1, t2: 1 if t1 < 1.25 and t1 + 0.25 * t2 < 1.375 
+                      else 0, [R(0,inf), R(0,inf)])
+    print( fires >= saved )
+    print("Alternative representation, using logic in EfProb")
+    p1 = Predicate(lambda t: t < 1.25, R(0,inf))
+    p2 = Predicate(lambda t1, t2: 1 if t1 + 0.25 * t2 < 1.375 else 0, 
+                   [R(0,inf), R(0,inf)])
+    #print( fires >= (p1 @ truth(R(0,inf))) & p2 )
+    
+
+
 def conditioning():
 
     print("\nSubsection: Conditioning\n")
@@ -187,9 +202,9 @@ def all():
 
 def main():
     #all()
-    states()
+    #states()
     #operations_on_states()
-    #predicates()
+    predicates()
     #conditioning()
     #random_variables()
     #state_pred_transformation()

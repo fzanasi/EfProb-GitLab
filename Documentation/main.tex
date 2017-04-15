@@ -3389,7 +3389,7 @@ Since the domain and codomain of the channel \pythoninline{c} are
 different, we cannot simply compose \pythoninline{c} with itself. We
 have to take the types into accout, as in:
 $$\xymatrix{
-\mbox{\pythoninline{num\_dom}}\ar[r]^-{\pythoninline{c}} &
+\mbox{\pythoninline{num\_dom}}\ar[r]^-{\mbox{\pythoninline{c}}} &
    \mbox{\pythoninline{col\_dom @ num\_dom}}
    \ar[rrr]^-{\mbox{\pythoninline{idn(col\_dom) @ c}}} & & &
    \mbox{\pythoninline{col\_dom @ col\_dom @ num\_dom}}
@@ -4120,6 +4120,48 @@ We can now see why we have checked the validities \pythoninline{s >=
 to the requirement that the integral $\int_{D}$ over the domain $D$ of
 (the pdf of) \pythoninline{s} is one, see~\eqref{eqn:cvalidity}.
 
+
+\begin{example}
+\label{ex:shiponfire}
+In\cite{MichelsHLV15} a situation is described with two fires on a
+ship that need to be contained within certain a time period in order
+to save the ship. The development of both fires is given by an
+exponential distribution, each with parameter 1.
+\begin{python}
+>>> fires = exponential_state(1) @ exponential_state(1)
+\end{python}
+
+\noindent This is a joint state on the domain \pythoninline{[R(0,inf),
+    R(0,inf)]}.
+
+A rather artifical constraint is given in \textit{loc. cit.}
+about the times within which the fires must be extinguished, in order
+to save the ship. We translate it literally into a predicate in
+\EfProb, and calculate its validity:
+\begin{python}
+>>> saved = Predicate(lambda t1, t2: 1 if t1 < 1.25 and t1 + 0.25 * t2 < 1.375 
+...                   else 0, [R(0,inf), R(0,inf)])
+>>> fires >= saved
+0.656931730836
+\end{python}
+
+\noindent This corresponds to the approximate probability $0.66$
+given in the original source. Computing this probability involves a
+complicated integral, which takes about 25 sec.\ on a standard PC.
+
+% use on the command line: time python3 continuous-illustrations.py
+
+The above predicate \pythoninline{saved} contains some inner logical
+structure which can be made explicit in \EfProb. We then get the
+same outcome:
+\begin{python}
+>>> p1 = Predicate(lambda t: t < 1.25, R(0,inf))
+>>> p2 = Predicate(lambda t1, t2: 1 if t1 + 0.25 * t2 < 1.375 else 0, 
+...                [R(0,inf), R(0,inf)])
+>>> fires >= (p1 @ truth(R(0,inf))) & p2
+0.656931730836
+\end{python}
+\end{example}
 
 
 
