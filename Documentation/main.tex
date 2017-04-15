@@ -3930,8 +3930,8 @@ expression \pythoninline{inf}, as in:
 \end{python}
 
 \noindent The latter state \pythoninline{w} is an example of a
-Gaussian distribution, see Subsection~\ref{subsec:gaussian} below for
-more information.
+Gaussian distribution, see Subsection~\ref{subsec:cstate:predefined}
+below for more information.
 
 One can also define states on product domains, via multiple lambda
 abstractions, see for instance:
@@ -3950,9 +3950,15 @@ continuous case. But there are several predefined standard
 distributions, which will be described below.
 
 
-\subsection{Gaussian distributions}\label{subsec:gaussian}
+\subsection{Predefined distributions}\label{subsec:cstate:predefined}
 
-A Gaussian distribution has a pdf $g$ of the form:
+Several standard continous distributions are available in \EfProb,
+such as Gaussian (normal), beta, gamma, and exponential distributions.
+They are based on their counterparts in \Python's underlying
+\pythoninline{scypi} library.
+
+A Gaussian (or: normal) distribution\index{Gaussian~distribution} has
+a pdf $g$ of the form:
 $$\begin{array}{rcl}
 g(x)
 & = &
@@ -3988,8 +3994,29 @@ optional\marginnote{The default value for this domain parameter is
 \noindent Such bounded gaussian states can be plotted, as shown
 in the margin.\marginnote[-3\baselineskip]{\includegraphics[width=\marginparwidth]{Pictures/gaussian_2_1.png}}
 
+In a similar way there are for instance beta,\index{beta~distribution} gamma\index{gamma~distribution} and exponential\index{exponential~distribution}
+distributions:
+\begin{python}
+>>> be = beta_state(2,5)
+>>> be.plot()
+>>> ga = gamma_state(5,2)
+>>> ga.plot(R(0,10))
+>>> ex = exponential_state(2)
+>>> ex.plot(R(0,5))
+\end{python}
 
-
+\noindent They lead to the following three plots.
+\begin{center}
+\begin{tabular}{ccc}
+\includegraphics[width=15em]{Pictures/beta-2-5.png}
+\hspace*{-1em} & \hspace*{-1em}
+\includegraphics[width=15em]{Pictures/gamma-5-2.png}
+\hspace*{-1em} & \hspace*{-1em}
+\includegraphics[width=15em]{Pictures/exponential-2.png}
+\\[-1em]
+beta & gamma & exponential
+\end{tabular}
+\end{center}
 
 \subsection{Operations on states}\label{subsec:cstate:operations}
 

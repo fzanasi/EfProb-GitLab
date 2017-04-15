@@ -46,13 +46,18 @@ def states():
 
     print("\n===\n")
 
-    print("* Gaussian distributions")
+    print("* predefined distributions")
     s = gaussian_state(2, 1)
     print( s )
     t = gaussian_state(2, 1, R(-10,10))
     print( t >= truth(t.dom) )
     #t.plot()
-
+    be = beta_state(2,5)
+    #be.plot()
+    ga = gamma_state(5,2)
+    #ga.plot(R(0,10))
+    ex = exponential_state(2)
+    #ex.plot(R(0,5))
 
 def operations_on_states():
 
@@ -181,8 +186,8 @@ def all():
 
 
 def main():
-    all()
-    #states()
+    #all()
+    states()
     #operations_on_states()
     #predicates()
     #conditioning()
