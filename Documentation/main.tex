@@ -714,7 +714,7 @@ Since the booleans \pythoninline{True} and \pythoninline{False} are
 often combined in a domain, there is a predefined
 boolean domain for them:
 \begin{python}
-bool_dom = [True, False]
+bool_dom = Dom([True, False])
 \end{python}
 
 \EfProb is an embedded language within \Python. This means that we
@@ -1188,9 +1188,9 @@ a: 0.2 | b: 1 | c: 0.5 | d: 0
 with the associated probability.
 
 There are several predefined predicates. The truth predicate on the
-domain \pythoninline{[True,False]} is described as:
+boolean domain \pythoninline{[True,False]} is described as:
 \begin{python}
->>> truth([True, False])
+>>> truth(bool_dom)
 True: 1 | False: 1
 \end{python}
 
@@ -1325,7 +1325,7 @@ conjunction\index{parallel~conjunction!of~discrete~predicates}
 predicate predicate, together with its domain.
 \begin{python}
 >>> p = Predicate([0.2, 0.8, 0.5, 0.0], ['a', 'b', 'c', 'd'])
->>> q = truth([True,False])
+>>> q = truth(bool_dom)
 >>> p @ q
 a,True: 0.2 | a,False: 0.2 | b,True: 0.8 | b,False: 0.8 | 
    c,True: 0.5 | c,False: 0.5 | d,True: 0 | d,False: 0
@@ -1546,9 +1546,9 @@ Here is an example.
 >>> even = Predicate([0,1,0,1,0,1], [1,2,3,4,5,6])
 >>> fdice >= even
 0.5
->>> fdice @ flip(0.3) >= even @ truth([True,False])
+>>> fdice @ flip(0.3) >= even @ truth(bool_dom)
 0.5
->>> flip(0.3) @ fdice >= truth([True,False]) @ even
+>>> flip(0.3) @ fdice >= truth(bool_dom) @ even
 0.5
 \end{python}
 
@@ -2075,7 +2075,7 @@ variable and computing the expected value, variance and standard
 deviation wrt.\ the uniform state:
 \begin{python}
 >>> data = [2, 6, 4, 1, 10]
->>> dom = range(len(data))
+>>> dom = Dom(range(len(data)))
 >>> s = uniform_state(dom)
 >>> rv = RandVar(data, dom)
 >>> s.expectation(rv)
@@ -2196,7 +2196,7 @@ Implicitly one use a uniform state, with the common length as size.
 >>> Xs = [5, 10, 15, 20, 25]
 >>> Ys = [10,  8, 10, 15, 12]
 >>> N = len(Xs)
->>> dom = range(N)
+>>> dom = Dom(range(N))
 >>> s = uniform_state(dom)
 >>> X_rv = RandVar(Xs, dom)
 >>> Y_rv = RandVar(Ys, dom)
@@ -2432,8 +2432,8 @@ distribution and a channel in the above data.
 
 First we formalise the domain and prior distribution for the bags.
 \begin{python}
->>> candy_dom = ['cherry', 'lime']
->>> bag_dom = ['h1', 'h2', 'h3', 'h4', 'h5']
+>>> candy_dom = Dom(['cherry', 'lime'])
+>>> bag_dom = Dom(['h1', 'h2', 'h3', 'h4', 'h5'])
 >>> prior = State([0.1, 0.2, 0.4, 0.2, 0.1], bag_dom)
 >>> prior
 0.1|h1> + 0.2|h2> + 0.4|h3> + 0.2|h4> + 0.1|h5>
@@ -2604,14 +2604,14 @@ $1\%$. There is a test for the disease with the following
 positive; but if someone does not have the disease, there is still a
 $5\%$ chance that the test is positive.
 \begin{python}
->>> disease_domain = ['D', '~D']
+>>> disease_domain = Dom(['D', '~D'])
 >>> prior = flip(1/100, disease_domain)
 >>> disease_pred = Predicate([1,0], disease_domain)
 >>> prior
 0.01|D> + 0.99|~D>
 >>> prior >= disease_pred
 0.01
->>> test_domain = ['T', '~T']
+>>> test_domain = Dom(['T', '~T'])
 >>> test_pred = Predicate([1,0], test_domain)
 >>> sensitivity = Channel([[9/10, 1/20], [1/10, 19/20]], disease_domain, test_domain)
 >>> sensitivity.dom
@@ -2710,7 +2710,7 @@ The number of fish in the pond must be at least 20. Let's assume the
 maximal number is 300. We will be considering units of 10 fish. Hence
 the domain we are looking at, with the uniform `prior' state, is:
 \begin{python}
->>> fish_domain = [10 * i for i in range(2, 31)]
+>>> fish_domain = Dom([10 * i for i in range(2, 31)])
 >>> fish_domain
 [20, 30, 40, 50, 60, 70, 80, ..., 280, 290, 300]
 >>> prior = uniform_state(fish_domain)
@@ -2747,7 +2747,7 @@ a transformed predicate, as below.
 \noindent This last line generates the diagram below, describing the
 likelihoods of the various numbers of fish in the pond.
 \begin{center}
-\includegraphics[width=30em]{Pictures/capture-recapture.png} 
+\includegraphics[width=45em,height=25em]{Pictures/capture-recapture.png} 
 \end{center}
 \end{example}
 
@@ -2786,8 +2786,8 @@ interval in the following way, using a precision of three decimals.
 \begin{python}
 >>> N = 20
 >>> precision = 3
->>> bias_dom = [floor((10 ** precision) * (i+1)/(N+1) + 0.5) / (10 ** precision)
-                for i in range(N)]
+>>> bias_dom = Dom([floor((10 ** precision) * (i+1)/(N+1) + 0.5) / (10 ** precision)
+...                 for i in range(N)])
 >>> bias_dom
 [0.048, 0.095, 0.143, 0.19, 0.238, 0.286, 0.333, 0.381, 0.429, 0.476, 
    0.524, 0.571, 0.619, 0.667, 0.714, 0.762, 0.81, 0.857, 0.905, 0.952]
@@ -2845,7 +2845,8 @@ fragment look as follows.
 \end{tabular}
 \end{center}
 
-\noindent These states approximate a (continuous) beta distribution.
+\noindent These states approximate a (continuous) beta
+distribution.\index{beta~distribution}
 
 In the end, after these 8 updates we can ask which coin corresponds to
 the bias distribution:
@@ -2899,8 +2900,8 @@ def channel_denotation(c, s):
 \noindent We illustrate this denotation function by copying Example~1
 from\cite{McIverMSEM14}.
 \begin{python}
->>> X = ['x1', 'x2', 'x2']
->>> Y = ['y1', 'y2', 'y3', 'y4']
+>>> X = Dom(['x1', 'x2', 'x2'])
+>>> Y = Dom(['y1', 'y2', 'y3', 'y4'])
 >>> c = Channel.from_states([State([1,   0,   0,   0  ], Y),
 ...                          State([0,   1/2, 1/4, 1/4], Y),
 ...                          State([1/2, 1/3, 1/6, 0  ], Y)], X)
@@ -3051,15 +3052,15 @@ marginalisation\index{marginalisation!via~a~projection~channel} of
 states and weakening\index{weakening!via~a~projection~channel} of
 predicates.
 \begin{python}
->>> s = State([1/12, 1/8, 1/4, 1/4, 1/6, 1/8], [[True,False], range(3)])
+>>> s = State([1/12, 1/8, 1/4, 1/4, 1/6, 1/8], [bool_dom, range(3)])
 >>> s
 0.0833|True,0> + 0.125|True,1> + 0.25|True,2> + 0.25|False,0> + 0.167|False,1> + 0.125|False,2>
 >>> s % [1,0]
 0.458|True> + 0.542|False>
 >>> s % [0,1]
 0.333|0> + 0.292|1> + 0.375|2>
->>> proj1 = idn([True,False]) @ discard(range(3))
->>> proj2 = discard([True,False]) @ idn(range(3))
+>>> proj1 = idn(bool_dom) @ discard(range(3))
+>>> proj2 = discard(bool_dom) @ idn(range(3))
 >>> proj1 >> s
 0.458|True> + 0.542|False>
 >>> proj2 >> s
@@ -3070,11 +3071,11 @@ predicates.
 of predicates via these same projection channels \pythoninline{proj1} and
 \pythoninline{proj2}.
 \begin{python}
->>> p1 = Predicate([1/4, 5/8], [True,False])
+>>> p1 = Predicate([1/4, 5/8], bool_dom)
 >>> p2 = Predicate([1/2, 1, 1/12], range(3))
 >>> p1 @ truth(range(3))
 True,0: 0.25 | True,1: 0.25 | True,2: 0.25 | False,0: 0.625 | False,1: 0.625 | False,2: 0.625
->>> truth([True,False]) @ p2
+>>> truth(bool_dom) @ p2
 True,0: 0.5 | True,1: 1 | True,2: 0.0833 | False,0: 0.5 | False,1: 1 | False,2: 0.0833
 >>> proj1 << p1
 True,0: 0.25 | True,1: 0.25 | True,2: 0.25 | False,0: 0.625 | False,1: 0.625 | False,2: 0.625
@@ -3124,7 +3125,7 @@ def graph(c):
 For each pair of domains \pythoninline{dom1}
 and \pythoninline{dom2} there is a swap
 channel:\index{swap~channel!discrete~--}\index{channel!discrete~swap~--}
-$$\mbox{\pythoninline{swap(dom1,dom2) : dom1 + dom2 -> dom2 + dom1}}$$
+$$\mbox{\pythoninline{swap(dom1,dom2) : dom1 @ dom2 -> dom2 @ dom1}}$$
 
 \noindent It behaves in the obvious manner. These copy and swap
 channels play an important role in the channel that models a Bayesian
@@ -3143,14 +3144,14 @@ as in Example~\ref{ex:dcrossover}.
 This examples introduces a variation on the disease-test illustration
 from Example~\ref{ex:diseasetest}. There we used a prior disease state:
 \begin{python}
->>> disease_domain = ['D', '~D']
+>>> disease_domain = Dom(['D', '~D'])
 >>> prior = State([1/100, 99/100], disease_domain)
 \end{python}
 
 \noindent Now we add a second domain for mood, and use joint
 state for disease and mood, simply called \pythoninline{prior}.
 \begin{python}
->>> mood_domain = ['M', '~M']
+>>> mood_domain = Dom(['M', '~M'])
 >>> joint_prior = State([0.05, 0.5, 0.4, 0.05], [disease_domain, mood_domain])
 >>> joint_prior
 0.05|D,M> + 0.5|D,~M> + 0.4|~D,M> + 0.05|~D,~M>
@@ -3281,7 +3282,7 @@ C, G, T will be used to form a domain, a prior distribution
 \pythoninline{s0} on that domain, and four predicates on
 \pythoninline{s0} for the different components.
 \begin{python}
->>> ACGT = ['A', 'C', 'G', 'T']
+>>> ACGT = Dom(['A', 'C', 'G', 'T'])
 >>> s0 = State([0.3, 0.2, 0.1, 0.4], ACGT)
 >>> A = Predicate([1,0,0,0], ACGT)
 >>> C = Predicate([0,1,0,0], ACGT)
@@ -3541,7 +3542,7 @@ $f$ & $f$ & $\frac{1}{10}$ \\
 In \EfProb this Bayesian network can be modeled as follows. There
 are the following pre-defined functions for states and predicates.
 \begin{python}
-bnd = ['t', 'f']
+bnd = Dom(['t', 'f'])
 def bn_prior(r): return State([r,1-r], bnd)
 def bn_pred(r,s): return Predicate([r,s], bnd)
 bn_pos_pred = bn_pred(1,0)

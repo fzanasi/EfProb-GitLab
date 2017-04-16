@@ -13,6 +13,9 @@ from math import *
 
 def states():
 
+    rgb = State([0.3,0.2,0.5], ['R','G','B'])
+    #rgb.plot()
+
     print("\nSection: States\n")
 
     print("* fair flip state, with domain True, False")
@@ -28,7 +31,8 @@ def states():
     print("\n===\n")
 
     print("* flip function")
-    def flip(r): return State([r, 1-r], [True,False])
+    bool_dom = Dom([True,False])
+    def flip(r): return State([r, 1-r], bool_dom)
     print( flip(0.2) )
 
     print("\n===\n")
@@ -52,7 +56,7 @@ def states():
     print("\n===\n")
 
     print("* unit state example")
-    print( point_state(True, [True,False]) )
+    print( point_state(True, bool_dom) )
     print( point_state(3, [1,2,3,4,5,6]) )
 
     print("\n===\n")
@@ -83,7 +87,7 @@ def operations_on_states():
     print("\nSubsection: Operations on states\n")
 
     print("* two flips in parallel")
-    def flip(r): return State([r, 1-r], [True,False])
+    def flip(r): return State([r, 1-r], bool_dom)
     print( flip(0.2) )
     print( flip(0.7) )
     print( flip(0.2) @ flip(0.7) )
@@ -123,6 +127,15 @@ def operations_on_states():
 
     print("* two-out-of-three marginalisation")
     print( (random_state(range(100)) @ flip(0.5) @ uniform_state(range(2))) % [0,1,1] )
+
+
+    print("\nSubsection: Plotting states\n")
+    #flip(0.2).plot()
+    #poisson(7,20).plot()
+    #random_state(range(50)).plot()
+    #(s @ flip(0.3)).plot()
+    #(s @ flip(0.3)).plot(...,True)
+    
 
 def excursion():
 
@@ -184,8 +197,8 @@ def validity():
     fdice = uniform_state([1,2,3,4,5,6])
     even = Predicate([0,1,0,1,0,1], [1,2,3,4,5,6])
     print( fdice >= even )
-    print( fdice @ flip(0.3) >= even @ truth([True,False]) )
-    print( flip(0.3) @ fdice >= truth([True,False]) @ even )
+    print( fdice @ flip(0.3) >= even @ truth(bool_dom) )
+    print( flip(0.3) @ fdice >= truth(bool_dom) @ even )
 
 def conditioning():
 
@@ -319,7 +332,7 @@ def expectation():
 
     print("* Average of sample data")
     data = [2, 6, 4, 1, 10]
-    dom = range(len(data))
+    dom = Dom(range(len(data)))
     rv = RandVar(data, dom)
     s = uniform_state(dom)
     print( s.expectation(rv) )
@@ -376,7 +389,7 @@ def covariance():
     Xs = [5, 10, 15, 20, 25]
     Ys = [10,  8, 10, 15, 12]
     N = len(Xs)
-    dom = range(N)
+    dom = Dom(range(N))
     s = uniform_state(dom)
     X_rv = RandVar(Xs, dom)
     Y_rv = RandVar(Ys, dom)
@@ -390,9 +403,9 @@ def covariance():
     print("\n===\n")
 
     print("* Covariance of a joint state")
-    X = [1,2]
-    Y = [1,2,3]
-    w = State([1/4, 1/4, 0, 0, 1/4, 1/4], [X, Y])
+    X = Dom([1,2])
+    Y = Dom([1,2,3])
+    w = State([1/4, 1/4, 0, 0, 1/4, 1/4], X @ Y)
     print( w )
     print( w.covariance() )
     print( w.correlation() )
@@ -433,8 +446,8 @@ def state_pred_transformation():
     print("\nSubsection: State and predicate transformation\n")
 
     print("* Candy example")
-    candy_dom = ['cherry', 'lime']
-    bag_dom = ['h1', 'h2', 'h3', 'h4', 'h5']
+    candy_dom = Dom(['cherry', 'lime'])
+    bag_dom = Dom(['h1', 'h2', 'h3', 'h4', 'h5'])
     prior = State([0.1, 0.2, 0.4, 0.2, 0.1], bag_dom)
     print( prior )
     chan = chan_from_states([flip(1, candy_dom),
@@ -468,11 +481,11 @@ def state_pred_transformation():
     print("\n===\n")
 
     print("* Disease-test")
-    disease_domain = ['D', '~D']
+    disease_domain = Dom(['D', '~D'])
     prior = flip(1/100, disease_domain)
     disease_pred = Predicate([1,0], disease_domain)
 
-    test_domain = ['T', '~T']
+    test_domain = Dom(['T', '~T'])
     test_pred = Predicate([1,0], test_domain)
     sensitivity = Channel([[9/10, 1/20], 
                            [1/10, 19/20]], disease_domain, test_domain)
@@ -491,7 +504,7 @@ def state_pred_transformation():
 
     print("* Capture recapture example")
     N = 20
-    fish_domain = [10 * i for i in range(2, 31)]
+    fish_domain = Dom([10 * i for i in range(2, 31)])
     print( fish_domain )
     prior = uniform_state(fish_domain)
     chan = chan_fromklmap(lambda d: binomial(N, N/d), fish_domain, range(N+1))
@@ -504,8 +517,8 @@ def state_pred_transformation():
 
 
     print("* Denotation of a channel")
-    X = ['x1', 'x2', 'x2']
-    Y = ['y1', 'y2', 'y3', 'y4']
+    X = Dom(['x1', 'x2', 'x2'])
+    Y = Dom(['y1', 'y2', 'y3', 'y4'])
     c = Channel.from_states([State([1,   0,   0,   0  ], Y),
                              State([0,   1/2, 1/4, 1/4], Y),
                              State([1/2, 1/3, 1/6, 0  ], Y)], X)
@@ -525,8 +538,8 @@ def state_pred_transformation():
     print("* Coin parameter learning")
     N = 20
     precision = 3
-    bias_dom = [floor((10 ** precision) * (i+1)/(N+1) + 0.5) / (10 ** precision)
-                for i in range(N)]
+    bias_dom = Dom([floor((10 ** precision) * (i+1)/(N+1) + 0.5) / (10 ** precision)
+                    for i in range(N)])
     print( bias_dom )
     prior = uniform_state(bias_dom)
     chan = chan_fromklmap(lambda r: flip(r), bias_dom, bool_dom)
@@ -554,13 +567,13 @@ def structural_channels():
     print("\nSubsection: Structural channels")
 
     print("* Marginalisation via projection")
-    s = State([1/12, 1/8, 1/4, 1/4, 1/6, 1/8], [[True,False], range(3)])
+    s = State([1/12, 1/8, 1/4, 1/4, 1/6, 1/8], [bool_dom, range(3)])
     print( s )
     print("marginals")
     print( s % [1,0] )
     print( s % [0,1] )
-    proj1 = idn([True,False]) @ discard(range(3))
-    proj2 = discard([True,False]) @ idn(range(3))
+    proj1 = idn(bool_dom) @ discard(range(3))
+    proj2 = discard(bool_dom) @ idn(range(3))
     print("marginalisation via projections")
     print( proj1 >> s )
     print( proj2 >> s )
@@ -568,11 +581,11 @@ def structural_channels():
     print("\n===\n")
 
     print("* Weakening via projection")
-    p1 = Predicate([1/4, 5/8], [True,False])
+    p1 = Predicate([1/4, 5/8], bool_dom)
     p2 = Predicate([1/2, 1, 1/12], range(3))
     print("weakenings")
     print( p1 @ truth(range(3)) )
-    print( truth([True,False]) @ p2 )
+    print( truth(bool_dom) @ p2 )
     print("weakenings via projections")
     print( proj1 << p1 )
     print( proj2 << p2 )
@@ -620,7 +633,7 @@ def markov_models():
     print("\nSection: Hidden Markov models\n")
 
     print("* Genetic hidden Markov model")
-    ACGT = ['A', 'C', 'G', 'T']
+    ACGT = Dom(['A', 'C', 'G', 'T'])
     s0 = State([0.3, 0.2, 0.1, 0.4], ACGT)
     A = Predicate([1,0,0,0], ACGT)
     C = Predicate([0,1,0,0], ACGT)
@@ -668,7 +681,7 @@ def markov_models():
 
     prior = point_state((1,1), num_dom)
     print( e >> prior )
-    (e >> prior).plot()
+    #(e >> prior).plot()
 
 
 def bayesian_networks():
@@ -750,7 +763,7 @@ def all():
     bayesian_networks()
 
 def main():
-    #all()
+    all()
     #states()
     #operations_on_states()
     #excursion()
@@ -761,7 +774,7 @@ def main():
     #channels()
     #state_pred_transformation()
     #structural_channels()
-    markov_models()
+    #markov_models()
     #bayesian_networks()
 
 if __name__ == "__main__":
