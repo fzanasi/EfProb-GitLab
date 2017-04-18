@@ -21,6 +21,7 @@ import numpy as np
 import scipy.integrate as integrate
 import scipy.stats as stats
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 integrate_opts = {}
 use_lru_cache = True
@@ -351,21 +352,50 @@ class Fun:
 
     def plot(self, preargs=(), interval=None,
              postargs=(), steps=256, block=True):
+        preargs = tuple(preargs)
+        postargs = tuple(postargs)
         axis = len(preargs)
-        if interval:
-            start = interval[0]
-            stop = interval[1]
-        else:
-            start, stop = self.supp[axis]
-        if stop < start:
+        if interval is None:
+            interval = self.supp[axis]
+        if interval[1] < interval[0]:
             raise ValueError("Empty interval")
-        if math.isinf(start) or math.isinf(stop):
+        if math.isinf(interval[0]) or math.isinf(interval[1]):
             raise ValueError("Unbounded interval")
         fig, (ax) = plt.subplots(1, 1, figsize=(10,5))
-        xs = np.linspace(start, stop, steps, endpoint=True)
+        xs = np.linspace(interval[0], interval[1], steps, endpoint=True)
         ys = [self(*(preargs+(x,)+postargs)) for x in xs]
         plt.interactive(True)
         ax.plot(xs, ys, color="blue", linewidth=2.0, linestyle="-")
+        plt.draw()
+        plt.pause(0.001)
+        if block:
+            input("Press [enter] to continue.")
+
+    def plot2(self, args0=(), interval0=None, args1=(),
+             interval1=None, args2=(), steps=100, block=True):
+        args0 = tuple(args0)
+        args1 = tuple(args1)
+        args2 = tuple(args2)
+        axis0 = len(args0)
+        axis1 = axis0 + 1 + len(args1)
+        if interval0 is None:
+            interval0 = self.supp[axis0]
+        if interval1 is None:
+            interval1 = self.supp[axis1]
+        if interval0[1] < interval0[0] or interval1[1] < interval1[0]:
+            raise ValueError("Empty interval")
+        if (math.isinf(interval0[0]) or math.isinf(interval0[1])
+            or math.isinf(interval1[0]) or math.isinf(interval1[1])):
+            raise ValueError("Unbounded interval")
+        fig, (ax) = plt.subplots(1, 1, figsize=(10,5))
+        ax = fig.add_subplot(111, projection='3d')
+        X = np.linspace(interval0[0], interval0[1], steps, endpoint=True)
+        Y = np.linspace(interval1[0], interval1[1], steps, endpoint=True)
+        X, Y = np.meshgrid(X, Y)
+        zs = np.array([self(*(args0+(x,)+args1+(y,)+args2))
+                       for x,y in zip(np.ravel(X), np.ravel(Y))])
+        Z = zs.reshape(X.shape)
+        ax.plot_surface(X, Y, Z)
         plt.draw()
         plt.pause(0.001)
         if block:
@@ -502,21 +532,17 @@ class StateLike:
         return itertools.product(*iters)
 
     @staticmethod
-    def _plot_split(*args):
-        i = 0
-        interval = None
-        for a in args:
-            if a is Ellipsis or isinstance(a, Interval) or isR(a):
-                interval = a
-                break
-            i += 1
+    def _plot_split(args):
+        try:
+            i = next(i for i, a in enumerate(args)
+                     if a is Ellipsis or isinstance(a, Interval) or isR(a))
+        except StopIteration:
+            return args, None, ()
         preargs = args[:i]
-        interval = interval if not isR(interval) else R_
-        postargs = args[i+1:]
-        if any(a is Ellipsis or isinstance(a, Interval) or isR(a)
-               for a in postargs):
-            raise ValueError("Cannot plot dim > 1")
-        return preargs, interval, postargs
+        interval = args[i]
+        interval = R_ if isR(interval) else interval
+        rest = args[i+1:]
+        return preargs, interval, rest
 
     def plot(self, *args, **kwargs):
         """Plot some axes of the state-like.
@@ -547,8 +573,7 @@ class StateLike:
             args = (...,) * len(self.dom)
         disc_args, cont_args = self.dom.split(args)
         discplot = any(a is Ellipsis for a in disc_args)
-        contplot = any(a is Ellipsis
-                       or isinstance(a, Interval) or isR(a)
+        contplot = any(a is Ellipsis or isinstance(a, Interval) or isR(a)
                        for a in cont_args)
         if discplot and contplot:
             raise ValueError("Cannot plot discrete and continuous "
@@ -568,17 +593,34 @@ class StateLike:
                 labels.append(",".join(str(a) for a in label_args))
             bar_plot(values, labels, **kwargs)
         elif contplot:
-            (preargs,
-             interval,
-             postargs) = StateLike._plot_split(*cont_args)
+            (args0,
+             interval0,
+             args12) = StateLike._plot_split(cont_args)
+            (args1,
+             interval1,
+             args2) = StateLike._plot_split(args12)
+            if any(a is Ellipsis or isinstance(a, Interval) or isR(a)
+                   for a in args2):
+                raise ValueError("Cannot plot dim > 2")
             fun = self.array[self.dom.get_disc_indices(disc_args)]
-            axis = len(preargs)
-            if interval is Ellipsis:
-                interval = self.dom.cont[axis]
-                if not interval.issubset(self.dom.cont[axis]):
-                    raise ValueError("Interval must be a subset of domain")
-            fun.plot(preargs=preargs, interval=interval,
-                     postargs=postargs, **kwargs)
+            axis0 = len(args0)
+            if interval0 is Ellipsis:
+                interval0 = self.dom.cont[axis0]
+            elif not interval0.issubset(self.dom.cont[axis0]):
+                raise ValueError("Interval must be a subset of domain")
+            if interval1 is None:
+                fun.plot(preargs=args0, interval=interval0,
+                         postargs=args12, **kwargs)
+                return
+            # 3d plot
+            axis1 = axis0 + 1 + len(args1)
+            if interval1 is Ellipsis:
+                interval1 = self.dom.cont[axis1]
+            elif not interval1.issubset(self.dom.cont[axis1]):
+                raise ValueError("Interval must be a subset of domain")
+            fun.plot2(args0=args0, interval0=interval0,
+                      args1=args1, interval1=interval1,
+                      args2=args2, **kwargs)
         else:
             raise ValueError("Nothing to plot")
 
