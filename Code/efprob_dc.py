@@ -766,7 +766,7 @@ class State(StateLike):
                 args = [next(xi) if s else next(yi) for s in selectors]
                 return self.getvalue(*args) / m
             return State.fromfun(g, cod)
-        return Channel.fromklmap(f, dom, cod)
+        return Channel.fromklmap(f, dom, cod)        
 
 
 def _var_integral(rvfun, sfun, exp):
@@ -1233,6 +1233,14 @@ class Channel:
 
     def __matmul__(self, other):
         return self.joint(other)
+
+    def inversion(self, state):
+        check_dom_match(self.dom, state.dom)
+        l = len(self.dom)
+        k = len(self.cod)
+        joint = State(lambda *args: state.getvalue(*args[:l]) * self(*args[:l]).getvalue(*args[l:]), 
+                      self.dom + self.cod)
+        return joint.disintegration([0]*l + [1]*k)
 
 
 def idn(dom):

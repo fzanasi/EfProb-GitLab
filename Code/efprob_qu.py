@@ -967,10 +967,12 @@ def random_randvar(n):
 #
 def choi(u):
     n = u.shape[0]
-    mat = np.zeros((n,n,n,n)) + 0j
+    m = u.shape[1]
+    mat = np.zeros((n,n,m,m)) + 0j
     for i in range(n):
         for j in range(n):
-            out = np.dot(u, np.dot(matrix_base(i,j,n), conjugate_transpose(u)))
+#            out = np.dot(u, np.dot(matrix_base(i,j,n), conjugate_transpose(u)))
+            out = np.dot(conjugate_transpose(u), np.dot(matrix_base(i,j,n), u))
             mat[i,j] = out
     return mat
 
