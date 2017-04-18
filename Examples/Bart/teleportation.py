@@ -1,4 +1,4 @@
-from quantprob import *
+from efprob_qu import *
 
 alice = (meas0 @ meas0) \
         * (hadamard @ idn(2)) \

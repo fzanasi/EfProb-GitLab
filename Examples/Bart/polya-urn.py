@@ -13,6 +13,10 @@ num_dom = Dom([range(1,N), range(1,N)])
 prior = point_state((1,1), num_dom)
 col_dom = Dom(['B', 'W'])
 
+#
+# Note: a "dependent" channel is needed that combines both observation
+# and transition.
+#
 c = chan_fromklmap(lambda b,w:
                    b/(b+w) * (point_state('B', col_dom) \
                               @ point_state((b+1,w), num_dom)) \
@@ -31,4 +35,4 @@ def cn(n):
 def bwn(n):
     return (idn(col_dom * n) @ discard(num_dom)) * cn(n)
 
-(bwn(6) >> prior).plot()
+(bwn(3) >> prior).plot()
