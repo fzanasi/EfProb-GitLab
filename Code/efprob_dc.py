@@ -1238,7 +1238,7 @@ class Channel:
         check_dom_match(self.dom, state.dom)
         l = len(self.dom)
         k = len(self.cod)
-        joint = State(lambda *args: state.getvalue(*args[:l]) * self(*args[:l]).getvalue(*args[l:]), 
+        joint = state_fromfun(lambda *args: state.getvalue(*args[:l]) * self(*args[:l]).getvalue(*args[l:]), 
                       self.dom + self.cod)
         return joint.disintegration([0]*l + [1]*k)
 
