@@ -4036,11 +4036,20 @@ State on R(-1, 1) * R(5, 10)
 >>> t = flip(0.3) @ s
 >>> t
 State on [True, False] * R(-1, 1) * R(5, 10)
-\end{python}
+\end{python} 
 
 \noindent We see that printing such states gives information about
-their domains. Only 1-dimensional continuous states with a bounded
-domain can be plotted.
+their domains. Only 1- and 2-dimensional continuous states with a
+bounded domain can be plotted. The plot below is produced via the
+following product of a Gaussian and Beta distribution.
+\begin{python}
+>>> w = gaussian_state(1, 0.5, R(0,2)) @ beta_state(2,1)
+>>> w.plot()
+\end{python}
+
+\begin{center}
+\includegraphics[width=30em]{Pictures/gaussian-beta.png}
+\end{center}
 
 
 

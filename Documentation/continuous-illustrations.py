@@ -63,11 +63,14 @@ def operations_on_states():
 
     print("\nSubsection: Operations on states\n")
 
-    print("* print product of states")
+    print("* Product of states")
     s = uniform_state(R(-1,1)) @ uniform_state(R(5,10))
     print( s )
     t = flip(0.3) @ s
     print( t )
+
+    w = gaussian_state(1, 0.4, R(0,2)) @ beta_state(2,1)
+    w.plot()
 
 
 def predicates():
@@ -203,8 +206,8 @@ def all():
 def main():
     #all()
     #states()
-    #operations_on_states()
-    predicates()
+    operations_on_states()
+    #predicates()
     #conditioning()
     #random_variables()
     #state_pred_transformation()
