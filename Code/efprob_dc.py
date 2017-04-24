@@ -1030,7 +1030,7 @@ class Fun2:
     def joint(self, other):
         def fun(xs, ys):
             lx = len(self.dom_supp)
-            ly = len(self.dom_supp)
+            ly = len(self.cod_supp)
             return self(xs[:lx], ys[:ly]) * self(xs[lx:], ys[ly:])
         return Fun2(fun, self.dom_supp + other.dom_supp,
                     self.cod_supp + other.cod_supp)
