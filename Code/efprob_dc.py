@@ -1448,7 +1448,10 @@ class DetChan:
         return Fun(fun, self.dom.cont)
 
     def pred_trans(self, pred):
-        array = np.empty(self.shape, dtype=object)
+        if self.dom.iscont:
+            array = np.empty(self.shape, dtype=object)
+        else:
+            array = np.empty(self.shape, dtype=float)
         disc_funs, cont_funs = pred.dom.split(self.funs)
         for index in np.ndindex(*self.shape):
             disc_args = self.dom.disc_get(index)
@@ -1459,10 +1462,15 @@ class DetChan:
     def __lshift__(self, pred):
         return self.pred_trans(pred)
 
+    def _joint_slice(fun, i, j):
+        def f(*args):
+            return fun(*args[i:j])
+        return f
+
     def joint(self, other):
-        d_len = len(self.dom.disc) + len(self.dom.cont)
-        funs = ([lambda *args: f(*args[:d_len]) for f in self.funs]
-                + [lambda *args: f(*args[d_len:]) for f in other.funs])
+        d_len = len(self.dom)
+        funs = ([DetChan._joint_slice(f, None, d_len) for f in self.funs]
+                + [DetChan._joint_slice(f, d_len, None) for f in other.funs])
         return type(self)(funs, self.dom + other.dom)
 
     def __matmul__(self, other):
