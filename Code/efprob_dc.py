@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-04-06
+# Date: 2017-04-24
 #
 from functools import reduce
 import functools
@@ -1682,6 +1682,10 @@ def proj1_rv(joint_dom):
 
 def proj2_rv(joint_dom):
     return randvar_fromfun(lambda *x: x[1], joint_dom)
+
+def id_dc(dom):
+    return DetChan(lambda x: x, dom)
+
 
 
 

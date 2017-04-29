@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-04-06
+# Date: 2017-04-24
 #
 from functools import reduce
 import functools
@@ -2076,6 +2076,9 @@ def transition():
     s = cnot >> (random_state(2) @ random_state(2))
     print("* Multidimensional Leifer Spekkes")
     print( graph_pair(s, c).dom )
+    a = kron(2,2) << random_pred(4)
+    b = kron(2,2) << random_pred(4)
+    print( graph_pair(s,c) >= a @ b, s >= (c << a) & b )
     print("* Kraus test:",
           c << p == c.as_kraus() << p, c >> s == c.as_kraus() >> s )
     #print( tr1(c.as_operator().array, 4) )
@@ -2093,7 +2096,7 @@ def experiment():
 
 
 def main():
-    # validity()
+    validity()
     # marginals()
     #measurement()
     # instrument()
@@ -2103,7 +2106,7 @@ def main():
     # kappa_copy()
     # graphs()
     #transition()
-    experiment()
+    #experiment()
 
 
 if __name__ == "__main__":

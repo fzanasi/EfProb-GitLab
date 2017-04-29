@@ -3858,7 +3858,7 @@ addition, an alternative but equivalent approach will be described
 which first turns the above network into a joint state, and then uses
 `crossover influence'\sidenote{Jacobs \& Zanasi, forthcoming}.
 
-In \EfProb the network is represented as:
+In \EfProb the network is represented via the definitions:
 \begin{python}
 >>> smoking = bn_prior(0.3)
 >>> ashtray = cpt(0.95, 0.25)
@@ -3909,15 +3909,30 @@ using the `tuple' channnel:
 then parallel composition \pythoninline{@}.
 \begin{python}
 >>> joint = ((ashtray @ idn(bnd) @ cancer) * (copy(bnd) @ idn(bnd)) * copy(bnd)) >> smoking
+>>> joint
+0.114|t,t,t> + 0.171|t,t,f> + 0.00875|t,f,t> + 0.166|t,f,f> 
+     + 0.006|f,t,t> + 0.009|f,t,f> + 0.0263|f,f,t> + 0.499|f,f,f>
 \end{python}
 
 \noindent (Recall that \pythoninline{bnd} stands for `Bayesian network
 domain', given by $\{t,f\}$.)
 
-The presence of an ashtray is now extended (weakened) to a predicate
-\pythoninline{tt @ truth(bnd) @ truth(bnd)} on this joint state. We
-use it first for updating, and then we marginalise to obtain the
-third `cancer' component that we are interested in:
+This joint distribution contains the earlier-mentioned prior
+distributions as marginals:
+\begin{python}
+>>> joint % [1,0,0]
+0.46|t> + 0.54|f>
+>>> joint % [0,1,0]
+0.3|t> + 0.7|f>
+>>> joint % [0,0,1]
+0.155|t> + 0.845|f>
+\end{python}
+
+\noindent The presence of the ashtray evidence is now extended
+(weakened) to a predicate \pythoninline{tt @ truth(bnd) @ truth(bnd)}
+on this joint state. We use it first for updating, and then we
+marginalise to obtain the third `cancer' component that we are
+interested in:
 \begin{python}
 >>> (joint / (tt @ truth(bnd) @ truth(bnd))) % [0,0,1]
 0.267|t> + 0.733|f>

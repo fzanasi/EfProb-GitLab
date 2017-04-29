@@ -746,6 +746,32 @@ def bayesian_networks():
     print( prior >= (B_chan << bn_pos_pred) & (B_chan << (C_chan << bn_pos_pred)) )
     print( prior >= B_form & C_form )
 
+    print("\n===\n")
+
+    print("* Smoking example")
+    smoking = bn_prior(0.3)
+    ashtray = cpt(0.95, 0.25)
+    cancer = cpt(0.4, 0.05)
+    print("\npriors")
+    print( smoking )
+    print( ashtray >> smoking )
+    print( cancer >> smoking )
+    print("\nposteriors")
+    print( cancer >> (smoking / (ashtray << tt)) )
+    print( cancer >> (smoking / (ashtray << ff)) )
+    joint = ((ashtray @ idn(bnd) @ cancer) * (copy(bnd) @ idn(bnd)) * copy(bnd)) \
+            >> smoking
+    print("\nJoint-crossover approach, with joint:")
+    print( joint )
+    print("\npriors")
+    print( joint % [1,0,0] )
+    print( joint % [0,1,0] )
+    print( joint % [0,0,1] )
+    print("\nposteriors")
+    print( (joint / (tt @ truth(bnd) @ truth(bnd))) % [0,0,1] )
+    print( (joint / (ff @ truth(bnd) @ truth(bnd))) % [0,0,1] )
+
+
 
 
 def all():
