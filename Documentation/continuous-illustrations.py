@@ -6,7 +6,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-04-06
+# Date: 2017-04-24
 #
 from efprob_dc import *
 from math import *
@@ -70,7 +70,7 @@ def operations_on_states():
     print( t )
 
     w = gaussian_state(1, 0.4, R(0,2)) @ beta_state(2,1)
-    w.plot()
+    #w.plot()
 
 
 def predicates():
@@ -204,9 +204,9 @@ def all():
 
 
 def main():
-    #all()
+    all()
     #states()
-    operations_on_states()
+    #operations_on_states()
     #predicates()
     #conditioning()
     #random_variables()

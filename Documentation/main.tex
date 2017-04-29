@@ -3787,6 +3787,155 @@ not the right way to capture these probabilities we include:
 
 
 
+The next example illustrates how `evidence' is handled (propagated)
+through a Bayesian network, following\cite{JacobsZ16}. This phenomenon
+is called \emph{learning}, \emph{inference}, or \emph{belief update}.
+\begin{itemize}
+\item \textbf{backward learning} corresponds to first (backward)
+predicate transformation, and then conditioning: $\omega|_{f^{*}(q)}$;
+
+\item \textbf{forward learning} corresponds to first conditioning
+and then (forward) state transformation: $f_{*}(\omega|_{p})$.
+\end{itemize}
+
+\noindent In \EfProb notation the corresponding notation is
+\pythoninline{w / (f << q)} and \pythoninline{f >> (w / p)}.
+
+
+\begin{example}
+\label{ex:smoking}
+We consider the relation between smoking and the presence of ash trays
+and (lung) cancer, in the following simple Bayesian network.
+\[ \xymatrix@C-1.5pc@R-1.5pc{
+{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|c|}
+\hline
+smoking & $\Prob{\text{ashtray}}$ \\
+\hline\hline
+$t$ & $0.95$ \\
+\hline
+$f$ & $0.25$ \\
+\hline
+\end{tabular}} 
+& \ovalbox{ashtray} & & \ovalbox{cancer} &
+{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|c|}
+\hline
+smoking & $\Prob{\text{cancer}}$ \\
+\hline\hline
+$t$ & $0.4$ \\
+\hline
+$f$ & $0.05$ \\
+\hline
+\end{tabular}}
+\\
+\\
+& & \ovalbox{smoking}\ar[uul]\ar[uur]
+\\
+& & 
+{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|}
+\hline
+$\Prob{\text{smoking}}$ \\
+\hline\hline
+$0.3$ \\
+\hline
+\end{tabular}}}
+} \]
+
+\noindent Thus, 95\% of people who smoke have an ashtray in their
+home, and 25\% of the non-smokers too. On the right we see that in
+this situation a smoker has 40\% chance of developing cancer, whereas
+a non-smoker only has 5\% chance.
+
+The question we want to address is: what is the influence of the
+presence or absence of an ashtray on the probability of developing
+cancer? Here the presence/absence of the ashtray is the `evidence',
+whose influence is propagated through the network.
+
+In the current setting of states, predicates and channels, the
+evidence is a predicate, which can be transformed along a channel via
+\pythoninline{<<}, and used to update a state, which can then be
+transformed via \pythoninline{>>}. This will be described below.  In
+addition, an alternative but equivalent approach will be described
+which first turns the above network into a joint state, and then uses
+`crossover influence'\sidenote{Jacobs \& Zanasi, forthcoming}.
+
+In \EfProb the network is represented as:
+\begin{python}
+>>> smoking = bn_prior(0.3)
+>>> ashtray = cpt(0.95, 0.25)
+>>> cancer = cpt(0.4, 0.05)
+\end{python}
+
+\noindent We first consider the prior probabilities of smoking,
+ashtray, and cancer:
+\begin{python}
+>>> smoking
+0.3|t> + 0.7|f>
+>>> ashtray >> smoking
+0.46|t> + 0.54|f>
+>>> cancer >> smoking
+0.155|t> + 0.845|f>
+\end{python}
+
+\noindent The presence of an ashtray is given by the truth predicate
+\pythoninline{tt} and is turned into predicate \pythoninline{ashtray
+  << tt} on the state \pythoninline{smoking}. After updating this
+state, we transform it to an updated cancer probability. We can
+do this down-and-up propagation in one go:
+\begin{python}
+>>> cancer >> (smoking / (ashtray << tt))
+0.267|t> + 0.733|f>
+\end{python}
+
+\noindent As expected, the presence of an ashtray gives a higher
+probability of cancer. Similarly, the absence of an ashtray gives
+a lower propbability:
+\begin{python}
+>>> cancer >> (smoking / (ashtray << ff))
+0.0597|t> + 0.94|f>
+\end{python}
+
+We also describe an alternative solution to this ashtray-cancer
+question. We first turn the above Bayesian network in a joint state,
+on the domain $\{t,f\} \times \{t,f\} \times \{t,f\}$, where the first
+component is for `ashtray', the second one for `smoking' and the third
+one for `cancer'. We obtain this joint state via state tranformation
+using the `tuple' channnel:
+\[ \xymatrix{
+\{t,f\}\ar[rrr]^-{\tuple{\text{ashtray}, \,\text{idn}, \,\text{cancer}}} & & & 
+   \{t,f\} \times \{t,f\} \times \{t,f\}
+} \]
+
+\noindent In \EfProb this is done as follows, via first copying and
+then parallel composition \pythoninline{@}.
+\begin{python}
+>>> joint = ((ashtray @ idn(bnd) @ cancer) * (copy(bnd) @ idn(bnd)) * copy(bnd)) >> smoking
+\end{python}
+
+\noindent (Recall that \pythoninline{bnd} stands for `Bayesian network
+domain', given by $\{t,f\}$.)
+
+The presence of an ashtray is now extended (weakened) to a predicate
+\pythoninline{tt @ truth(bnd) @ truth(bnd)} on this joint state. We
+use it first for updating, and then we marginalise to obtain the
+third `cancer' component that we are interested in:
+\begin{python}
+>>> (joint / (tt @ truth(bnd) @ truth(bnd))) % [0,0,1]
+0.267|t> + 0.733|f>
+\end{python}
+
+\noindent The absence of an ashtray is handled via:
+\begin{python}
+>>> (joint / (ff @ truth(bnd) @ truth(bnd))) % [0,0,1]
+0.0597|t> + 0.94|f>
+\end{python}
+
+\noindent We see that the the joint-crossover approach yields the same
+cancer probability distributions as the earlier propagation approach,
+via predicate and state transformation.
+\end{example}
+
+
+
 %\section{Disintegration}\label{sec:disintegration}
 
 
