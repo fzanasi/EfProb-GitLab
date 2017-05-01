@@ -759,8 +759,7 @@ def bayesian_networks():
     print("\nposteriors")
     print( cancer >> (smoking / (ashtray << tt)) )
     print( cancer >> (smoking / (ashtray << ff)) )
-    joint = ((ashtray @ idn(bnd) @ cancer) * (copy(bnd) @ idn(bnd)) * copy(bnd)) \
-            >> smoking
+    joint = (ashtray @ idn(bnd) @ cancer) * copy(bnd,3) >> smoking
     print("\nJoint-crossover approach, with joint:")
     print( joint )
     print("\npriors")
@@ -770,7 +769,6 @@ def bayesian_networks():
     print("\nposteriors")
     print( (joint / (tt @ truth(bnd) @ truth(bnd))) % [0,0,1] )
     print( (joint / (ff @ truth(bnd) @ truth(bnd))) % [0,0,1] )
-
 
 
 

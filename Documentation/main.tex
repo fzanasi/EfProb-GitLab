@@ -3108,10 +3108,10 @@ the previous example.
 \paragraph{Copy and swap channels} For each domain \pythoninline{dom}
 there is a copy
 channel\index{copy~channel!discrete~--}\index{channel!discrete~copy~--}
-\pythoninline{copy(dom) : dom -> dom + dom}. It duplicates its input.
+\pythoninline{copy(dom) : dom -> dom @ dom}. It duplicates its input.
 Such copying exists in classical (discrete and continuous)
 probability, but not in quantum probability, because of the so-called
-no-cloning result. This copy channels is usef for instance to define
+no-cloning result. This copy channels is used for instance to define
 the `graph'\index{graph~of~a~channel} of a channel \pythoninline{c :
   dom -> cod} as a new channel \pythoninline{graph(c) : dom -> dom +
   cod}, in the following way.
@@ -3120,7 +3120,10 @@ def graph(c):
     return (idn(c.dom) @ c) * copy(c.dom)
 \end{python}
 
-\noindent This turns out to be a useful construction.
+\noindent This turns out to be a useful construction. There is also an
+$n$-fold copy \pythoninline{copy(dom, n)} which copies
+\pythoninline{n} times. The default value for \pythoninline{n} is
+\pythoninline{2}.
 
 For each pair of domains \pythoninline{dom1}
 and \pythoninline{dom2} there is a swap
@@ -3908,7 +3911,7 @@ using the `tuple' channnel:
 \noindent In \EfProb this is done as follows, via first copying and
 then parallel composition \pythoninline{@}.
 \begin{python}
->>> joint = ((ashtray @ idn(bnd) @ cancer) * (copy(bnd) @ idn(bnd)) * copy(bnd)) >> smoking
+>>> joint = (ashtray @ idn(bnd) @ cancer) * copy(bnd,3) >> smoking
 >>> joint
 0.114|t,t,t> + 0.171|t,t,f> + 0.00875|t,f,t> + 0.166|t,f,f> 
      + 0.006|f,t,t> + 0.009|f,t,f> + 0.0263|f,f,t> + 0.499|f,f,f>
@@ -3947,6 +3950,14 @@ interested in:
 \noindent We see that the the joint-crossover approach yields the same
 cancer probability distributions as the earlier propagation approach,
 via predicate and state transformation.
+
+%% We see that ashtrays \emph{influence} cancer. But can we also conclude
+%% that the \emph{cause} cancer? The common wisdom says that smoking
+%% causes cancer. But how can we express that in the current framework?
+%% This is a topic of much research, see\cite{Pearl??}.
+%% %
+%% % Notably with his causal `do' calculus.
+%% %
 \end{example}
 
 
