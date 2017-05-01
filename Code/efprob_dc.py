@@ -810,6 +810,10 @@ class State(StateLike):
             return State.fromfun(g, cod)
         return Channel.fromklmap(f, dom, cod)        
 
+    def __floordiv__(self, selectors):
+        """Disintegration of the joint state"""
+        return self.disintegration(selectors)
+
 
 def _var_integral(rvfun, sfun, exp):
     def integrand(*xs):
@@ -1339,7 +1343,7 @@ def swap(dom1, dom2):
     return Channel(array, dom1+dom2, dom2+dom1)
 
 
-def copy(dom):
+def copy2(dom):
     dom = asdom(dom)
     if dom.iscont:
         raise ValueError("Cannot make a continuous copy channnel")
@@ -1349,6 +1353,12 @@ def copy(dom):
         array[n, n, n] = 1.0
     return Channel(array, dom, dom+dom)
 
+def copy(dom, n=2):
+    if n % 2 == 0:
+        if n==2:
+            return copy2(dom)
+        return (copy(dom, n/2) @ copy(dom, n/2)) * copy2(dom)
+    return (idn(dom) @ copy(dom, n-1)) * copy2(dom)
 
 def graph(c):
     return (idn(c.dom) @ c) * copy(c.dom)
