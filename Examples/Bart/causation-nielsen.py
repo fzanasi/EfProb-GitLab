@@ -1,5 +1,7 @@
 from efprob_dc import *
 
+float_format_spec = ".4g"
+
 # http://www.michaelnielsen.org/ddi/if-correlation-doesnt-imply-causation-then-what-does/
 #
 # See also:
@@ -82,11 +84,11 @@ print("Smoke marginal: ", st % [1,0])
 c = chan_from_states([flip(0.85), flip(0.9), flip(0.05), flip(0.1)],
                      [smoke_dom, tar_dom])
 
-print("Get cancer: ", c >> st >= yes_pred )
+print("Get cancer: ", c >> st )
 print("Smoking, given cancer: ", 
-      c >> (st / (point_pred('S', smoke_dom) @ truth(tar_dom))) >= yes_pred )
+      c >> (st / (point_pred('S', smoke_dom) @ truth(tar_dom))) )
 
-print( (graph(c) >> st).disintegration([1,0,0])('S') % [0,1] >= yes_pred )
+print( (graph(c) >> st).disintegration([1,0,0])('S') % [0,1] )
 
 sc = ((graph(c) >> st) % [1,0,1])
 
