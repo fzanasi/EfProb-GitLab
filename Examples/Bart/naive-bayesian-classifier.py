@@ -308,6 +308,7 @@ dclass = chan_from_states(
      State([2/9, 4/9, 3/9], dTemp) @
      flip(3/9) @
      flip(3/9),
+
      State([3/5, 0/5, 2/5], Weather) @
      State([2/5, 2/5, 1/5], dTemp) @
      flip(4/5) @
@@ -328,8 +329,6 @@ dclass4 = chan_from_states([flip(3/9), flip(3/5)], bool_dom)
 dclass_tuple = (dclass1 @ dclass2 @ dclass3 @ dclass4) * copy(bool_dom,4)
 
 print(dclass_tuple)
-
-
 
 print("\nDiscrete case:")
 print( dclass.inversion(prior_play)('S', 'C', True, True) )
