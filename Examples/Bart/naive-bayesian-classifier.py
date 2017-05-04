@@ -313,10 +313,42 @@ dclass = chan_from_states(
      flip(4/5) @
      flip(3/5)], bool_dom)
 
+dclass1 = chan_from_states(
+    [State([2/9, 4/9, 3/9], Weather), State([3/5, 0/5, 2/5], Weather)],
+    bool_dom)
+
+dclass2 = chan_from_states(
+    [State([2/9, 4/9, 3/9], dTemp), State([2/5, 2/5, 1/5], dTemp)],
+    bool_dom)
+
+dclass3 = chan_from_states([flip(3/9), flip(4/5)], bool_dom)
+
+dclass4 = chan_from_states([flip(3/9), flip(3/5)], bool_dom)
+
+dclass_tuple = (dclass1 @ dclass2 @ dclass3 @ dclass4) * copy(bool_dom,4)
+
+print(dclass_tuple)
+
+
+
 print("\nDiscrete case:")
 print( dclass.inversion(prior_play)('S', 'C', True, True) )
+print( dclass_tuple.inversion(prior_play)('S', 'C', True, True) )
 
-print("Correspondence: ", 0.205 / 0.795, 0.0053 / 0.0206 )
+print("Book's outcome: ", 0.0053 / (0.0053 + 0.0206) )
+
+print("Iterated version:")
+s0 = prior_play
+print(s0)
+s1 = dclass1.inversion(s0)('S')
+print(s1)
+s2 = dclass2.inversion(s1)('C')
+print(s2)
+s3 = dclass3.inversion(s2)(True)
+print(s3)
+s4 = dclass4.inversion(s3)(True)
+print(s4)
+
 
 cclass = chan_from_states(
     [State([2/9, 4/9, 3/9], Weather) @
@@ -333,6 +365,6 @@ print("\nContinuous case:")
 # See p.96 of Data_Mining_Practical_Machine_Learning_Techniques_and_Tools.pdf
 print( cclass.inversion(prior_play)('S', 66, 90, True) )
 
-print( 0.000036 / (0.000136 + 0.000036), 0.000136 / (0.000136 + 0.000036) )
+print("Book's outcomes: ", 0.000036 / (0.000136 + 0.000036), 0.000136 / (0.000136 + 0.000036) )
      
 
