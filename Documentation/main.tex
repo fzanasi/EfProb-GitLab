@@ -63,6 +63,11 @@
 %    sudo pip3 install numpy
 %    and similarly for 
 %
+%  - Discuss (?) random processes, that is indexed collections 
+%    X_i : Omega -> R of random variables on the same domain Omega,
+%    where the index set usually captures (discrete or continuous) time.
+%    They can also be represented as map Omega x N -> R or Omega x pRR -> R
+%
 % Literature
 % ==========
 %
@@ -3452,21 +3457,21 @@ Consider the Bayesian network below that describes the various aspects
 of getting an academic paper accepted at a conference.
 \begin{gather*}
 \vcenter{\xymatrix@R=1pt@C=12pt{
-\ovalbox{\textbf{T}ime}\ar@/^/[ddr]\ar@/^/[r] & \ovalbox{\textbf{W}ell Written}\ar@/^/[ddr]\ar@/^/[r] & \ovalbox{\textbf{P}ositive Reviews} \ar@/^/[dr]
+\ovalbox{\strut \textbf{T}ime}\ar@/^/[ddr]\ar@/^/[r] & \ovalbox{\strut \textbf{W}ell Written}\ar@/^/[ddr]\ar@/^/[r] & \ovalbox{\strut \textbf{P}ositive Reviews} \ar@/^/[dr]
 \\
-&  & & \ovalbox{\textbf{A}cceptance}
+&  & & \ovalbox{\strut \textbf{A}cceptance}
 \\
-\ovalbox{\textbf{S}kill}\ar@/^/[r] & \ovalbox{Strong \textbf{R}esults} \ar@/^/[uur]\ar@/^/[r] & \ovalbox{\begin{minipage}{2.5cm} \centering PC \textbf{M}ember Championing\end{minipage}} \ar@/^/[ur]
+\ovalbox{\strut \textbf{S}kill}\ar@/^/[r] & \ovalbox{\strut Strong \textbf{R}esults} \ar@/^/[uur]\ar@/^/[r] & \ovalbox{\strut \begin{minipage}{2.5cm} \centering PC \textbf{M}ember Championing\end{minipage}} \ar@/^/[ur]
 }} \label{eq:acceptanceNetwork} \\
 \begin{tabular}{c}
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|c|}
 \hline
 $\Prob{T}$ \\
 \hline\hline
 $\frac{4}{10}$ \\
 \hline
 \end{tabular}}
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|c|}
 \hline
 $\Prob{S}$ \\
 \hline\hline
@@ -3474,7 +3479,7 @@ $\frac{7}{10}$ \\
 \hline
 \end{tabular}}
 \\[1.5em]
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|c|c|}
 \hline
 $T$ & $\Prob{W}$ \\
 \hline\hline
@@ -3485,7 +3490,7 @@ $f$ & $\frac{3}{10}$ \\
 \end{tabular}}
 \end{tabular}
 \ \
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|cc|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|cc|c|}
 \hline
 $T$ & $S$ & $\Prob{R}$ \\
 \hline\hline
@@ -3499,7 +3504,7 @@ $f$ & $f$ & $\frac{1}{10}$ \\
 \hline
 \end{tabular}}
 \ \
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|cc|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|cc|c|}
 \hline
 $W$ & $R$ & $\Prob{P}$ \\
 \hline\hline
@@ -3513,7 +3518,7 @@ $f$ & $f$ & $\frac{1}{10}$ \\
 \hline
 \end{tabular}}
 \ \
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|cc|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|cc|c|}
 \hline
 $W$ & $R$ & $\Prob{M}$ \\
 \hline\hline
@@ -3527,7 +3532,7 @@ $f$ & $f$ & $0$ \\
 \hline
 \end{tabular}}
 \ \
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|cc|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|cc|c|}
 \hline
 $P$ & $M$ & $\Prob{A}$ \\
 \hline\hline
@@ -3639,10 +3644,10 @@ logical formulas, like in Example~\ref{ex:churchmedical}.
 Let's consider the following simple Bayesian network.
 \begin{gather*}
 \xymatrix{
-\ovalbox{A}\ar[r] & \ovalbox{B}\ar[r] & \ovalbox{C}
+\ovalbox{\strut A}\ar[r] & \ovalbox{\strut B}\ar[r] & \ovalbox{\strut C}
 }
 \\
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|c|}
 \hline
 $\Prob{A}$ \\
 \hline\hline
@@ -3650,7 +3655,7 @@ $0.25$ \\
 \hline
 \end{tabular}}
 \qquad
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|c|c|}
 \hline
 $A$ & $\Prob{B}$ \\
 \hline\hline
@@ -3660,7 +3665,7 @@ $f$ & $0.1$ \\
 \hline
 \end{tabular}}
 \qquad
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|c|c|}
 \hline
 $B$ & $\Prob{C}$ \\
 \hline\hline
@@ -3810,7 +3815,7 @@ and then (forward) state transformation: $f_{*}(\omega|_{p})$.
 We consider the relation between smoking and the presence of ash trays
 and (lung) cancer, in the following simple Bayesian network.
 \[ \xymatrix@C-1.5pc@R-1.5pc{
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|c|c|}
 \hline
 smoking & $\Prob{\text{ashtray}}$ \\
 \hline\hline
@@ -3819,8 +3824,8 @@ $t$ & $0.95$ \\
 $f$ & $0.25$ \\
 \hline
 \end{tabular}} 
-& \ovalbox{ashtray} & & \ovalbox{cancer} &
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|c|}
+& \ovalbox{\strut ashtray} & & \ovalbox{\strut cancer} &
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|c|c|}
 \hline
 smoking & $\Prob{\text{cancer}}$ \\
 \hline\hline
@@ -3831,10 +3836,9 @@ $f$ & $0.05$ \\
 \end{tabular}}
 \\
 \\
-& & \ovalbox{smoking}\ar[uul]\ar[uur]
-\\
-& & 
-{\setlength\tabcolsep{0.2em}\begin{tabular}{|c|}
+& & \ovalbox{\strut smoking}\ar[uul]\ar[uur]
+  \rlap{\quad\smash{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}
+\begin{tabular}{|c|}
 \hline
 $\Prob{\text{smoking}}$ \\
 \hline\hline
