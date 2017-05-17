@@ -669,8 +669,12 @@ $$0.3\ket{R} + 0.2\ket{G} + 0.5\ket{B}.$$
 of red, green, and blue. The `ket' notation $\ket{-}$ is borrowed from
 the quantum world. It has no mathematical meaning, but is convenient
 to separate the weights in the unit interval $[0,1]$ from the `things'
-that are weighed. A graphical representation (`plot') of the above
-convex combination can be seen in the
+that are weighed. Such distributions are sometimes called
+`categorical',\index{categorical~distribution}\index{distribution!categorical}
+but here we avoid this terminology since it is confusing in a context
+where category theory plays an important role. A graphical
+representation (`plot') of the above convex combination can be seen in
+the
 margin.\marginnote[-5\baselineskip]{\includegraphics{Pictures/RGB.png}}
 
 This chapter describes how to form such distributions, and how to
@@ -2860,14 +2864,18 @@ the bias distribution:
 0.6|True> + 0.4|False>
 \end{python}
 
-\noindent Alternatively we can ask for the expected value in
-this learned state, via the identity random variable:
+\noindent Alternatively we can ask for the expected value in this
+learned state --- known as the `posterior mean' --- via the identity
+random variable:
 \begin{python}
 >>> s.expectation(RandVar(bias_dom, bias_dom))
 0.599974754805
 \end{python}
 
 \noindent Hence we arrive at a bias of 0.6. 
+
+% Posterior mean is often contrasted with the ``MAP'': maximum a
+% posterior estimation.
 
 This final outcome is determined by the number of $0$'s and $1$'s in
 the list of observations, and not by their order. This is because the

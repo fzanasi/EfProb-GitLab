@@ -625,6 +625,50 @@ class StateLike:
             raise ValueError("Nothing to plot")
 
 
+#
+# Functions for masks
+#
+
+#
+# super_mask and sub_mask must have the same length. The result
+# removes all entries from sub_mask which are 0 in super_mask
+#
+def mask_restrict(super_mask, sub_mask):
+    if len(super_mask) != len(sub_mask):
+        raise Exception('Length mismatch in mask restriction')
+    result = []
+    for i in range(len(super_mask)):
+        if super_mask[i] == 1:
+            result = result + [sub_mask[i]]
+    return result
+
+#
+# Add two masks pointwise, throwing an error if there are two 1's at a
+# particular position.
+#
+def mask_sum(mask1, mask2):
+    n = len(mask1)
+    if len(mask2) != n:
+        raise Exception('Length mismatch in mask summation')
+    sum_mask = [mask1[i] + mask2[i] for i in range(n)]
+    # check disjointness after summation
+    if any([i > 1 for i in sum_mask]):
+        raise Exception('Non-disjoint masks in mask summation')
+    return sum_mask
+
+#
+# return conditional probability channel stat[ concl_mask | cond_mask ]
+#
+def condprobchan(stat, concl_mask, cond_mask):
+    n = len(stat.dom)
+    if len(cond_mask) != n or len(concl_mask) != n:
+        raise Exception('Mask mismatch in conditional probability')
+    sum_mask = mask_sum(concl_mask, cond_mask)
+    marginal_stat = stat % sum_mask
+    sub_cond_mask = mask_restrict(sum_mask, cond_mask)
+    return marginal_stat // sub_cond_mask
+
+
 class State(StateLike):
     """States."""
     def __init__(self, *args, **kwargs):
@@ -813,6 +857,15 @@ class State(StateLike):
     def __floordiv__(self, selectors):
         """Disintegration of the joint state"""
         return self.disintegration(selectors)
+
+    def condprob(self, concl_mask, cond_mask):
+        """conditional probability stat[ concl_mask | cond_mask ]"""
+        return condprobchan(self, concl_mask, cond_mask)
+
+    def __getitem__(self, key):
+        """interprete the key as a pair of masks"""
+        return self.condprob(key[0], key[1])
+
 
 
 def _var_integral(rvfun, sfun, exp):
