@@ -864,7 +864,7 @@ class State(StateLike):
 
     def __getitem__(self, key):
         """interprete the key as a pair of masks"""
-        return self.condprob(key[0], key[1])
+        return self.condprob(key.start, key.stop)
 
 
 
