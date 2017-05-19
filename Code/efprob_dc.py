@@ -1088,7 +1088,7 @@ class Fun2:
         def fun(xs, ys):
             lx = len(self.dom_supp)
             ly = len(self.cod_supp)
-            return self(xs[:lx], ys[:ly]) * self(xs[lx:], ys[ly:])
+            return self(xs[:lx], ys[:ly]) * other(xs[lx:], ys[ly:])
         return Fun2(fun, self.dom_supp + other.dom_supp,
                     self.cod_supp + other.cod_supp)
 
@@ -1318,12 +1318,12 @@ class Channel:
                                      other.dom_size)
         if self.iscont:
             if other.iscont:
-                outer = Fun.u_joint.outer
+                outer = Fun2.u_joint.outer
             else:
-                outer = Fun.u_smul.outer
+                outer = Fun2.u_smul.outer
         else:
             if other.iscont:
-                outer = Fun.u_rsmul.outer
+                outer = Fun2.u_rsmul.outer
             else:
                 outer = np.outer
         return Channel(kron2d(selfa, othera, outer=outer),
