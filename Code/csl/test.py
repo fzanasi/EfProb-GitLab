@@ -20,7 +20,7 @@ class TestCsl(unittest.TestCase):
         """ Programma basic.csl """
         self.drive("test/basic.csl")
 
-    def test_basic(self):
+    def test_pythonEscape(self):
         """ Programma pythonEscape.csl """
         self.drive("test/pythonEscape.csl")
 
