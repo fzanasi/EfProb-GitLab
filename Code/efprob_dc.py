@@ -1333,6 +1333,11 @@ class Channel:
     def __matmul__(self, other):
         return self.joint(other)
 
+    def __pow__(self, n):
+        if n == 0:
+            raise ValueError("Power must be at least 1")
+        return reduce(lambda s1, s2: s1 @ s2, [self] * n)
+
     def inversion(self, state):
         check_dom_match(self.dom, state.dom)
         l = len(self.dom)
