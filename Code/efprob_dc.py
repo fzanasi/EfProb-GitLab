@@ -1692,10 +1692,13 @@ def gaussian_fun(mu, sigma, supp=R):
     if isR(supp):
         def fun(x):
             return stats.norm.pdf(x, loc=mu, scale=sigma)
+        # We can also `freeze' the distribution and get pdf as
+        #     fun = stats.norm(loc=mu, scale=sigma).pdf
+        # but apparantly this is slower
     else:
-        s = gaussian_compensation(mu, sigma, supp[0], supp[1])
+        a, b = (supp[0] - mu) / sigma, (supp[1] - mu) / sigma
         def fun(x):
-            return stats.norm.pdf(x, loc=mu, scale=sigma) / s
+            return stats.truncnorm.pdf(x, a, b, loc=mu, scale=sigma)
     return Fun(fun, [supp])
 
 
