@@ -690,7 +690,7 @@ probability) distribution a \emph{state}.
 \section{States}\label{sec:dstate}
 
 In our embedded language \EfProb within \Python one can define a
-state for a fair (balanced) coin as:
+state for a fair (balanced) coin\index{coin!flip} as:
 \begin{python}
 >>> fflip = State([0.5, 0.5], [True, False])
 >>> fflip
@@ -873,8 +873,8 @@ marginal. We discuss them one by one below.
 A `joint' or `product'
 distribution/state\index{product!of~discrete~states}\index{state!discrete~product~--}
 can be formed via the product operator \pythoninline{@}. For instance,
-the product of a coin with bias \pythoninline{0.2} and a coin with
-bias \pythoninline{0.7} is written as:
+the product of a coin with bias\index{coin!bias} \pythoninline{0.2}
+and a coin with bias \pythoninline{0.7} is written as:
 \begin{python}
 >>> flip(0.2)
 0.2|True> + 0.8|False>
@@ -1743,8 +1743,8 @@ $$\begin{array}{rcl}
 \begin{example}
 \label{ex:vonneumancoin}
 There is a trick to turn an unfair coin into a fair, due to von
-Neumann.\index{von~Neumann~fair~coin} It is usually described
-as\sidenote{The three steps are as on
+Neumann.\index{von~Neumann~fair~coin}\index{coin!von~Neumann~fair~--}
+It is usually described as\sidenote{The three steps are as on
   \url{https://en.wikipedia.org/wiki/Fair_coin}}
 \begin{enumerate}
 \item Toss the coin twice.
@@ -2777,8 +2777,9 @@ same.
 \begin{example}
 \label{ex:dcoinparameter}
 In this example we look at the following classical question: suppose
-we are given a coin with an unknown bias, and we observe the following
-sequence of heads (1) and tails (0):
+we are given a coin with an unknown
+bias,\index{coin!bias~learning!discrete~--} and we observe the
+following sequence of heads (1) and tails (0):
 $$0,1,1,1,0,0,1,1$$
 
 \noindent What can we say about the bias of the coin?
@@ -3823,7 +3824,8 @@ and then (forward) state transformation: $f_{*}(\omega|_{p})$.
 We consider the relation between smoking and the presence of ash trays
 and (lung) cancer, in the following simple Bayesian network.
 \[ \xymatrix@C-1.5pc@R-1.5pc{
-{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|c|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}
+\begin{tabular}{|c|c|}
 \hline
 smoking & $\Prob{\text{ashtray}}$ \\
 \hline\hline
@@ -3833,7 +3835,8 @@ $f$ & $0.25$ \\
 \hline
 \end{tabular}} 
 & \ovalbox{\strut ashtray} & & \ovalbox{\strut cancer} &
-{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}\begin{tabular}{|c|c|}
+{\setlength\tabcolsep{0.2em}\renewcommand{\arraystretch}{1}
+\begin{tabular}{|c|c|}
 \hline
 smoking & $\Prob{\text{cancer}}$ \\
 \hline\hline
@@ -3852,8 +3855,8 @@ $\Prob{\text{smoking}}$ \\
 \hline\hline
 $0.3$ \\
 \hline
-\end{tabular}}
-} \]
+\end{tabular}}} 
+}\]
 
 \noindent Thus, 95\% of people who smoke have an ashtray in their
 home, and 25\% of the non-smokers too. On the right we see that in
@@ -4558,8 +4561,8 @@ heads and tails. The bias is a number from the unit interval
 $[0,1]$. In the discrete approach we chopped this unit interval up
 into intervals, and considered a discrete distribution over these
 intervals. In this chapter we work directly with a continuous
-distribution on the unit interval, represented in \EfProb as
-\pythoninline{R(0,1)}.
+distribution\index{coin!bias~learning!continuous~--} on the unit
+interval, represented in \EfProb as \pythoninline{R(0,1)}.
 \begin{python}
 >>> bias_dom = R(0,1)
 >>> prior = uniform_state(coin_bias)
@@ -7234,6 +7237,17 @@ measurement in the standard basis:
 \begin{python}
 meas0 = meas_pred(point_pred(0,2))
 meas1 = meas_pred(point_pred(1,2))
+\end{python}
+
+\noindent For instance, a (fair) quantum coin\index{coin!quantum~--}
+can be obtained as:
+\begin{python}
+>>> meas0 >> (hadamard >> ket(0))
+[[ 0.5+0.j  0.0+0.j]
+ [ 0.0+0.j  0.5+0.j]]
+>>> (meas0 * hadamard) >> ket(1)
+[[ 0.5+0.j  0.0+0.j]
+ [ 0.0+0.j  0.5+0.j]]
 \end{python}
 
 In quantum circuits it is custom to indicate the classical outcome of
