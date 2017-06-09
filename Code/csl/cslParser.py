@@ -156,7 +156,7 @@ def p_channel_sample(p):
     '''channel : sample'''
 
 def p_sample(p):
-    '''sample : NAME ARROW state_or_channel'''
+    '''sample : nameList ARROW state_or_channel'''
 
 def p_state_or_channel_state(p):
     '''state_or_channel : state'''
@@ -187,6 +187,12 @@ def p_state_elem(p):
 
 def p_domain(p):
     'domain : L_S_PAREN elementList R_S_PAREN'
+
+def p_nameList(p):
+    'nameList : NAME COMMA nameList'
+
+def p_nameList_single(p):
+    'nameList : NAME'
 
 def p_elementList(p):
     'elementList : nameOrBool COMMA elementList'

@@ -105,7 +105,7 @@ price = p >> prior
 print("\nPrice expectation and variance: ",
       price.expectation(), price.variance() )
 
-#price.plot()
+price.plot()
 
 buy = b >> price
 
@@ -113,7 +113,7 @@ buy = b >> price
 
 print( buy >= yes_pred )
 
-#buy.plot()
+buy.plot()
 
 
 

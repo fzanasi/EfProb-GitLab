@@ -6,7 +6,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-04-24
+# Date: 2017-05-20
 #
 from efprob_qu import *
 from math import *
@@ -522,6 +522,12 @@ def measurement():
     s = random_state(5)
     print( s >= p )
     print( meas_pred(p) >> s )
+
+    print("\n===\n")
+
+    print("* Quantum coin")
+    print( meas0 >> (hadamard >> ket(0)) )
+    print( (meas0 * hadamard) >> ket(1) )
 
     print("\n===\n")
 

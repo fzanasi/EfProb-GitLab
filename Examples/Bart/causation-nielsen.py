@@ -63,7 +63,7 @@ print( u / SmallB >= SuccessB, u / ~SmallB >= SuccessB, u >= SuccessB )
 print("\nSmokers with tar and cancer")
 
 def do(w, x):
-    return (w % [1,0]) @ (w.disintegration([1,0])(x))
+    return (w % [1,0]) @ (w // [1,0])(x)
 
 smoke_dom = ['S', '~S']
 tar_dom = ['T', '~T']
@@ -106,10 +106,51 @@ print("Don't: ", do(st, '~S') )
 print( c >> do(st, '~S') )
 
 print("Do intervention: ",
-      c >> (st % [1,0] @ st.disintegration([1,0])('S')) >= yes_pred )
+      c >> (st % [1,0] @ (st // [1,0])('S')) >= yes_pred,
+      c >> (point_state('S', smoke_dom) @ (st // [1,0])('S')) >= yes_pred )
 
 #print( 0.85 * 0.95 * 0.5 + 0.9 * 0.05 * 0.5 + 0.05 * 0.95 * 0.5 + 0.1 * 0.05 * 0.5 )
 
 #print( 0.85 * 0.95 * 0.51 + 0.9 * 0.05 * 0.51 + 0.05 * 0.95 * 0.49 + 0.1 * 0.05 * 0.49 )
 
 print( c * (idn(smoke_dom) @ (st // [1,0])) * copy(smoke_dom) >> point_state('S', smoke_dom) )
+
+
+print("\nAshtray example")
+
+smoking = bn_prior(0.3)
+ashtray = cpt(0.95,0.25)
+cancer = cpt(0.4,0.05)
+
+joint = (ashtray @ cancer @ idn(bnd)) * copy(bnd,3) >> smoking
+
+alt_joint = (ashtray >> smoking) @ (cancer >> smoking) @ smoking
+
+print("\nJoint: ", joint)
+print("ashtray is: ", joint % [1,0,0] )
+print("cancer is: ", joint % [0,1,0] )
+print("smoking is: ", joint % [0,0,1] )
+
+print("\nAlternative joint: ", alt_joint)
+print("ashtray is: ", alt_joint % [1,0,0] )
+print("cancer is: ", alt_joint % [0,1,0] )
+print("smoking is: ", alt_joint % [0,0,1] )
+
+print("\nCheck: ",
+      (idn(bnd) @ (joint // [1,0,0])) * copy(bnd) >> (joint % [1,0,0]) )
+
+intervention = (joint % [1,0,0]) @ (joint // [1,0,0])('t')
+
+print("\nIntervene by enforcing ashtrays: ", intervention )
+
+print("\nNow cancer is: ", intervention % [0,1,0] )
+print("and smoking: ", intervention % [0,0,1] )
+print("and ashtray: ", intervention % [1,0,0] )
+
+alt_intervention = (alt_joint % [1,0,0]) @ (alt_joint // [1,0,0])('t')
+
+print("\nIntervene by enforcing ashtrays: ", alt_intervention )
+
+print("\nNow cancer is: ", alt_intervention % [0,1,0] )
+print("and smoking: ", alt_intervention % [0,0,1] )
+print("and ashtray: ", alt_intervention % [1,0,0] )
