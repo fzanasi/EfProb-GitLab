@@ -349,6 +349,47 @@ s4 = dclass4.inversion(s3)(True)
 print(s4)
 
 
+print("\nDiscrete case via disintegration of the table")
+
+
+# joint domain
+jd = [Weather, dTemp, bool_dom, bool_dom, bool_dom]
+
+joint = 1/14 * point_state(('S', 'H', True, False, False), jd) \
+        + 1/14 * point_state(('S', 'H', True, True, False), jd) \
+        + 1/14 * point_state(('O', 'H', True, False, True), jd) \
+        + 1/14 * point_state(('R', 'M', True, False, True), jd) \
+        + 1/14 * point_state(('R', 'C', False, False, True), jd) \
+        + 1/14 * point_state(('R', 'C', False, True, False), jd) \
+        + 1/14 * point_state(('O', 'C', False, True, True), jd) \
+        + 1/14 * point_state(('S', 'M', True, False, False), jd) \
+        + 1/14 * point_state(('S', 'C', False, False, True), jd) \
+        + 1/14 * point_state(('R', 'M', False, False, True), jd) \
+        + 1/14 * point_state(('S', 'M', False, True, True), jd) \
+        + 1/14 * point_state(('O', 'M', True, True, True), jd) \
+        + 1/14 * point_state(('O', 'H', False, False, True), jd) \
+        + 1/14 * point_state(('R', 'M', True, True, False), jd) 
+
+t0 = joint % [0,0,0,0,1]
+print(t0)
+t1 = (joint[[1,0,0,0,0] : [0,0,0,0,1]]).inversion(t0)('S')
+print(t1)
+t2 = (joint[[0,1,0,0,0] : [0,0,0,0,1]]).inversion(t1)('C')
+print(t2)
+t3 = (joint[[0,0,1,0,0] : [0,0,0,0,1]]).inversion(t2)(True)
+print(t3)
+t4 = (joint[[0,0,0,1,0] : [0,0,0,0,1]]).inversion(t3)(True)
+print(t4)
+
+# doing it in one go yields a runtime warning:
+print( (joint[[1,1,1,1,0] : [0,0,0,0,1]]).inversion(t0)('S', 'C', True, True) )
+
+
+
+
+
+
+
 cclass = chan_from_states(
     [State([2/9, 4/9, 3/9], Weather) @
      gaussian_state(73, 6.2) @
@@ -365,5 +406,6 @@ print("\nContinuous case:")
 print( cclass.inversion(prior_play)('S', 66, 90, True) )
 
 print("Book's outcomes: ", 0.000036 / (0.000136 + 0.000036), 0.000136 / (0.000136 + 0.000036) )
+
      
 
