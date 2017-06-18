@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-04-24
+# Date: 2017-06-15
 #
 from functools import reduce
 import functools
@@ -1337,6 +1337,9 @@ class Channel:
         if n == 0:
             raise ValueError("Power must be at least 1")
         return reduce(lambda s1, s2: s1 @ s2, [self] * n)
+
+    def __truediv__(self, pred):
+        return chan_fromklmap(lambda *x: self(*x)/pred, self.dom, self.cod)
 
     def inversion(self, state):
         check_dom_match(self.dom, state.dom)

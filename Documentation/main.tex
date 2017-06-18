@@ -593,10 +593,11 @@ about the \EfProb library.
   logical \emph{proof}.
 
 \item Despite the fact that numerical approximations are used in the
-  EfProb calculations, the underlying semantics is \emph{exact}, and
-  the library computes probabilities using the standard mathematical
-  formulas, including, for instance, integration (like
-  in\cite{GehrMV16}). This is in contrast to languages based on
+  EfProb calculations, the underlying semantics is exact, and the
+  library computes probabilities using standard mathematical formulas,
+  including, for instance, integration (which is approximate,
+  unlike\cite{GehrMV16}, which uses exact symbolic
+  integration). Still, this is in contrast to language based on
   sampling, such as BLOG\cite{MilchMRSOK07} and
   Church\cite{GoodmanMRBT08}.
 
@@ -2860,13 +2861,16 @@ fragment look as follows.
 distribution.\index{beta~distribution}
 
 In the end, after these 8 updates we can ask which coin corresponds to
-the bias distribution:
+the bias distribution; it is obtained by state transformation.
 \begin{python}
 >>> chan >> s
 0.6|True> + 0.4|False>
 \end{python}
 
-\noindent Alternatively we can ask for the expected value in this
+\noindent Thus, after the observations $[0,1,1,1,0,0,1,1]$ the
+probability of getting a $1$ as next observation is $0.6$.
+
+Alternatively we can ask for the expected value in this
 learned state --- known as the `posterior mean' --- via the identity
 random variable:
 \begin{python}
