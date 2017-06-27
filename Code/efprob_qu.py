@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-06-15
+# Date: 2017-06-27
 #
 from functools import reduce
 import functools
@@ -149,6 +149,11 @@ def is_unitary(mat):
     out = out and np.allclose(np.dot(conjugate_transpose(mat), mat), 
                               np.eye(n))
     return out
+
+def is_isometry(mat):
+    n = mat.shape[1]
+    return np.allclose(np.dot(conjugate_transpose(mat), mat), 
+                       np.eye(n))
 
 
 def is_positive(mat):
@@ -322,7 +327,7 @@ class RandVar:
         def U(t):
             return scipy.linalg.expm(complex(0,-1) * t * self.array)
         def ch(t):
-            return channel_from_unitary(U(t), self.dom, self.dom)
+            return channel_from_isometry(U(t), self.dom, self.dom)
         return lambda t: ch(t) >> state
 
     def plot_evolution(self, state, randvar, lower_bound, upper_bound, steps=100):
@@ -614,6 +619,39 @@ class Channel:
                                             self.array[l][k]))
         #print("rshift out", is_positive(mat), np.trace(mat), "\n", mat)
         return State(mat, self.cod)
+
+    # # backward predicate transformation
+    # def __lshift__(self, p):
+    #     #print(p.dims, self.dom_dims, self.cod_dims)
+    #     if p.dom != self.cod:
+    #         raise Exception('Non-match in predicate transformation')
+    #     m = p.dom.size # = self.cod.size
+    #     n = self.dom.size
+    #     mat = np.zeros((n,n)) + 0j
+    #     # Perform a linear extension of the channel, encoding its
+    #     # behaviour on basisvectors in a matrix to arbitrary matrices.
+    #     for k in range(m):
+    #         for l in range(m):
+    #             mat = mat + p.array[k][l] * self.array[k][l]
+    #     return Predicate(mat, self.dom)
+
+    # # forward state transformation
+    # def __rshift__(self, s):
+    #     #print("rshift dims", s.dims, self.dom_dims)
+    #     if s.dom != self.dom:
+    #         raise Exception('Non-match in state transformation')
+    #     n = s.dom.size # = self.dom.size
+    #     m = self.cod.size
+    #     mat = np.zeros((m, m)) + 0j
+    #     for k in range(m):
+    #         for l in range(m):
+    #             # NB: the order of k,l must be different on the left
+    #             # and right hand side, because in the Hilbert-Schmidt
+    #             # inner product a transpose is used: <A,B> = tr(A*B).
+    #             mat[k][l] = np.trace(np.dot(s.array, 
+    #                                         self.array[l][k]))
+    #     #print("rshift out", is_positive(mat), np.trace(mat), "\n", mat)
+    #     return State(mat, self.cod)
 
     # parallel compositon
     def __matmul__(self, c):
@@ -958,35 +996,40 @@ def random_randvar(n):
     return RandVar(a + conjugate_transpose(a), [n])
 
 #
-# Choi matrix n x n of n x n matrices, obtained from n x n matrix u,
+# Choi matrix n x n of n x n matrices, obtained from m x n matrix u,
 # by forming putting u * E_ij * u^*, where E_ij is |i><j|, at position
 # (i,j). It satisfies choi(A @ B) = choi(A) @ choi(B), where @ is
 # tensor
 #
 # http://mattleifer.info/2011/08/01/the-choi-jamiolkowski-isomorphism-youre-doing-it-wrong/
 #
+# Note: np.dot(U,V) is first V then U, so equals UV = U*V as matrix product
+#
 def choi(u):
-    n = u.shape[0]
-    m = u.shape[1]
-    mat = np.zeros((n,n,m,m)) + 0j
-    for i in range(n):
-        for j in range(n):
-#            out = np.dot(u, np.dot(matrix_base(i,j,n), conjugate_transpose(u)))
-            out = np.dot(conjugate_transpose(u), np.dot(matrix_base(i,j,n), u))
+    m = u.shape[0] # columns
+    n = u.shape[1] # rows, so u is m x n matrix
+    mat = np.zeros((m,m,n,n)) + 0j
+    for i in range(m):
+        for j in range(m):
+            out = np.dot(conjugate_transpose(u), np.dot(matrix_base(i,j,m), u))
             mat[i,j] = out
     return mat
 
     
 #
-# Channel obtained from a unitary matrix. The key properties are:
+# Channel obtained from an isometry u. The key properties are:
 # 
 #   chan(u) >> s  =  conj_trans(u) * s.array * u
 #
 #   chan(u) << p  =  u * p.array * conj_trans(u)
 #
-def channel_from_unitary(u, dom, cod):
-    if not is_unitary(u):
-        raise Exception('Unitary matrix required for channel construction')
+# The domain and codomain are given as parameters, since they may
+# be of the form [2,2] instead of [4], when u has 4 rows or columns,
+# see for instance the cnot or swap channel below.
+#
+def channel_from_isometry(u, dom, cod):
+    if not is_isometry(u):
+        raise Exception('Isometry required for channel construction')
     return Channel(choi(u), dom, cod)
 
 
@@ -1032,7 +1075,7 @@ def convex_state_sum(*ls):
 def idn(*dims):
     if len(dims) == 0:
         raise Exception('Identity channel requires non-empty list of dimensions')
-    ch = channel_from_unitary( np.eye(dims[0]), [dims[0]], [dims[0]] )
+    ch = channel_from_isometry( np.eye(dims[0]), [dims[0]], [dims[0]] )
     if len(dims) == 1:
         return ch
     return ch @ idn(*dims[1:])
@@ -1103,7 +1146,7 @@ def copy(m,n):
 #
 # swap channel 2 @ 2 -> 2 @ 2
 #
-swap = channel_from_unitary(np.array([ [1, 0, 0, 0],
+swap = channel_from_isometry(np.array([ [1, 0, 0, 0],
                                        [0, 0, 1, 0],
                                        [0, 1, 0, 0],
                                        [0, 0, 0, 1] ]), 
@@ -1112,7 +1155,7 @@ swap = channel_from_unitary(np.array([ [1, 0, 0, 0],
 #
 # swap channel 2 @ 3 -> 3 @ 2
 #
-swap23 = channel_from_unitary(np.array([ [1, 0, 0, 0, 0, 0],
+swap23 = channel_from_isometry(np.array([ [1, 0, 0, 0, 0, 0],
                                          [0, 0, 1, 0, 0, 0],
                                          [0, 0, 0, 0, 1, 0],
                                          [0, 1, 0, 0, 0, 0],
@@ -1122,7 +1165,7 @@ swap23 = channel_from_unitary(np.array([ [1, 0, 0, 0, 0, 0],
 #
 # swap channel 3 @ 2 -> 2 @ 3
 #
-swap32 = channel_from_unitary(np.array([ [1, 0, 0, 0, 0, 0],
+swap32 = channel_from_isometry(np.array([ [1, 0, 0, 0, 0, 0],
                                          [0, 0, 0, 1, 0, 0],
                                          [0, 1, 0, 0, 0, 0],
                                          [0, 0, 0, 0, 1, 0],
@@ -1139,7 +1182,7 @@ def swaps(n,m):
             ar1[i] = 1
             ar2[j] = 1
             mat[i*m+j] = np.kron(ar2, ar1)
-    return channel_from_unitary(mat, [n,m], [m,n])
+    return channel_from_isometry(mat, [n,m], [m,n])
 
 # #
 # # first projection channel 2 @ 2 -> 2
@@ -1220,7 +1263,7 @@ x_matrix = np.array([[0,1],
 #
 # Pauli-X channel 2 -> 2
 #
-x_chan = channel_from_unitary(x_matrix, [2], [2])
+x_chan = channel_from_isometry(x_matrix, [2], [2])
 
 #
 # Eigen vectors of x_matrix and test
@@ -1235,7 +1278,7 @@ x_test = [x_pred, ~x_pred]
 #
 # This should be the same as quantum-control(x_chan)
 #
-cnot = channel_from_unitary(lower_right_one(x_matrix), [2, 2], [2, 2])
+cnot = channel_from_isometry(lower_right_one(x_matrix), [2, 2], [2, 2])
 
 
 y_matrix = np.array([[0,-complex(0, 1)],
@@ -1244,7 +1287,7 @@ y_matrix = np.array([[0,-complex(0, 1)],
 #
 # Pauli-Y channel 2 -> 2
 #
-y_chan = channel_from_unitary(y_matrix, [2], [2])
+y_chan = channel_from_isometry(y_matrix, [2], [2])
 
 
 #
@@ -1262,7 +1305,7 @@ z_matrix = np.array([[1,0],
 #
 # Pauli-Z channel 2 -> 2
 #
-z_chan = channel_from_unitary(z_matrix, [2], [2])
+z_chan = channel_from_isometry(z_matrix, [2], [2])
 
 
 #
@@ -1278,7 +1321,7 @@ hadamard_matrix = (1/math.sqrt(2)) * np.array([ [1, 1],
 #
 # Hadamard channel 2 -> 2
 #
-hadamard = channel_from_unitary(hadamard_matrix, [2], [2])
+hadamard = channel_from_isometry(hadamard_matrix, [2], [2])
 
 #
 # Basic states, commonly written as |+> and |->
@@ -1291,7 +1334,7 @@ hadamard_test = [plus.as_pred(), minus.as_pred()]
 #
 # Controlled Hadamard 2 @ 2 -> 2 @ 2
 #
-chadamard = channel_from_unitary(lower_right_one(hadamard_matrix), 
+chadamard = channel_from_isometry(lower_right_one(hadamard_matrix), 
                                  [2, 2], [2, 2])
 
 #
@@ -1369,13 +1412,13 @@ def phase_shift_matrix(angle):
 # Phase shift channel 2 -> 2, for angle between 0 and 2 pi
 #
 def phase_shift(angle):
-    return channel_from_unitary(phase_shift_matrix(angle), [2], [2])
+    return channel_from_isometry(phase_shift_matrix(angle), [2], [2])
 
 #
 # Controlled phase shift channel 2 @ 2 -> 2 @ 2, for angle between 0 and 2 pi
 #
 def cphase_shift(angle):
-    return channel_from_unitary(lower_right_one(phase_shift_matrix(angle)),
+    return channel_from_isometry(lower_right_one(phase_shift_matrix(angle)),
                                 [2, 2], [2, 2])
 
 
@@ -1383,15 +1426,15 @@ def cphase_shift(angle):
 #
 # toffoli channel 2 @ 2 @ 2 -> 2 @ 2 @ 2
 #
-toffoli = channel_from_unitary(np.array([ [1, 0, 0, 0, 0, 0, 0, 0],
-                                          [0, 1, 0, 0, 0, 0, 0, 0],
-                                          [0, 0, 1, 0, 0, 0, 0, 0],
-                                          [0, 0, 0, 1, 0, 0, 0, 0],
-                                          [0, 0, 0, 0, 1, 0, 0, 0],
-                                          [0, 0, 0, 0, 0, 1, 0, 0],
-                                          [0, 0, 0, 0, 0, 0, 0, 1],
-                                          [0, 0, 0, 0, 0, 0, 1, 0] ]),
-                               [2, 2, 2], [2, 2, 2])
+toffoli = channel_from_isometry(np.array([ [1, 0, 0, 0, 0, 0, 0, 0],
+                                           [0, 1, 0, 0, 0, 0, 0, 0],
+                                           [0, 0, 1, 0, 0, 0, 0, 0],
+                                           [0, 0, 0, 1, 0, 0, 0, 0],
+                                           [0, 0, 0, 0, 1, 0, 0, 0],
+                                           [0, 0, 0, 0, 0, 1, 0, 0],
+                                           [0, 0, 0, 0, 0, 0, 0, 1],
+                                           [0, 0, 0, 0, 0, 0, 1, 0] ]),
+                                [2, 2, 2], [2, 2, 2])
 
 
 

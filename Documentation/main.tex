@@ -122,6 +122,7 @@
 \usepackage{url}
 \usepackage{xspace} 
 \usepackage{MnSymbol}
+\usepackage{nicefrac}
 %\usepackage{nccmath}
 %\usepackage{fancybox}
 %\usepackage{xypic}
@@ -496,7 +497,11 @@ be formed, expectations and variances can be calculated, \etc These
 computations can be done for \eg~Bayesian networks, hidden Markov
 models, stochastic kernels, and quantum protocols.
 
-The library consists of two \Python files:
+A short introduction to \EfProb has been published.\cite{ChoJ17b} It
+can be used to get a quick overview. This manual gives a more
+extensive hands-on introduction.
+
+The \EfProb library consists of two \Python files:
 \begin{enumerate}
 \item \pythoninline{efprob\_dc.py}, for discrete and continuous
   probability, in combined form, discused in Chapters~\ref{ch:dp}
@@ -5792,14 +5797,14 @@ predicates, obtained from states.
 \begin{python} 
 >>> A1 = vector_pred(1/sqrt(2), 1/sqrt(2))
 >>> B1 = A1
->>> A2 = vector_pred(1/sqrt(2), 0.5/sqrt(2) * complex(1, sqrt(3)))
+>>> A2 = vector_pred(1/sqrt(2), 0.5/sqrt(2) * complex(1, -sqrt(3)))
 >>> B2 = A2
 >>> A1
 [[ 0.5  0.5]
  [ 0.5  0.5]]
 >>> A2
-[[ 0.50+0.j         0.25-0.4330127j]
- [ 0.25+0.4330127j  0.50+0.j       ]]
+[[ 0.50+0.j         0.25+0.4330127j]
+ [ 0.25-0.4330127j  0.50+0.j       ]]
 \end{python}
 
 \noindent These predicates may look a bit \emph{ad hoc} at this
@@ -6332,7 +6337,7 @@ can be seen as:
 \end{array}
 \end{equation}
 
-\noindent This matrix\index{matrix!of a quantum channel} can be
+\noindent This matrix\index{matrix!of~a~quantum~channel} can be
 accessed via an attribute, as in \pythoninline{c.array} for a channel
 \pythoninline{c}.
 
@@ -6410,59 +6415,74 @@ s \models c \ll p.
 equation.
 
 
-\subsection{Channels from unitary matrices}\label{subsec:qchannel:unitaries}
+\subsection{Channels from isometric matrices}\label{subsec:qchannel:isometries}
 
-An $n\times n$ complex matrix $U$ is called \emph{unitary} if its
-conjugate transpose $U^\dag$ is its inverse. Such $n\times n$ unitary
-matrix gives rise to a quantum channel $[n] \rightarrow [n]$, given by
-a `Choi' matrix of the following form:
+An $m\times n$ complex matrix $U$ is called an
+\emph{isometry}\index{isometry} if its conjugate transpose $U^\dag$ is
+its left inverse, that is, if $U^{\dag}U = \idmap$. Such matrices are
+also called `dagger monos'. To prevent confusion, $m\times n$ matrices
+have $m$ rows and $n$ columns, and gives rise to a linear function
+$\CN^{n} \rightarrow \CN^{m}$. We show how it yields a quantum channel
+$[n] \rightarrow [m]$, given by a `Choi' matrix of the following form:
 $$\left(\begin{array}{ccc}
-UE_{11}U^{\dag} & \quad\cdots\quad & UE_{n1}U^{\dag}
+U^{\dag}E_{00}U & \quad\cdots\quad & U^{\dag}E_{(m-1)0}U
 \\
 \vdots & & \vdots
 \\
-UE_{1n}U^{\dag} & \quad\cdots\quad & UE_{nn}U^{\dag}
+U^{\dag}E_{0(m-1)}U & \quad\cdots\quad & U^{\dag}E_{(m-1)(m-1)}U
 \end{array}\right)
 \qquad\mbox{where}\qquad
 {\begin{array}{rcl}
 E_{ij}
 & = &
-\ket{i}\bra{j}.
+\ket{i}\bra{j}, \mbox{ for }i,j<m.
 \end{array}}$$
 
 \noindent The matrices $E_{ij} = \ket{i}\bra{j}$ have a $1$ at
 position $(i,j)$ and zero's everywhere else. They form the basis
-vectors of the vector space $\Mat_{n}$ of $n\times n$ matrices.
+vectors of the vector space $\Mat_{m}$ of $m\times m$ matrices.  The
+above $m\times m$ matrix thus consists of $n\times n$ matrices
+$U^{\dag}E_{ij}U \colon \CN^{n} \rightarrow \CN^{m} \rightarrow
+\CN^{m} \rightarrow \CN^{n}$.\sidenote{One can form channels more
+  generally, using the Kraus form, via matrices $U_{i}$ with $\sum_{i}
+  U_{i}^{\dag}U_{i} = \idmap$, but this generality is not used.}
 
-In this way the \EfProb library defines a number of standard
-channels, like:
+In this way the \EfProb library defines a number of standard channels,
+mostly from unitary\index{unitary} matrices. The latter are matrices
+$U$ whose conjugate transpose $U^{\dag}$ is its inverse, so that both
+equations $U^{\dag}U = \idmap$ and $UU^{\dag}=\idmap$ hold. This means
+that both $U$ and $U^{\dag}$ are isometries, and can thus be used form
+channels, in opposite directions, as described above.  Such channels
+from unitaries are sometimes called
+`pure'.\index{pure!quantum~channel}\index{channel!quantum~--!pure~--}
+We reproduce some examples from the $\EfProb$ library:
 \begin{python}
-x_chan = channel_from_unitary(np.array([[0,1],
-                                        [1,0]]), [2], [2])
-y_chan = channel_from_unitary(np.array([[0,-complex(0, 1)],
-                                        [complex(0,1),0]]), [2], [2])
-z_chan = channel_from_unitary(np.array([[1,0],
-                                        [0,-1]]), [2], [2])
-hadamard = channel_from_unitary((1/sqrt(2)) * np.array([ [1, 1],
-                                                         [1, -1] ]), [2], [2])
+x_chan = channel_from_isometry(np.array([[0,1],
+                                         [1,0]]), [2], [2])
+y_chan = channel_from_isometry(np.array([[0,-complex(0, 1)],
+                                         [complex(0,1),0]]), [2], [2])
+z_chan = channel_from_isometry(np.array([[1,0],
+                                         [0,-1]]), [2], [2])
+hadamard = channel_from_isometry((1/sqrt(2)) * np.array([ [1, 1],
+                                                          [1, -1] ]), [2], [2])
 def phase_shift(angle):
-    return channel_from_unitary(np.array([[1, 0],
-                                          [0, complex(cos(angle),
-                                                      sin(angle))]]), [2], [2])
+    return channel_from_isometry(np.array([[1, 0],
+                                           [0, complex(cos(angle),
+                                                       sin(angle))]]), [2], [2])
 \end{python}
 
 \noindent These are all channels $[2] \rightarrow [2]$.
 
 In addition, we have the following channels $[2,2] \rightarrow [2,2]$.
 \begin{python}
-cnot = channel_from_unitary(np.array([ [1, 0, 0, 0],
-                                       [0, 1, 0, 0],
-                                       [0, 0, 0, 1],
-                                       [0, 0, 1, 0] ]), [2,2], [2,2])
-swap = channel_from_unitary(np.array([ [1, 0, 0, 0],
-                                       [0, 0, 1, 0],
-                                       [0, 1, 0, 0],
-                                       [0, 0, 0, 1] ]), [2,2], [2,2])
+cnot = channel_from_isometry(np.array([ [1, 0, 0, 0],
+                                        [0, 1, 0, 0],
+                                        [0, 0, 0, 1],
+                                        [0, 0, 1, 0] ]), [2,2], [2,2])
+swap = channel_from_isometry(np.array([ [1, 0, 0, 0],
+                                        [0, 0, 1, 0],
+                                        [0, 1, 0, 0],
+                                        [0, 0, 0, 1] ]), [2,2], [2,2])
 \end{python}
 
 \noindent We can use these channels to define new states and
@@ -6592,8 +6612,8 @@ via predicate transformation as:\sidenote{See again the the reference
 >>> angle = pi / 3
 >>> A2 = phase_shift(angle) << A1
 >>> A2
-[[ 0.50+0.j         0.25-0.4330127j]
- [ 0.25+0.4330127j  0.50+0.j       ]]
+[[ 0.50+0.j         0.25+0.4330127j]
+ [ 0.25-0.4330127j  0.50+0.j       ]]
 \end{python}
 
 We can also \emph{test} the transformation validity
@@ -6614,6 +6634,100 @@ manner, using compositon \pythoninline{*} of channels:
 
 \noindent Notice the reversal of channels when using $\ll$ twice, because
 $\ll$ works in backward direction.
+
+
+We have seen how states and predicates from discrete classical
+probability can be incorporated in the quantum world by putting
+the relevant probabilities at the diagonal. The next example
+illustrates how discrete channels fit in the quantum picture.
+
+
+\begin{example}
+\label{ex:dqchannel}
+Consider the discrete channel $c \colon 2 \rightarrow 3$ given by:
+$$\begin{array}{rclcrcl}
+c(0)
+& = &
+\frac{1}{2}\ket{0} + \frac{1}{8}\ket{1} + \frac{3}{8}\ket{2}
+& \qquad\mbox{and}\qquad &
+c(1)
+& = &
+\frac{1}{3}\ket{0} + \frac{1}{2}\ket{1} + \frac{1}{6}\ket{2}.
+\end{array}$$
+
+\noindent We turn it into channel $[2] \rightarrow [3]$ via the
+the follow $3\times 3$ matrix of $2\times 2$ matrices.
+$$\begin{array}{rcl}
+M
+& = &
+\begin{pmatrix}
+\left(\begin{smallmatrix} 
+\nicefrac{1}{2} & 0 \\ 0 & \nicefrac{1}{3} 
+\end{smallmatrix}\right)
+&
+\left(\begin{smallmatrix} 
+0 & 0 \\ 0 & 0
+\end{smallmatrix}\right)
+&
+\left(\begin{smallmatrix} 
+0 & 0 \\ 0 & 0
+\end{smallmatrix}\right)
+\\
+\left(\begin{smallmatrix} 
+0 & 0 \\ 0 & 0
+\end{smallmatrix}\right)
+&
+\left(\begin{smallmatrix} 
+\nicefrac{1}{8} & 0 \\ 0 & \nicefrac{1}{2} 
+\end{smallmatrix}\right)
+&
+\left(\begin{smallmatrix} 
+0 & 0 \\ 0 & 0
+\end{smallmatrix}\right)
+\\
+\left(\begin{smallmatrix} 
+0 & 0 \\ 0 & 0
+\end{smallmatrix}\right)
+&
+\left(\begin{smallmatrix} 
+0 & 0 \\ 0 & 0
+\end{smallmatrix}\right)
+&
+\left(\begin{smallmatrix} 
+\nicefrac{3}{8} & 0 \\ 0 & \nicefrac{1}{6} 
+\end{smallmatrix}\right)
+\end{pmatrix}
+\end{array}$$
+
+\noindent We see how the probabilities from the discrete channel $c$
+are organised on the diagonals of the matrices on the diagonal.
+
+For a state $\omega = \frac{1}{5}\ket{0} + \frac{4}{5}\ket{1}$ on $2$
+we obtain the transformed state $c_{*}(\omega) = \frac{11}{30}\ket{0}
++ \frac{17}{40}\ket{1} + \frac{5}{24}\ket{2}$ on $3$, via the
+  formula~\eqref{eqn:discstatetransf}. When we incorporate the above
+  matrix $M$ into an $\EfProb$ quantum channel \pythoninline{d} we get
+  the same outcomes, on the diagonal, via quantum state
+  transformation:
+\begin{python}
+>>> d >> probabilistic_state(1/5, 4/5)
+[[ 0.36666667+0.j  0.00000000+0.j  0.00000000+0.j]
+ [ 0.00000000+0.j  0.42500000+0.j  0.00000000+0.j]
+ [ 0.00000000+0.j  0.00000000+0.j  0.20833333+0.j]]
+\end{python}
+
+\noindent Similarly for predicate transformation. Take the predicate
+$q$ on $3$ defined by $q(0) = \frac{1}{2}$, $q(1) = 0$, $q(2) = 1$,
+then $c^{*}(q)(0) = \frac{5}{8}$ and $c^{*}(q)(1) = \frac{1}{3}$
+using~\eqref{eqn:discpredtransf}. These values again appear on the
+diagonal if we do quantum predicate transformation:
+\begin{python}
+>>> d << probabilistic_pred(1/2, 0, 1)
+[[ 0.62500000+0.j  0.00000000+0.j]
+ [ 0.00000000+0.j  0.33333333+0.j]]
+\end{python}
+\end{example}
+
 
 
 \auxproof{
@@ -6659,7 +6773,7 @@ where the channel \pythoninline{ch} is determined by a unitary matrix
 >>> U = np.array([[1/sqrt(2), 1/2, -1/2], 
 ...               [1/sqrt(2), -1/2, 1/2], 
 ...               [0, 1/sqrt(2), 1/sqrt(2)]])
->>> ch = channel_from_unitary(U, [3], [3])
+>>> ch = channel_from_isometry(U, [3], [3])
 >>> W = ch >> M
 >>> W >= B
 0.0
@@ -6774,7 +6888,7 @@ in Example~\ref{ex:linda}.
     U = np.array([[1/sqrt(2), 1/2, -1/2], 
                   [1/sqrt(2), -1/2, 1/2], 
                   [0, 1/sqrt(2), 1/sqrt(2)]])
-    ch = channel_from_unitary(U, [3], [3])
+    ch = channel_from_isometry(U, [3], [3])
     W = ch >> M
     print( W >= B )
     print( W >= A )
@@ -7332,7 +7446,7 @@ predicates in the state \pythoninline{w}.
 
 
 \paragraph{Control channels}
-In Subsection~\ref{subsec:qchannel:unitaries} we have seen the
+In Subsection~\ref{subsec:qchannel:isometries} we have seen the
 \pythoninline{cnot} channel, obtained from a unitary matrix. It
 performs what is called `controlled-not'. One would like to have
 similar `controlled' channels. At this stage we only support
@@ -7362,7 +7476,7 @@ behaviour is illustrated in:
 \end{python}
 
 \noindent The \pythoninline{cnot} channel defined in
-Subsection~\ref{subsec:qchannel:unitaries} is \emph{not} defined via
+Subsection~\ref{subsec:qchannel:isometries} is \emph{not} defined via
 classical control, but via quantum control. If we restrict
 \pythoninline{cnot} to classical bits via the \pythoninline{classic}
 channel we can make a precise statement, namely that the next two
@@ -7817,7 +7931,7 @@ It is defined first.
 \begin{python}
 >>> iy_matrix = np.array([[0,1],
 ...                       [-1,0]])
->>> iy_chan = channel_from_unitary(iy_matrix, [2], [2])
+>>> iy_chan = channel_from_isometry(iy_matrix, [2], [2])
 >>> alice = (discard(8) @ idn(2,2)) * ccase(idn(2) @ idn(2), 
 ...                                         idn(2) @ x_chan, 
 ...                                         x_chan @ idn(2), 
@@ -7965,9 +8079,9 @@ matrix-exponent:
 ...               [1, 0, 0, 1],
 ...               [0, 1, 1, 0]])
 >>> Ujp = scipy.linalg.expm(1.2393 * complex(0,-1) * H)
->>> chjp = channel_from_unitary(Ujp, [4], [4])
+>>> chjp = channel_from_isometry(Ujp, [4], [4])
 >>> Ujd = scipy.linalg.expm(-3.8324 * complex(0,-1) * H)
->>> chjd = channel_from_unitary(Ujd, [4], [4])
+>>> chjd = channel_from_isometry(Ujd, [4], [4])
 \end{python}
 
 \noindent With this infrastructure in place, we can define the three
@@ -8058,10 +8172,10 @@ characteristic.
     Udp = np.dot(Ujp, conjugate_transpose(Ujd))
     print("Self-adjoint and unitaries: ",
           is_hermitian(H), is_unitary(Ujp), is_unitary(Ujd), is_unitary(Upd) )
-    chjp = channel_from_unitary(Ujp, [4], [4])
-    chjd = channel_from_unitary(Ujd, [4], [4])
-    chpd = channel_from_unitary(Upd, [4], [4])
-    chdp = channel_from_unitary(Udp, [4], [4])
+    chjp = channel_from_isometry(Ujp, [4], [4])
+    chjd = channel_from_isometry(Ujd, [4], [4])
+    chpd = channel_from_isometry(Upd, [4], [4])
+    chdp = channel_from_isometry(Udp, [4], [4])
     J = vector_state(sqrt(0.459/2),sqrt(0.459/2),sqrt(0.541/2),sqrt(0.541/2))
     P = chjp >> J
     D = chjd >> J

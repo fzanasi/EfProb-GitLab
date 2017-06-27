@@ -6,7 +6,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-06-15
+# Date: 2017-06-27
 #
 from efprob_qu import *
 from math import *
@@ -246,7 +246,7 @@ def validity():
     v1 = vector_pred(1/sqrt(2), 1/sqrt(2))
     A1 = v1
     B1 = v1
-    v2 = vector_pred(1/sqrt(2), 0.5/sqrt(2) * complex(1, sqrt(3)))
+    v2 = vector_pred(1/sqrt(2), 0.5/sqrt(2) * complex(1, -sqrt(3)))
     A2 = v2
     B2 = v2
     print( A1 )
@@ -461,6 +461,28 @@ def predicate_transformation():
     print( (x_chan * hadamard) >> s >= p )
     print( s >= hadamard << (x_chan << p) )
     print( s >= (x_chan * hadamard) << p )
+
+    print("\n===\n")
+
+    print("* Classical discrete and quantum channels")
+    # consider discrete channel c : 2 -> 3 given by
+    # c(0) = 1/2|0> + 1/8|1> + 3/8|2>,  c(1) = 1/3|0> + 1/2|1> + 1/6|2>
+    # for state s = 1/5|0> + 4/5|1> we get 
+    # c >> s = 11/30|0> + 17/40|1> + 5/24|2> where
+    # 11/30 = 0.366.., 17/40 = 0.425, 5/24 = 0.20833..
+    mat = np.array([ [ np.array([[1/2,0], [0,1/3]]), 
+                       np.array([[0,0], [0,0]]), 
+                       np.array([[0,0], [0,0]]) ],
+                     [ np.array([[0,0], [0,0]]), 
+                       np.array([[1/8,0], [0,1/2]]), 
+                       np.array([[0,0], [0,0]]) ],
+                     [ np.array([[0,0], [0,0]]), 
+                       np.array([[0,0], [0,0]]),
+                       np.array([[3/8,0], [0,1/6]]) ] ])
+    d = Channel(mat, [2], [3])
+    print( d << truth(3) )
+    print( d >> probabilistic_state(1/5, 4/5) )
+    print( d << probabilistic_pred(1/2, 0, 1) )
 
 
 def structural_channels():
@@ -694,7 +716,7 @@ def teleportation_and_superdensecoding():
     print("* GHZ-superdense coding")
     iy_matrix = np.array([[0,1],
                           [-1,0]])
-    iy_chan = channel_from_unitary(iy_matrix, [2], [2])
+    iy_chan = channel_from_isometry(iy_matrix, [2], [2])
     alice = (discard(8) @ idn(2,2)) * ccase(idn(2) @ idn(2), 
                                             idn(2) @ x_chan, 
                                             x_chan @ idn(2), 
