@@ -56,7 +56,8 @@ def operations_on_states():
     print("\n===\n")
 
     print("* Printing convex sum example")
-    print( convex_state_sum((0.2,ket(0)),(0.3,plus),(0.5,minus)) )
+    print( convex_state_sum( (0.2,ket(0)), (0.3,plus), (0.5,minus) ) )
+    print( convex_state_sum( (1/2, plus), (1/2, minus) ) )
 
     print("\n===\n")
 
@@ -68,7 +69,7 @@ def operations_on_states():
     print("\n===\n")
 
     print("* purification")
-    s = random_state(5)
+    s = random_state([5])
     v = s.purify()
     print( v.dom )
     print( v % [1,0] == s )
@@ -108,12 +109,12 @@ def basic_states():
     print("\n===\n")
 
     print("* Random state")
-    print( random_state(3) )
+    print( random_state([3]) )
 
     print("\n===\n")
 
     print("* Random probabilistic state")
-    print( random_probabilistic_state(2) )
+    print( random_probabilistic_state([2]) )
 
 
 
@@ -123,9 +124,8 @@ def predicates():
     print("\nSection: Predicates\n")
 
     print("* Falsity and truth")
-    print( falsity(2) )
-
-    print( truth(2,3) )
+    print( falsity([2]) )
+    print( truth([2,3]) )
 
     print("\n===\n")
 
@@ -146,7 +146,7 @@ def operations_on_predicates():
     print("\nSubsection: Operations on predicates\n")
 
     print("* Random predicate and its orthocomplement")
-    p = random_pred(2)
+    p = random_pred([2])
     print(p)
     print(~p)
 
@@ -159,6 +159,10 @@ def operations_on_predicates():
 
     print("* Sum of unit predicates")
     print( point_pred(2,4) + point_pred(0,4) )
+    print( x_pred )
+    p = vector_pred(1/sqrt(2), 1/sqrt(2))
+    print( p )
+    print( x_pred + p )
 
     print("\n===\n")
 
@@ -176,7 +180,7 @@ def operations_on_predicates():
     print("\n===\n")
 
     print("* Parallel conjunction of truth and falsity")
-    print( truth(2) @ falsity(3) )
+    print( truth([2]) @ falsity([3]) )
 
     print("\n===\n")
 
@@ -190,7 +194,7 @@ def operations_on_predicates():
     t = ket(0,0)
     p = point_pred(1,2)
     print( s >= p )
-    print( s @ t >= p @ truth(2,2) )
+    print( s @ t >= p @ truth(t.dom) )
 
 
 
@@ -207,8 +211,8 @@ def validity():
     print("\n===\n")
 
     print("* Validity preserves scaling example")
-    # s = random_state(100)
-    # p = random_pred(100)
+    # s = random_state([100])
+    # p = random_pred([100])
     # print( s >= 0.3 * p )
     # print( 0.3 * (s >= p) )
 
@@ -223,8 +227,8 @@ def validity():
     print("\n===\n")
 
     print("* Validity of states")
-    s = random_state(8)
-    t = random_state(8)
+    s = random_state([8])
+    t = random_state([8])
     print( s >= t.as_pred() )
     print( t >= s.as_pred() )
 
@@ -262,21 +266,21 @@ def validity():
 
     print("\nAdditional experiments")
     print("Validities of B1, in itself and after conditiong with A1, A2")
-    print( bell00 >= truth(2) @ B1, 
-           bell00 / (A1 @ truth(2)) >= truth(2) @ B1,
-           bell00 / (A2 @ truth(2)) >= truth(2) @ B1 )
+    print( bell00 >= truth([2]) @ B1, 
+           bell00 / (A1 @ truth([2])) >= truth([2]) @ B1,
+           bell00 / (A2 @ truth([2])) >= truth([2]) @ B1 )
     print("Validities of B2, in itself and after conditiong with A1, A2")
-    print( bell00 >= truth(2) @ B2, 
-           bell00 / (A1 @ truth(2)) >= truth(2) @ B2,
-           bell00 / (A2 @ truth(2)) >= truth(2) @ B2 )
+    print( bell00 >= truth([2]) @ B2, 
+           bell00 / (A1 @ truth([2])) >= truth([2]) @ B2,
+           bell00 / (A2 @ truth([2])) >= truth([2]) @ B2 )
     print("Validities of A1, in itself and after conditiong with B1, B2")
-    print( bell00 >= A1 @ truth(2), 
-           bell00 / (truth(2) @ B1) >= A1 @ truth(2),
-           bell00 / (truth(2) @ B2) >= A1 @ truth(2) )
+    print( bell00 >= A1 @ truth([2]), 
+           bell00 / (truth([2]) @ B1) >= A1 @ truth([2]),
+           bell00 / (truth([2]) @ B2) >= A1 @ truth([2]) )
     print("Validities of A2, in itself and after conditiong with B1, B2")
-    print( bell00 >= A2 @ truth(2), 
-           bell00 / (truth(2) @ B1) >= A2 @ truth(2),
-           bell00 / (truth(2) @ B2) >= A2 @ truth(2) )
+    print( bell00 >= A2 @ truth([2]), 
+           bell00 / (truth([2]) @ B1) >= A2 @ truth([2]),
+           bell00 / (truth([2]) @ B2) >= A2 @ truth([2]) )
 
     print("\nphi's")
     phi1 = A1 @ B1 + ~A1 @ ~B1
@@ -297,16 +301,16 @@ def conditioning():
     print("\nSubsection: Conditioning\n")
 
     print("* Bayes' rule illustration")
-    s = random_state(2)
-    p = random_pred(2)
-    q = random_pred(2)
+    s = random_state([2])
+    p = random_pred([2])
+    q = random_pred([2])
     print( s / p >= q )
     print( (s >= p & q) / (s >= p) )
 
     print("\n===\n")
 
     print("* polarisation illustration, in several steps")
-    s = random_state(2)
+    s = random_state([2])
     vert_filt = point_pred(0,2)
     hor_filt = point_pred(1,2)
     diag_filt = plus.as_pred()
@@ -354,38 +358,38 @@ def conditioning():
     print("\n===\n")
 
     print("* EPR Crossover")
-    print( bell00 >= truth(2) @ point_pred(0, 2) )
-    print( bell00 / (point_pred(0, 2) @ truth(2)) >= truth(2) @ point_pred(0, 2) )
-    print( bell00 / (point_pred(1, 2) @ truth(2)) >= truth(2) @ point_pred(0, 2) )
+    print( bell00 >= truth([2]) @ point_pred(0, 2) )
+    print( bell00 / (point_pred(0, 2) @ truth([2])) >= truth([2]) @ point_pred(0, 2) )
+    print( bell00 / (point_pred(1, 2) @ truth([2])) >= truth([2]) @ point_pred(0, 2) )
     print("\n===\n")
 
     print("* Crossover via the x predicates")
     x_pp = vector_pred(-1/sqrt(2), 1/sqrt(2))
     x_mp = vector_pred(1/sqrt(2), 1/sqrt(2))
-    print( bell00 >= truth(2) @ x_pp )
-    print( bell00 / (x_pp @ truth(2)) >= truth(2) @ x_pp )
-    print( bell00 / (x_mp @ truth(2)) >= truth(2) @ x_pp )
+    print( bell00 >= truth([2]) @ x_pp )
+    print( bell00 / (x_pp @ truth([2])) >= truth([2]) @ x_pp )
+    print( bell00 / (x_mp @ truth([2])) >= truth([2]) @ x_pp )
     print("Similar outcomes for the other Bell states")
     print( "bell01 ", 
-           bell01 >= truth(2) @ x_pp,
-           bell01 / (x_pp @ truth(2)) >= truth(2) @ x_pp,
-           bell01 / (x_mp @ truth(2)) >= truth(2) @ x_pp )
+           bell01 >= truth([2]) @ x_pp,
+           bell01 / (x_pp @ truth([2])) >= truth([2]) @ x_pp,
+           bell01 / (x_mp @ truth([2])) >= truth([2]) @ x_pp )
     print( "bell10 ", 
-           bell10 >= truth(2) @ x_pp,
-           bell10 / (x_pp @ truth(2)) >= truth(2) @ x_pp,
-           bell10 / (x_mp @ truth(2)) >= truth(2) @ x_pp )
+           bell10 >= truth([2]) @ x_pp,
+           bell10 / (x_pp @ truth([2])) >= truth([2]) @ x_pp,
+           bell10 / (x_mp @ truth([2])) >= truth([2]) @ x_pp )
     print( "bell11 ", 
-           bell11 >= truth(2) @ x_pp,
-           bell11 / (x_pp @ truth(2)) >= truth(2) @ x_pp,
-           bell11 / (x_mp @ truth(2)) >= truth(2) @ x_pp )
+           bell11 >= truth([2]) @ x_pp,
+           bell11 / (x_pp @ truth([2])) >= truth([2]) @ x_pp,
+           bell11 / (x_mp @ truth([2])) >= truth([2]) @ x_pp )
 
     print("\n===\n")
 
     print("* Crossover conditioning")
-    print( (bell00 / (point_pred(0,2) @ truth(2))) % [0,1] == point_state(0,2),
-           (bell00 / (point_pred(1,2) @ truth(2))) % [0,1] == point_state(1,2) )
-    print( (bell00 / (x_pp @ truth(2))) % [0,1] == x_plus,
-           (bell00 / (x_mp @ truth(2))) % [0,1] == x_min )
+    print( (bell00 / (point_pred(0,2) @ truth([2]))) % [0,1] == point_state(0,2),
+           (bell00 / (point_pred(1,2) @ truth([2]))) % [0,1] == point_state(1,2) )
+    print( (bell00 / (x_pp @ truth([2]))) % [0,1] == x_plus,
+           (bell00 / (x_mp @ truth([2]))) % [0,1] == x_min )
 
 
 def random_variables():
@@ -406,7 +410,7 @@ def random_variables():
     print("\n===\n")
 
     print("* Dice variance, quantum style")
-    dice = uniform_probabilistic_state(6)
+    dice = uniform_probabilistic_state([6])
     points = 1 * point_pred(0,6) + 2 * point_pred(1,6) + 3 * point_pred(2,6) \
              + 4 * point_pred(3,6) + 5 * point_pred(4,6) + 6 * point_pred(5,6)
     print( dice >= points )
@@ -455,8 +459,8 @@ def predicate_transformation():
     print("\n===\n")
 
     print("* Transformations validity")
-    p = random_pred(2)
-    s = random_state(2)
+    p = random_pred([2])
+    s = random_state([2])
     print( x_chan >> (hadamard >> s) >= p )
     print( (x_chan * hadamard) >> s >= p )
     print( s >= hadamard << (x_chan << p) )
@@ -480,7 +484,7 @@ def predicate_transformation():
                        np.array([[0,0], [0,0]]),
                        np.array([[3/8,0], [0,1/6]]) ] ])
     d = Channel(mat, [2], [3])
-    print( d << truth(3) )
+    print( d << truth([3]) )
     print( d >> probabilistic_state(1/5, 4/5) )
     print( d << probabilistic_pred(1/2, 0, 1) )
 
@@ -502,9 +506,9 @@ def structural_channels():
     print("\n===\n")
 
     print("* Projection, in various forms")
-    s = random_state(2)
+    s = random_state([2])
     print( s )
-    t = random_state(2)
+    t = random_state([2])
     #print( (proj1 * cnot) >> (s @ t) )
     print( ((idn(2) @ discard(2)) * cnot) >> (s @ t) )
     print( (cnot >> (s @ t)) % [1,0] )
@@ -513,8 +517,8 @@ def structural_channels():
     print("\n===\n")
 
     print("* Swap examples")
-    s = random_state(2)
-    t = random_state(2)
+    s = random_state([2])
+    t = random_state([2])
     print( swap >> (s @ t) == t @ s )
     print( swap >> bell00 == bell00,
            swap >> bell01 == bell01,
@@ -525,13 +529,13 @@ def structural_channels():
 
     print("* Ancilla added to a channel")
     c = hadamard
-    s = random_state(2)
+    s = random_state([2])
     print( (c @ ket(1).as_chan()) >> s == (c >> s) @ ket(1) )
 
     print("\n===\n")
 
     print("* Discard and ancilla")
-    s = random_state(2)
+    s = random_state([2])
     print( (discard(2) @ ket(0).as_chan()) >> s )
     print( (ket(0).as_chan() @ discard(2)) >> s )
 
@@ -540,8 +544,8 @@ def measurement():
     print("\nSubsection: Measurement, control and instruments\n")
 
     print("* Probabilistic outcome of measurement")
-    p = random_pred(5)
-    s = random_state(5)
+    p = random_pred([5])
+    s = random_state([5])
     print( s >= p )
     print( meas_pred(p) >> s )
 
@@ -554,7 +558,7 @@ def measurement():
     print("\n===\n")
 
     print("* Classic channel taking out the diagonal")
-    s = random_state(3)
+    s = random_state([3])
     print( s )
     print( classic(3) >> s )
 
@@ -563,7 +567,7 @@ def measurement():
     print("* Measurement in the Bell basis")
     bell_test = [bell00.as_pred(), bell01.as_pred(), bell10.as_pred(), bell11.as_pred()]
     meas_bell = meas_test(bell_test)
-    w = cnot >> (random_state(2) @ random_state(2))
+    w = cnot >> random_state([2,2])
     print( w )
     print( meas_bell >> w )
     print( w >= bell00.as_pred() )
@@ -580,7 +584,7 @@ def measurement():
 
     print("* ccase illustration")
     s = probabilistic_state(0.2, 0.3, 0.5)
-    t = random_state(2)
+    t = random_state([2])
     w = ccase(x_chan, hadamard, idn(2)) >> (s @ t)
     print( w % [1, 0] )
     print( w % [0, 1] )
@@ -591,33 +595,33 @@ def measurement():
     print("\n===\n")
 
     print("* First projection of instrument is measurement")
-    p = random_pred(5)
+    p = random_pred([5])
     print( (idn(2) @ discard(5)) * instr(p) == meas_pred(p) )
 
     print("\n===\n")
 
     print("* Second projection of instrument is convex sum")
-    s = random_state(5)
+    s = random_state([5])
     print( discard(2) @ idn(5) * instr(p) >> s ==
            convex_state_sum( (s >= p, s / p), (s >= ~p, s / ~p) ) )
 
     print("\n===\n")
 
     print("* Intrument predicate transformation")
-    p = random_pred(10)
-    q = random_pred(10)
-    print( instr(p) << truth(2) @ q == (p & q) + (~p & q) )
+    p = random_pred([10])
+    q = random_pred([10])
+    print( instr(p) << truth([2]) @ q == (p & q) + (~p & q) )
     print( instr(p) << point_pred(0,2) @ q == p & q )
     print( instr(p) << point_pred(1,2) @ q == ~p & q )
 
     print("\n===\n")
 
     print("* Predicate case")
-    p = random_pred(2)
-    s = random_state(2)
+    p = random_pred([2])
+    s = random_state([2])
     print( pcase(p)(x_chan, y_chan) >> s ==
            convex_state_sum( (s >= p, x_chan >> s/p), (s >= ~p, y_chan >> s/~p) ) )
-    q = random_pred(2)
+    q = random_pred([2])
     print( pcase(p)(x_chan, y_chan) << q ==
            (p & x_chan << q) + (~p & y_chan << q) )
 
@@ -625,9 +629,9 @@ def measurement():
     print("\n===\n")
 
     print("* Extract update state from instrument")
-    p = random_pred(10)
-    s = random_state(10)
-    print( ((instr(p) >> s) / (point_pred(0,2) @ truth(10))) % [0,1] ==  s / p )
+    p = random_pred([10])
+    s = random_state([10])
+    print( ((instr(p) >> s) / (point_pred(0,2) @ truth([10]))) % [0,1] ==  s / p )
 
 
 def teleportation_and_superdensecoding():
@@ -641,7 +645,7 @@ def teleportation_and_superdensecoding():
           * (idn(2) @ discard(2) @ idn(2)) \
           * (idn(2) @ ccontrol(x_chan))
     teleportation = bob * (alice @ idn(2)) * (idn(2) @ bell00.as_chan())
-    s = random_state(2)
+    s = random_state([2])
     print( s )
     print( teleportation >> s )
 
@@ -706,7 +710,7 @@ def teleportation_and_superdensecoding():
     print("\n===\n")
 
     print("* GHZ-teleportation, test")
-    s = random_state(2)
+    s = random_state([2])
     print( s )
     print( ghz_teleporation >> s )
     print( ghz_teleporation == idn(2) )
@@ -737,7 +741,7 @@ def teleportation_and_superdensecoding():
     print("\n===\n")
 
     print("* GHZ-superdense coding 8-test")
-    s = random_probabilistic_state(8)
+    s = random_probabilistic_state([8])
     print( s )
     print( ghz_sdc >> s )
 
@@ -746,9 +750,9 @@ def teleportation_and_superdensecoding():
     print("* GHZ-superdense coding classical bit test")
     k1 = kron(4,2) * (kron(2,2) @ idn(2))
     k2 = (kron_inv(2,2) @ idn(2)) * kron_inv(4,2)
-    r1 = random_probabilistic_state(2)
-    r2 = random_probabilistic_state(2)
-    r3 = random_probabilistic_state(2)
+    r1 = random_probabilistic_state([2])
+    r2 = random_probabilistic_state([2])
+    r3 = random_probabilistic_state([2])
     print( r1 )
     print( r2 )
     print( r3 )

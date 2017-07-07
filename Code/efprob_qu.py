@@ -225,6 +225,7 @@ def matrix_base(i,j,n):
 class Dom:
     """(Co)domains of states, predicates and channels"""
     def __init__(self, dims):
+        # dims is list of numbers (dimensions of components)
         self.dims = dims
         self.size = prod(dims)
 
@@ -886,11 +887,13 @@ def probabilistic_state(*ls):
 # The uniform probabilistic state of size n, with probability 1/n on
 # the diagonal in the resulting density matrix.
 #
-def uniform_probabilistic_state(n):
+def uniform_probabilistic_state(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
     mat = np.zeros((n,n))
     for i in range(n):
         mat[i,i] = 1/n
-    return State(mat, [n])
+    return State(mat, dom)
 
 #
 # A random vector state of size n, using Python's random number
@@ -905,7 +908,7 @@ def random_vector_state(n):
 # A random state of size n, using Python's random number
 # generator. These states are useful for testing.
 #
-def random_state(n):
+def random_state(dom):
     # alternative use numpy.random and A*.A/trace(A*.A)
     # for predicates use A*.A / max (eigenvalue (A*.A))
     # A = np.random.rand(n,n)
@@ -917,6 +920,8 @@ def random_state(n):
     # D = np.dot(C, conjugate_transpose(C))
     # D = (1/np.trace(D).real) * D
     # print(np.trace(D), is_positive(D))
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
     ls = [vector_state(*[complex(random.uniform(-10.0, 10.0),
                                  random.uniform(-10.0, 10.0))
                          for i in range(n)]) 
@@ -924,15 +929,21 @@ def random_state(n):
     amps = [random.uniform(0.0, 1.0) for i in range(n)]
     s = sum(amps)
     mat = sum([amps[i]/s * ls[i].array for i in range(n)])
-    return State(mat, [n])
+    return State(mat, dom)
 
 #
 # A random probabilistic state of size n, with n probabilities that
 # add up to one on the diagonal of the resulting density matrix.
 #
-def random_probabilistic_state(n):
+def random_probabilistic_state(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
     ls = [random.uniform(0.0, 1.0) for i in range(n)]
-    return probabilistic_state(*ls)
+    s = sum(ls)
+    mat = np.zeros((n,n))
+    for i in range(n):
+        mat[i,i] = ls[i]/s
+    return State(mat, dom)
 
 #
 # 0 <= theta <= pi, 0 <= phi <= 2*pi
@@ -947,17 +958,12 @@ def bloch_state(theta, phi):
 #
 # Truth predicate, for arbitrary dims
 #
-def truth(*dims):
-    if len(dims) == 0:
-        return Predicate(np.eye(1), [])
-    n = dims[0]
-    p = Predicate(np.eye(n), [n])
-    if len(dims) == 1:
-        return p
-    return p @ truth(*dims[1:])
+def truth(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    return Predicate(np.eye(dom.size), dom)
 
-def falsity(*dims):
-    return ~truth(*dims)
+def falsity(dom):
+    return ~truth(dom)
 
 def probabilistic_pred(*ls):
     n = len(ls)
@@ -973,12 +979,17 @@ def point_pred(i, n):
 #
 # A random probabilitisc predicate of dimension n
 #
-def random_probabilistic_pred(n):
-    ls = [random.uniform(0.0, 1.0) for i in range(n)]
-    s = sum(ls)
-    return probabilistic_pred(*[r/s for r in ls])
+def random_probabilistic_pred(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
+    mat = np.zeros((n,n))
+    for i in range(n):
+        mat[i,i] = random.uniform(0.0, 1.0)
+    return Predicate(mat, dom)
 
-def random_pred(n):
+def random_pred(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
     ls = [vector_state(*[complex(random.uniform(-10.0, 10.0),
                                  random.uniform(-10.0, 10.0))
                          for i in range(n)])
@@ -987,7 +998,7 @@ def random_pred(n):
     mat = sum([amps[i] * ls[i].array for i in range(n)])
     E = np.linalg.eigvals(mat)
     m = max([x.real for x in E])
-    return Predicate(mat/m, [n])
+    return Predicate(mat/m, dom)
 
 def random_randvar(n):
     ar = complex(20, 0) * (np.random.rand(n,n) - 0.5)
@@ -1551,7 +1562,7 @@ def meas_test(ts):
     t = ts[0]
     for i in range(l-1):
         t = t + ts[i+1]
-    if not np.all(np.isclose(t.array, truth(*dom.dims).array)):
+    if not np.all(np.isclose(t.array, truth(dom).array)):
         raise Exception('The predicates in a test must add up to truth')
     mat = np.zeros((l,l,dom.size,dom.size)) + 0j
     for i in range(l):

@@ -68,6 +68,11 @@
 %    where the index set usually captures (discrete or continuous) time.
 %    They can also be represented as map Omega x N -> R or Omega x pRR -> R
 %
+%  - Include convex sum example 1/2*plus + 1/2*min = id
+%
+%
+%
+%
 % Literature
 % ==========
 %
@@ -5050,10 +5055,15 @@ subsection is the convex sum.\index{convex!sum~of~quantum~states} It
 involves a weighted sum of states where the weights add up to one, as
 in:
 \begin{python}
->>> convex_state_sum((0.2,ket(0)),(0.3,plus),(0.5,minus))
+>>> convex_state_sum( (0.2,ket(0)), (0.3,plus), (0.5,minus) )
 [[ 0.6+0.j -0.1+0.j]
  [-0.1+0.j  0.4+0.j]]
+>>> print( convex_state_sum( (1/2, plus), (1/2, minus) ) 
+[[ 0.5+0.j  0.0+0.j]
+ [ 0.0+0.j  0.5+0.j]]
 \end{python}
+
+\noindent The latter is the fair quantum coin state.\index{coin!quantum~--}
 
 %% \noindent For binary convex sums one can also use the following syntax:
 %% \begin{python}
@@ -5120,7 +5130,7 @@ can also be used for purification,\index{purification} whereby a pure
 state is formed with a domain that is twice as big, but whose (first)
 marginal is the orginal state. Here is what this looks like:
 \begin{python}
->>> s = random_state(5)
+>>> s = random_state([5])
 >>> v = s.purify()
 >>> v.dom 
 [5, 5]
@@ -5242,7 +5252,7 @@ a vector state --- and also of a probabilistic state. It puts a single
 \paragraph{Random states} For testing purposes it is very useful
 to have randomly generated states of a certain length. For instance:
 \begin{python}
->>> random_state(3)
+>>> random_state([3])
 [[ 0.32162863+0.j          0.23537749-0.07970437j -0.08834685-0.11437522j]
  [ 0.23537749+0.07970437j  0.49432253+0.j         -0.08974455+0.06699254j]
  [-0.08834685+0.11437522j -0.08974455-0.06699254j  0.18404884+0.j        ]]
@@ -5254,7 +5264,7 @@ produced, using the underlying random number generator of python.
 There is a similar function that produces a random probabilistic state,
 as in:
 \begin{python}
->>> random_probabilistic_state(2)
+>>> random_probabilistic_state([2])
 [[ 0.59979369  0.        ]
  [ 0.          0.40020631]]
 \end{python}
@@ -5308,10 +5318,10 @@ composition. This equation is also known as Born's rule.
 
 The most basic predicates are truth and falsity:
 \begin{python}
->>> falsity(2)
+>>> falsity([2])
 [[ 0.  0.]
  [ 0.  0.]]
->>> truth(2,3)
+>>> truth([2,3])
 [[ 1.  0.  0.  0.  0.  0.]
  [ 0.  1.  0.  0.  0.  0.]
  [ 0.  0.  1.  0.  0.  0.]
@@ -5327,7 +5337,7 @@ sidenote~\getrefnumber{note:qstate:type}, and make it possible to
 define truth and falsity on an entire product state at once, by using
 the appropriate domain of the product state as input. Thus, the
 predicate \pythoninline{truth(2,3)} used above is the same
-as the parallel product \pythoninline{truth(2) @ truth(3)} that
+as the parallel product \pythoninline{truth([2]) @ truth([3])} that
 will be described below.
 
 A \emph{probabilistic} predicate has, like a probabilistic state, only
@@ -5353,10 +5363,10 @@ interval.
  [0 0 0 0]]
 \end{python}
 
-For testing purposes one can use
-\pythoninline{random_pred(n)} and
-\pythoninline{random_probabilistic_pred(n)} to get
-arbitrary (probabilist) predicates of dimension \pythoninline{n}.
+For testing purposes one can use \pythoninline{random_pred([n1,..nk])}
+and \pythoninline{random_probabilistic_pred([n1,..,nk])} to get
+arbitrary (probabilist) predicates of dimension \pythoninline{n1}
+$\times \cdots \times $ \pythoninline{nk}.
 
 Each state of dimension $n$ is also a predicate of dimension $n$, but
 not the around --- take \pythoninline{falsity} for instance. There is
@@ -5407,7 +5417,7 @@ given by $\ortho r = 1 - r$. In a quantum setting the orthosupplement
 of a predicate is given similarly, by subtracting the predicate from
 the identity (diagonal) matrix. Thus, $\ortho p = 1 - p$, see:
 \begin{python}
->>> p = random_pred(2)
+>>> p = random_pred([2])
 >>> p
 [[ 0.36250803+0.j         -0.15404606-0.00875401j]
  [-0.15404606+0.00875401j  0.96265550+0.j        ]]
@@ -5451,6 +5461,21 @@ matrix is still below the identity (matrix). Here is an example.
  [0 0 0 0]
  [0 0 1 0]
  [0 0 0 0]]
+\end{python}
+
+\noindent There is a predefined x-predicate. We show what its
+orthosupplement is:
+\begin{python}
+>>> x_pred
+[[ 0.5 -0.5]
+ [-0.5  0.5]]
+>>> p = vector_pred(1/sqrt(2), 1/sqrt(2))
+>>> p
+[[ 0.5  0.5]
+ [ 0.5  0.5]]
+>>> x_pred + p
+[[ 1.  0.]
+ [ 0.  1.]]
 \end{python}
 
 \noindent It is not hard to see that a convex sum of predicates always
@@ -5503,7 +5528,7 @@ product\index{Kronecker!product}\index{product!Kronecker~--} of the
 two matrices, just like for states. The predicate \pythoninline{p1 @
   p2} is like a multiplication, see \eg in:
 \begin{python}
->>> truth(2) @ falsity(3)
+>>> truth([2]) @ falsity([3])
 [[ 0.  0.  0.  0.  0.  0.]
  [ 0.  0.  0.  0.  0.  0.]
  [ 0.  0.  0.  0.  0.  0.]
@@ -5581,7 +5606,7 @@ weakening explicitly, namely via parallel conjunction with truth:
 >>> p = point_pred(1,2)
 >>> s >= p
 0.6
->>> s @ t >= p @ truth(2,2)
+>>> s @ t >= p @ truth(t.dom)
 0.6
 \end{python}
 
@@ -5651,8 +5676,8 @@ r * (\omega\models p)
 \noindent Such properties can be tested (but not proven!) by using
 random states and predicates, as in:
 \begin{python}
->>> s = random_state(100)
->>> p = random_pred(100)
+>>> s = random_state([100])
+>>> p = random_pred([100])
 >>> s >= 0.3 * p
 0.05918743186783347
 >>> 0.3 * (s >= p)
@@ -5678,8 +5703,8 @@ to turn the state on the right hand side into a predicate. The resulting
 validity does not depend on which of the two states is used as
 predicate.
 \begin{python}
->>> s = random_state(8)
->>> t = random_state(8)
+>>> s = random_state([8])
+>>> t = random_state([8])
 >>> s >= t.as_pred()
 0.116791838672 
 >>> t >= s.as_pred()
@@ -5789,7 +5814,7 @@ are given in Examples~\ref{ex:carpreference} and~\ref{??}.
 \begin{example}
 \label{ex:belltable}
 The Bell states are famous 2-qubit states which have been defined at
-the end of Section~\ref{sec:qstate}. Of these four states be use the
+the end of Section~\ref{sec:qstate}. Of these four states we use the
 one named \pythoninline{bell00}. We additionally use the following
 predicates, obtained from states.
 % A1 = x_min, so ~A1 = x_plus
@@ -5948,9 +5973,9 @@ close connection given by Bayes'\index{Bayes'~rule!quantum~--} rule:
 
 \noindent Here is a test of Bayes rule in the quantum world:
 \begin{python}
->>> s = random_state(2)
->>> p = random_pred(2)
->>> q = random_pred(2)
+>>> s = random_state([2])
+>>> p = random_pred([2])
+>>> q = random_pred([2])
 >>> s / p >= q
 0.5479352799030488
 >>> (s >= p & q) / (s >= p)
@@ -5978,7 +6003,7 @@ following~\cite{Jacobs15}. For more background information see
 
 We start with a random qubit state, and the relevant predicates.
 \begin{python}
->>> s = random_state(2)
+>>> s = random_state([2])
 >>> vert_filt = point_pred(0,2)
 >>> hor_filt = point_pred(1,2)
 >>> diag_filt = plus.as_pred()
@@ -6095,16 +6120,16 @@ in the validity of the `zero' point predicate in the second component.
 We have to use weakening via the truth predicate in the first
 components to make the types match.
 \begin{python}
->>> bell00 >= truth(2) @ point_pred(0, 2)
+>>> bell00 >= truth([2]) @ point_pred(0, 2)
 0.5
 \end{python}
 
 \noindent Conditioning in the first component changes the validity
 of this predicate in the second component.
 \begin{python}
->>> bell00 / (point_pred(0, 2) @ truth(2)) >= truth(2) @ point_pred(0, 2)
+>>> bell00 / (point_pred(0, 2) @ truth([2])) >= truth([2]) @ point_pred(0, 2)
 1.0
->>> bell00 / (point_pred(1, 2) @ truth(2)) >= truth(2) @ point_pred(0, 2)
+>>> bell00 / (point_pred(1, 2) @ truth([2])) >= truth([2]) @ point_pred(0, 2)
 0.0
 \end{python}
 
@@ -6119,11 +6144,11 @@ $\left(\begin{smallmatrix} 0 & 1 \\ 1 & 0 \end{smallmatrix}\right)$.
 \begin{python}
 >>> x_pp = vector_pred(-1/sqrt(2), 1/sqrt(2))
 >>> x_mp = vector_pred(1/sqrt(2), 1/sqrt(2))
->>> bell00 >= truth(2) @ x_plus
+>>> bell00 >= truth([2]) @ x_plus
 0.5
->>> bell00 / (x_pp @ truth(2)) >= truth(2) @ x_pp
+>>> bell00 / (x_pp @ truth([2])) >= truth([2]) @ x_pp
 1.0
->>> bell00 / (x_mp @ truth(2)) >= truth(2) @ x_pp
+>>> bell00 / (x_mp @ truth([2])) >= truth([2]) @ x_pp
 0.0
 \end{python}
 
@@ -6136,9 +6161,9 @@ This `crossover' influence can be described more explicitly via
 conditioning in one coordinate and then projecting (marginalising)
 that coordinate away:
 \begin{python}
->>> (bell00 / (point_pred(0,2) @ truth(2))) % [0,1] == point_state(0,2)
+>>> (bell00 / (point_pred(0,2) @ truth([2]))) % [0,1] == point_state(0,2)
 True
->>> (bell00 / (point_pred(1,2) @ truth(2))) % [0,1] == point_state(1,2) 
+>>> (bell00 / (point_pred(1,2) @ truth([2]))) % [0,1] == point_state(1,2) 
 True
 \end{python}
 \end{example}
@@ -6255,7 +6280,7 @@ A new operation that exists on random variables is
 \emph{variance}.\index{variance!quantum~--} We shall illustrate
 it for an ordinary dice, incorporated into the quantum world.
 \begin{python}
->>> dice = uniform_probabilistic_state(6)
+>>> dice = uniform_probabilistic_state([6])
 >>> points = 1 * point_pred(0,6) + 2 * point_pred(1,6) + 3 * point_pred(2,6) \
 ...          + 4 * point_pred(3,6) + 5 * point_pred(4,6) + 6 * point_pred(5,6)
 >>> dice >= points
@@ -6620,8 +6645,8 @@ We can also \emph{test} the transformation validity
 equation~\eqref{eqn:qvaliditytransformation}, even in an iterated
 manner, using compositon \pythoninline{*} of channels:
 \begin{python}
->>> p = random_pred(2)
->>> s = random_state(2)
+>>> p = random_pred([2])
+>>> s = random_state([2])
 >>> x_chan >> (hadamard >> s) >= p
 0.66686812144481133
 >>> (x_chan * hadamard) >> s >= p
@@ -7165,11 +7190,11 @@ $$\vcenter{\Qcircuit@R-1pc{
 
 \noindent Here is a simple test:
 \begin{python}
->>> s = random_state(2)
+>>> s = random_state([2])
 >>> s
 [[ 0.47726159+0.j        -0.44585810-0.0353013j]
  [-0.44585810+0.0353013j  0.52273841+0.j       ]]
->>> t = random_state(2)
+>>> t = random_state([2])
 >>> ((idn(2) @ discard(2)) * cnot) >> (s @ t)
 [[ 0.47726159+0.j          0.21691432+0.01717443j]
  [ 0.21691432-0.01717443j  0.52273841+0.j        ]]
@@ -7191,8 +7216,8 @@ channel\index{swap~channel!quantum~--}\index{channel!quantum~swap~--}
 that can do this, but only for qubits. Its type is \pythoninline{[2,2]
   -> [2,2]}. Here are some simple examples.
 \begin{python}
->>> s = random_state(2)
->>> t = random_state(2)
+>>> s = random_state([2])
+>>> t = random_state([2])
 >>> swap >> (s @ t) == t @ s
 True
 >>> swap >> bell00 == bell00 
@@ -7279,7 +7304,7 @@ parallel with an existing channel, this existing channel is widenend.
 This effect is illustrated in:
 \begin{python}
 >>> c = hadamard
->>> s = random_state(2)
+>>> s = random_state([2])
 >>> (c @ ket(1).as_chan()) >> s == (c >> s) @ ket(1) )
 True
 \end{python}
@@ -7299,7 +7324,7 @@ $$\vcenter{\Qcircuit@R-1pc{
 \noindent Indeed, the random state \pythoninline{s} plays no role in
 this construction:
 \begin{python}
->>> s = random_state(2)
+>>> s = random_state([2])
 >>> (discard(2) @ ket(0).as_chan()) >> s
 [[ 1.+0.j  0.+0.j]
  [ 0.+0.j  0.+0.j]]
@@ -7342,8 +7367,8 @@ r
 \noindent Hence this channel \pythoninline{meas(p)} measures and
 produces the resulting value as a probabilistic state. Concretely:
 \begin{python}
->>> p = random_pred(5)
->>> s = random_state(5)
+>>> p = random_pred([5])
+>>> s = random_state([5])
 >>> s >= p
 0.514240393407
 >>> meas_pred(p) >> s
@@ -7400,7 +7425,7 @@ These measurement ideas are used in a channel
 `computational basic' of the domain. This channel removes everything
 from a state except its diagonal:
 \begin{python}
->>> s = random_state(3)
+>>> s = random_state([3])
 >>> s
 [[ 0.32345901+0.j          0.00687158+0.15788094j  0.15185772-0.22324826j]
  [ 0.00687158-0.15788094j  0.34920366+0.j         -0.23730879+0.01392982j]
@@ -7422,7 +7447,7 @@ input.\index{measurement!wrt.~a~test}
 \begin{python}
 >>> bell_test = [bell00.as_pred(), bell01.as_pred(), bell10.as_pred(), bell11.as_pred()]
 >>> meas_bell = meas_test(bell_test)
->>> w = cnot >> (random_state(2) @ random_state(2))
+>>> w = cnot >> random_state([2,2]
 >>> meas_bell >> w 
 [[ 0.12947764+0.j  0.00000000+0.j  0.00000000+0.j  0.00000000+0.j]
  [ 0.00000000+0.j  0.16059948+0.j  0.00000000+0.j  0.00000000+0.j]
@@ -7461,7 +7486,7 @@ with an additional qubit input. If this qubit is
 second input. Otherwise it applies the channel \pythoninline{c}. This
 behaviour is illustrated in:
 \begin{python}
->>> s = random_state(2)
+>>> s = random_state([2])
 >>> s
 [[ 0.58141072+0.j         0.46816135+0.1293966j]
  [ 0.46816135-0.1293966j  0.41858928+0.j       ]]
@@ -7497,7 +7522,7 @@ If the list of channels has length \pythoninline{n}, then the
 below.
 \begin{python}
 >>> s = probabilistic_state(0.2, 0.3, 0.5)
->>> t = random_state(2)
+>>> t = random_state([2])
 >>> w = ccase(x_chan, hadamard, idn(2)) >> (s @ t)
 >>> w % [1, 0]
 [[ 0.2+0.j  0.0+0.j  0.0+0.j]
@@ -7533,7 +7558,7 @@ Let \pythoninline{p} be a predicate with domain \pythoninline{dom}.
 The channel \pythoninline{instr(p)} has type \pythoninline{dom ->
   [2]+dom}. By projecting away the second part we obtain measurement:
 \begin{python}
->>> p = random_pred(5)
+>>> p = random_pred([5])
 >>> (idn(2) @ discard(5)) * instr(p) == meas_pred(p)
 True
 \end{python}
@@ -7541,8 +7566,8 @@ True
 \noindent The second part of the output of an instrument is a
 convex combination of conditional states, as illustrated in:
 \begin{python}
->>> p = random_pred(5)
->>> s = random_state(5)
+>>> p = random_pred([5])
+>>> s = random_state([5])
 >>> discard(2) @ idn(5) * instr(p) >> s ==
 ...   convex_state_sum( (s >= p, s / p), (s >= ~p, s / ~p) 
 True
@@ -7563,9 +7588,9 @@ re-appears when we describe predicate transformation for instruments,
 as described below. We have to weaken the predicate \pythoninline{q}
 so that domains fit. 
 \begin{python}
->>> p = random_pred(10)
->>> q = random_pred(10)
->>> instr(p) << truth(2) @ q == (p & q) + (~p & q)
+>>> p = random_pred([10])
+>>> q = random_pred([10])
+>>> instr(p) << truth([2]) @ q == (p & q) + (~p & q)
 True
 >>> instr(p) << point_pred(0,2) @ q == p & q
 True
@@ -7585,12 +7610,12 @@ a pair of channels \pythoninline{c,d}. Intuitively it performs
 if-\pythoninline{p}-then-\pythoninline{c}-else-\pythoninline{d}, but
 it does so by taking probabilities and side-effect into account.
 \begin{python}
->>> p = random_pred(2)
->>> s = random_state(2)
+>>> p = random_pred([2])
+>>> s = random_state([2])
 >>> pcase(p)(x_chan, y_chan) >> s ==
 ...   convex_state_sum( (s >= p, x_chan >> s/p), (s >= ~p, y_chan >> s/~p) ) 
 True
->>> q = random_pred(2)
+>>> q = random_pred([2])
 >>> pcase(p)(x_chan, y_chan) << q ==
 ...   (p & x_chan << q) + (~p & y_chan << q) )
 True
@@ -7602,9 +7627,9 @@ precondition rule for if-then-else.
 Finally, by conditioning the outcome of an instrument to the ``true''
 case and taking the second marginal we can extract the revised state:
 \begin{python}
->>> p = random_pred(10)
->>> s = random_state(10)
->>> ((instr(p) >> s) / (point_pred(0,2) @ truth(10))) % [0,1] ==  s / p 
+>>> p = random_pred([10])
+>>> s = random_state([10])
+>>> ((instr(p) >> s) / (point_pred(0,2) @ truth([10]))) % [0,1] ==  s / p 
 True
 \end{python}
 
@@ -7680,7 +7705,7 @@ this logically. But it does allow us to \emph{test} the claim that
 to an arbitrary state. After loading the above definitions we can do
 this:
 \begin{python}
->>> s = random_state(2)
+>>> s = random_state([2])
 >>> s
 [[ 0.80038663+0.j          0.01459339+0.11782929j]
  [ 0.01459339-0.11782929j  0.19961337+0.j        ]]
@@ -7902,7 +7927,7 @@ case distinctions:
 \noindent Since the types match, the latter composite is allowed,
 giving us GHZ-teleportation as a single channel. Now we can test it:
 \begin{python}
->>> s = random_state(2)
+>>> s = random_state([2])
 >>> s
 [[ 0.33869735+0.j          0.06518770+0.17403915j]
  [ 0.06518770-0.17403915j  0.66130265+0.j        ]]
@@ -7965,7 +7990,7 @@ We are ready to test the channel \pythoninline{ghz\_superdense\_coding}.
 One way of doing this by taking an arbitrary probabilistic state
 of length 8, and feeding it into the channel.
 \begin{python}
->>> s = random_probabilistic_state(8)
+>>> s = random_probabilistic_state([8])
 >>> t = ghz_sdc >> s 
 \end{python}
 
@@ -7979,9 +8004,9 @@ Kronecker channels.
 \begin{python}
 >>> k1 = kron(4,2) * (kron(2,2) @ idn(2))
 >>> k2 = (kron_inv(2,2) @ idn(2)) * kron_inv(4,2)
->>> r1 = random_probabilistic_state(2)
->>> r2 = random_probabilistic_state(2)
->>> r3 = random_probabilistic_state(2)
+>>> r1 = random_probabilistic_state([2])
+>>> r2 = random_probabilistic_state([2])
+>>> r3 = random_probabilistic_state([2])
 >>> r1
 [[ 0.04748214  0.        ]
  [ 0.          0.95251786]]

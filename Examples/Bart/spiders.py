@@ -1,3 +1,6 @@
+#
+# 
+#
 from efprob_qu import *
 
 def ket_zero_vector(n):
@@ -112,49 +115,123 @@ def modifier(stat):
             mat[i][j] = stat.array[i][j].conjugate() * np.eye(n)
     return Channel(mat, stat.dom, stat.dom)
 
-N = 2
+N = 3
 
-v = random_state(N)
+v = random_state([N,N])
 #v = random_probabilistic_state(N)
 
 print("")
-print( v )
+#print( v )
 mv = modifier(v)
 #print( mv )
 print("")
-print( truth(N) == mv << truth(N) )
-print( v == mv >> uniform_probabilistic_state(N) )
+print( v == uniform_probabilistic_state(v.dom) / v.as_pred() )
+print( truth(v.dom) == mv << truth(v.dom) )
+print( v == mv >> uniform_probabilistic_state(v.dom) )
 print( is_positive(mv.as_operator().array) )
 
 print("\nSquare root modifier")
 
-def sq_modifier(stat):
+def sqr_modifier(stat):
     n = stat.dom.size
+    s = matrix_square_root(stat.array)
     mat = np.zeros((n,n,n,n)) + 0j
-    c = instr(stat.as_pred())
     for i in range(n):
         for j in range(n):
-            mat[i][j] = 2 * (c << (point_pred(0,2) @ Predicate(matrix_base(i,j,n),
-                                                           stat.dom))).array
+            mat[i][j] = np.dot(s, np.dot(matrix_base(i,j,n), s))
     return Channel(mat, stat.dom, stat.dom)
 
-# kr = np.kron(matrix_square_root(v.array), np.eye(N))
 
-# vop = Operator(np.dot(kr,
-#                       np.dot(idn(N).as_operator().array,
-#                              kr)),
-#                Dom([N]), Dom([N]))
+sqrmv = sqr_modifier(v)
+sqrmvi = sqr_modifier(State(np.linalg.inv(v.array), v.dom))
 
-sqmv = sq_modifier(v)
+print( np.all(np.isclose(v.array, 
+                         N * (sqrmv >> uniform_probabilistic_state(v.dom)).array)) )
+print( is_positive(sqrmv.as_operator().array) )
+# Next outcomes are equal, up to a rather larger error
+#print( np.isclose((sqrmv * sqrmvi).array, idn(N).array) )
+#print( np.isclose((sqrmvi * sqrmv).array, idn(N).array) )
+# not a unitary map
+#print( sqrmv << truth(N) )
 
-print( sqmv >> uniform_probabilistic_state(N) )
+print("\nLeifer-Spekkens style\n")
 
-#mvi = pair_extract(graph_pair(v, idn(N)))[1]
+print( random_pred([2,2]) )
+
+def cap(n):
+    return State(1/n * idn(n).as_operator().array, [n,n])
+
+ph = 1.5
+c = x_chan * phase_shift(ph) * z_chan
+
+# from channel to binary state
+bs = (idn(2) @ c) >> cap(2)
+#print( bs )
+
+#print( c.as_operator() )
+
+def extract(w):
+    n = w.dom.dims[0]
+    m = w.dom.dims[1]
+    v = Operator(n * w.array, Dom([n]), Dom([m]))
+    return v.as_channel()
+
+#print( extract(bs) )
+#print( c )
 
 
 
 
+"""
 
+c = (hadamard @ discard(2))
+
+#print( c.dom, c.cod )
+
+#print( c.as_operator() )
+
+unif22 = kron_inv(2,2) >> uniform_probabilistic_state(4)
+
+print("\nCaps and cups")
+
+cap2 = bell00.as_chan()
+# fails:
+cup2 = bell00.as_pred().as_chan()
+
+
+#print( cup2 << Predicate(np.eye(1), []) )
+
+w = kron_inv(2,2) >> random_state(4)
+
+print( pair_extract(w)[1] )
+
+print( (idn(2) @ w.as_chan()).cod )
+
+print( (cap2 @ idn(2)) * (idn(2) @ w.as_chan()) )
+
+snake1 = (unif22.as_pred().as_chan() @ idn(2)) * (idn(2) @ unif22.as_chan())
+snake2 = (bell00.as_pred().as_chan() @ idn(2)) * (idn(2) @ bell00.as_chan())
+
+print("\nsnake")
+#print( snake2 )
+#print( snake2 << truth(2) )
+
+unif2222 = (kron_inv(2,2) @ kron_inv(2,2)) >> (kron_inv(4,4) >> uniform_probabilistic_state(16))
+
+#print( (c @ idn(2,2)) >> unif2222 )
+
+ground22 = unif22.as_pred().as_chan()
+
+print("\nGround types: ", ground22.dom, ground22.cod )
+
+cpred = ground22 * (c @ idn(2))
+
+#print( cpred.dom )
+
+
+
+
+"""
 
 
 
