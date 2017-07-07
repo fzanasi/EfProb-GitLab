@@ -494,14 +494,14 @@ def structural_channels():
     print("\nSubsection: Structural channels\n")
 
     print("* Plus state via hadamard channel")
-    c = (hadamard @ idn(2)) * cnot
+    c = (hadamard @ idn([2])) * cnot
     print( c >> ket(0,0) )
 
     print("\n===\n")
 
     print("* Outcome of discarding")
-    print( discard(2) >> ket(0) )
-    print( discard(2) >> ket(1) )
+    print( discard([2]) >> ket(0) )
+    print( discard([2]) >> ket(1) )
 
     print("\n===\n")
 
@@ -510,9 +510,9 @@ def structural_channels():
     print( s )
     t = random_state([2])
     #print( (proj1 * cnot) >> (s @ t) )
-    print( ((idn(2) @ discard(2)) * cnot) >> (s @ t) )
+    print( ((idn([2]) @ discard([2])) * cnot) >> (s @ t) )
     print( (cnot >> (s @ t)) % [1,0] )
-    print( ((idn(2) @ discard(2)) * cnot) >> (s @ t) == (cnot >> (s @ t)) % [1,0] )
+    print( ((idn([2]) @ discard([2])) * cnot) >> (s @ t) == (cnot >> (s @ t)) % [1,0] )
 
     print("\n===\n")
 
@@ -536,8 +536,8 @@ def structural_channels():
 
     print("* Discard and ancilla")
     s = random_state([2])
-    print( (discard(2) @ ket(0).as_chan()) >> s )
-    print( (ket(0).as_chan() @ discard(2)) >> s )
+    print( (discard([2]) @ ket(0).as_chan()) >> s )
+    print( (ket(0).as_chan() @ discard([2])) >> s )
 
 def measurement():
     
@@ -560,7 +560,7 @@ def measurement():
     print("* Classic channel taking out the diagonal")
     s = random_state([3])
     print( s )
-    print( classic(3) >> s )
+    print( classic([3]) >> s )
 
     print("\n===\n")
 
@@ -578,31 +578,31 @@ def measurement():
     print("\n===\n")
 
     print("* Equality of channels")
-    print( cnot * (classic(2) @ idn(2)) == ccontrol(x_chan) )
+    print( cnot * (classic([2]) @ idn([2])) == ccontrol(x_chan) )
 
     print("\n===\n")
 
     print("* ccase illustration")
     s = probabilistic_state(0.2, 0.3, 0.5)
     t = random_state([2])
-    w = ccase(x_chan, hadamard, idn(2)) >> (s @ t)
+    w = ccase(x_chan, hadamard, idn([2])) >> (s @ t)
     print( w % [1, 0] )
     print( w % [0, 1] )
     print( convex_state_sum((0.2, x_chan >> t), \
                             (0.3, hadamard >> t), \
-                            (0.5, idn(2) >> t)) )
+                            (0.5, idn([2]) >> t)) )
 
     print("\n===\n")
 
     print("* First projection of instrument is measurement")
     p = random_pred([5])
-    print( (idn(2) @ discard(5)) * instr(p) == meas_pred(p) )
+    print( (idn([2]) @ discard([5])) * instr(p) == meas_pred(p) )
 
     print("\n===\n")
 
     print("* Second projection of instrument is convex sum")
     s = random_state([5])
-    print( discard(2) @ idn(5) * instr(p) >> s ==
+    print( discard([2]) @ idn([5]) * instr(p) >> s ==
            convex_state_sum( (s >= p, s / p), (s >= ~p, s / ~p) ) )
 
     print("\n===\n")
@@ -639,12 +639,12 @@ def teleportation_and_superdensecoding():
     print("\nSection: Measurement, control and instruments\n")
 
     print("* Teleportation, with the Bell state")
-    alice = (meas0 @ meas0) * (hadamard @ idn(2)) * cnot
-    bob = (discard(2) @ idn(2)) \
+    alice = (meas0 @ meas0) * (hadamard @ idn([2])) * cnot
+    bob = (discard([2]) @ idn([2])) \
           * ccontrol(z_chan) \
-          * (idn(2) @ discard(2) @ idn(2)) \
-          * (idn(2) @ ccontrol(x_chan))
-    teleportation = bob * (alice @ idn(2)) * (idn(2) @ bell00.as_chan())
+          * (idn([2]) @ discard([2]) @ idn([2])) \
+          * (idn([2]) @ ccontrol(x_chan))
+    teleportation = bob * (alice @ idn([2])) * (idn([2]) @ bell00.as_chan())
     s = random_state([2])
     print( s )
     print( teleportation >> s )
@@ -657,19 +657,19 @@ def teleportation_and_superdensecoding():
     print("\n===\n")
 
     print("* Equality of channels")
-    print( np.isclose(teleportation.array, idn(2).array) )
-    print( np.all(np.isclose(teleportation.array, idn(2).array)) )
-    print( teleportation == idn(2) )
+    print( np.isclose(teleportation.array, idn([2]).array) )
+    print( np.all(np.isclose(teleportation.array, idn([2]).array)) )
+    print( teleportation == idn([2]) )
 
     print("\n===\n")
 
     print("* Superdense coding, with the Bell state")
-    alice = (discard(2) @ idn(2)) * ccontrol(x_chan) \
-            * (idn(2) @ discard(2) @ idn(2)) \
-            * (idn(2) @ ccontrol(z_chan)) * (swap @ idn(2))
-    bob = (meas0 @ meas0) * (hadamard @ idn(2)) * cnot
+    alice = (discard([2]) @ idn([2])) * ccontrol(x_chan) \
+            * (idn([2]) @ discard([2]) @ idn([2])) \
+            * (idn([2]) @ ccontrol(z_chan)) * (swap @ idn([2]))
+    bob = (meas0 @ meas0) * (hadamard @ idn([2])) * cnot
     def superdense_coding(r, s):
-        return bob >> ((alice @ idn(2)) >> (cflip(r) @ cflip(s) @ bell00))
+        return bob >> ((alice @ idn([2])) >> (cflip(r) @ cflip(s) @ bell00))
     r = random.uniform(0,1)
     s = random.uniform(0,1)
     print( r )
@@ -680,10 +680,10 @@ def teleportation_and_superdensecoding():
     print("\n===\n")
 
     print("* Superdense coding, with the Bell state, as channel")
-    sdc = bob * (alice @ idn(2)) * (idn(2,2) @ bell00.as_chan())
+    sdc = bob * (alice @ idn([2])) * (idn([2,2]) @ bell00.as_chan())
     sdck = kron(2,2) * sdc * kron_inv(2,2)
     print("channel types", sdc.dom, sdc.cod )
-    print( sdc == classic(2) @ classic(2), sdck == classic(4),  )
+    print( sdc == classic([2,2]), sdck == classic([4]),  )
 
     print("\n===\n")
 
@@ -691,7 +691,7 @@ def teleportation_and_superdensecoding():
     bell_test = [bell00.as_pred(), bell01.as_pred(), bell10.as_pred(), bell11.as_pred()]
     meas_bell = meas_test(bell_test)
     print( meas_bell.dom, meas_bell.cod )
-    alice = (meas_bell @ idn(2,2)) * (idn(2) @ ghz.as_chan())
+    alice = (meas_bell @ idn([2,2])) * (idn([2]) @ ghz.as_chan())
     print( alice.dom, alice.cod )
 
     print("\n===\n")
@@ -699,11 +699,11 @@ def teleportation_and_superdensecoding():
     print("* GHZ-teleportation, Bob's side")
     hadamard_test = [plus.as_pred(), minus.as_pred()]
     meas_hadamard = meas_test(hadamard_test)
-    bob = ( discard(8) @ idn(2) ) \
-          * ccase(idn(2), z_chan, x_chan, x_chan * z_chan, \
-                  z_chan, idn(2), x_chan * z_chan, x_chan) \
-        * ( kron(4, 2) @ idn(2) ) \
-        * ( idn(4) @ meas_hadamard @ idn(2) )
+    bob = ( discard([8]) @ idn([2]) ) \
+          * ccase(idn([2]), z_chan, x_chan, x_chan * z_chan, \
+                  z_chan, idn([2]), x_chan * z_chan, x_chan) \
+        * ( kron(4, 2) @ idn([2]) ) \
+        * ( idn([4]) @ meas_hadamard @ idn([2]) )
     print( bob.dom, bob.cod )
     ghz_teleporation = bob * alice
 
@@ -713,7 +713,7 @@ def teleportation_and_superdensecoding():
     s = random_state([2])
     print( s )
     print( ghz_teleporation >> s )
-    print( ghz_teleporation == idn(2) )
+    print( ghz_teleporation == idn([2]) )
 
     print("\n===\n")
 
@@ -721,21 +721,21 @@ def teleportation_and_superdensecoding():
     iy_matrix = np.array([[0,1],
                           [-1,0]])
     iy_chan = channel_from_isometry(iy_matrix, [2], [2])
-    alice = (discard(8) @ idn(2,2)) * ccase(idn(2) @ idn(2), 
-                                            idn(2) @ x_chan, 
-                                            x_chan @ idn(2), 
-                                            x_chan @ x_chan, 
-                                            z_chan @ idn(2), 
-                                            z_chan @ x_chan, 
-                                            iy_chan @ idn(2), 
-                                            iy_chan @ x_chan) 
+    alice = (discard([8]) @ idn([2,2])) * ccase(idn([2]) @ idn([2]), 
+                                                idn([2]) @ x_chan, 
+                                                x_chan @ idn([2]), 
+                                                x_chan @ x_chan, 
+                                                z_chan @ idn([2]), 
+                                                z_chan @ x_chan, 
+                                                iy_chan @ idn([2]), 
+                                                iy_chan @ x_chan) 
     print( alice.dom, alice.cod )
 
     print("\n===\n")
 
     print("* GHZ-superdense coding, Bob's side")
     bob = meas_ghz
-    ghz_sdc = bob * (alice @ idn(2)) * (idn(8) @ ghz.as_chan())
+    ghz_sdc = bob * (alice @ idn([2])) * (idn([8]) @ ghz.as_chan())
     print( ghz_sdc.dom, ghz_sdc.cod )
 
     print("\n===\n")
@@ -748,8 +748,8 @@ def teleportation_and_superdensecoding():
     print("\n===\n")
 
     print("* GHZ-superdense coding classical bit test")
-    k1 = kron(4,2) * (kron(2,2) @ idn(2))
-    k2 = (kron_inv(2,2) @ idn(2)) * kron_inv(4,2)
+    k1 = kron(4,2) * (kron(2,2) @ idn([2]))
+    k2 = (kron_inv(2,2) @ idn([2])) * kron_inv(4,2)
     r1 = random_probabilistic_state([2])
     r2 = random_probabilistic_state([2])
     r3 = random_probabilistic_state([2])

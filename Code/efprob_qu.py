@@ -1081,47 +1081,50 @@ def convex_state_sum(*ls):
 
 
 #
-# identity channel dims -> dims
+# identity channel dom -> dom
 #
-def idn(*dims):
-    if len(dims) == 0:
-        raise Exception('Identity channel requires non-empty list of dimensions')
-    ch = channel_from_isometry( np.eye(dims[0]), [dims[0]], [dims[0]] )
-    if len(dims) == 1:
-        return ch
-    return ch @ idn(*dims[1:])
+def idn(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
+    return channel_from_isometry(np.eye(n), dom, dom)
 
 #
-# unique channel discard : dims -> []
+# unique channel discard : dom -> []
 #
-def discard(*dims):
-    if len(dims) == 0:
-        raise Exception('Discard channel requires non-empty list of dimensions')
-    n = dims[0]
+def discard(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
     mat = np.eye(n)
     mat.resize((1,1,n,n))
-    ch = Channel(mat, [n], [])
-    if len(dims) == 1:
-        return ch
-    return ch @ discard(*dims[1:])
+    return Channel(mat, dom, [])
 
 #
 # Channel dims -> dims that only keeps classical part, by measuring in
 # the standard basis
 #
-def classic(*dims):
-    if len(dims) == 0:
-        raise Exception('Classic channel requires non-empty list of dimensions')
-    n = dims[0]
+def classic(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
     mat = np.zeros((n,n,n,n))
     for i in range(n):
         tmp = np.zeros((n,n))
         tmp[i][i] = 1
         mat[i][i] = tmp
-    ch = Channel(mat, [n], [n])
-    if len(dims) == 1:
-        return ch
-    return ch @ classic(*dims[1:])
+    return Channel(mat, dom, dom)
+
+# def classic(*dims):
+#     if len(dims) == 0:
+#         raise Exception('Classic channel requires non-empty list of dimensions')
+#     n = dims[0]
+#     mat = np.zeros((n,n,n,n))
+#     for i in range(n):
+#         tmp = np.zeros((n,n))
+#         tmp[i][i] = 1
+#         mat[i][i] = tmp
+#     ch = Channel(mat, [n], [n])
+#     if len(dims) == 1:
+#         return ch
+#     return ch @ classic(*dims[1:])
 
 #
 # Injection channel kappa(m,k,n) : n -> m @ n for k below m with main
@@ -1131,7 +1134,7 @@ def classic(*dims):
 #
 def kappa(m,k,n):
     mat = np.zeros((n*m,n*m,n,n)) + 0j
-    ar = idn(n).array
+    ar = idn([n]).array
     for i in range(n):
         for j in range(n):
             mat[k*n+i][k*n+j] = ar[i][j]
@@ -1146,7 +1149,7 @@ def kappa(m,k,n):
 #
 def copy(m,n):
     mat = np.zeros((n*m,n*m,n,n)) + 0j
-    ar = 1.0/m * idn(n).array
+    ar = 1.0/m * idn([n]).array
     for k in range(m):
         for i in range(n):
             for j in range(n):
@@ -1351,7 +1354,7 @@ chadamard = channel_from_isometry(lower_right_one(hadamard_matrix),
 #
 # channel 2 @ 2 -> 2 @ 2 for producing Bell states
 #
-bell_chan = cnot * (hadamard @ idn(2))
+bell_chan = cnot * (hadamard @ idn([2]))
 # bell00 = bell_chan >> ket(0,0)
 # bell01 = bell_chan >> ket(0,1)
 # bell10 = bell_chan >> ket(1,0)
@@ -1375,7 +1378,7 @@ bell_test = [bell00.as_pred(),
 #
 # Greenberger-Horne-Zeilinger states
 #
-ghz = (idn(2) @ cnot) >> ((bell_chan @ idn(2)) >> ket(0,0,0))
+ghz = (idn([2]) @ cnot) >> ((bell_chan @ idn([2])) >> ket(0,0,0))
 
 # The ghz states one by one
 
@@ -1611,7 +1614,7 @@ def pcase(p):
         d = chan_pair[1]
         if c.dom != d.dom or c.cod != d.cod:
             raise Exception('channels must have equal domain and codomain in predicate case channel')
-        return (discard(2) @ idn(*c.dom.dims)) * ccase(c,d) * instr(p)
+        return (discard([2]) @ idn(c.dom)) * ccase(c,d) * instr(p)
     return fun
 
 
@@ -1904,7 +1907,7 @@ def validity():
           (s1 @ s3 >= (chadamard << (p1 @ truth(2)))) \
           - ((chadamard >> s1 @ s3) >= (p1 @ truth(2))) )
     print("* weakening is the same as predicate transformation by a projection:", 
-          p3 @ truth(2) == (idn(2) @ discard(2)) << p3 )
+          p3 @ truth(2) == (idn([2]) @ discard([2])) << p3 )
     
 
 def marginals():
@@ -1914,9 +1917,9 @@ def marginals():
     b = random_state(2)
     print("* a random product state, and then several projection operations on that state:", 
           a == (a @ b) % [1,0],
-          a == idn(2) >> a,
-          a == idn(2) @ discard(2) >> (a @ b),
-          a == discard(2) @ idn(2) >> (swap >> (a @ b)) )
+          a == idn([2]) >> a,
+          a == idn([2]) @ discard([2]) >> (a @ b),
+          a == discard([2]) @ idn([2]) >> (swap >> (a @ b)) )
 
 def measurement():
     print("\nTests of predicates")
@@ -1961,7 +1964,7 @@ def instrument():
            instr(p) << point_pred(0,2) @ q == (p & q),
            instr(p) << point_pred(1,2) @ q == (~p & q) )
     print("channel equalities")
-    print( (idn(2) @ discard(2)) * instr(p) == meas_pred(p) )
+    print( (idn([2]) @ discard([2])) * instr(p) == meas_pred(p) )
 
 
 def conditioning():
@@ -1989,8 +1992,8 @@ def channel():
     print("* Swap tests")
     i = 4
     j = 2
-    si = random_state(i)
-    sj = random_state(j)
+    si = random_state([i])
+    sj = random_state([j])
     print( swaps(i,j) * swaps(j,i) == idn(j,i),
            swaps(i,j) >> si @ sj == sj @ si )
     print( swap * swap == idn(2,2) )
@@ -2005,7 +2008,7 @@ def channel():
     print( v >= p )
     print( p.as_chan() >> v )
     print("* discard channel; outcome is the identity matrix")
-    print( discard(2) * hadamard )
+    print( discard([2]) * hadamard )
     print("* from product to channel")
     w1 = random_probabilistic_state(2)
     w2 = random_state(2)
@@ -2040,11 +2043,11 @@ def kappa_copy():
     c = hadamard * x_chan * z_chan
     d = y_chan * phase_shift(math.pi/3) * x_chan
     e = c * d
-    print( ((discard(3) @ idn(2)) * ccase(c, d, e) * kappa(3,0,2)) == c,
-           ((discard(3) @ idn(2)) * ccase(c, d, e) * kappa(3,1,2)) == d,
-           ((discard(3) @ idn(2)) * ccase(c, d, e) * kappa(3,2,2)) == e )
-    # print ( np.isclose(((discard(2) @ idn(2,2)) \
-    #                     * ccase(ket(0).as_chan() @ idn(2), 
+    print( ((discard([3]) @ idn(2)) * ccase(c, d, e) * kappa(3,0,2)) == c,
+           ((discard([3]) @ idn(2)) * ccase(c, d, e) * kappa(3,1,2)) == d,
+           ((discard([3]) @ idn(2)) * ccase(c, d, e) * kappa(3,2,2)) == e )
+    # print ( np.isclose(((discard([2]) @ idn([2,2])) \
+    #                     * ccase(ket(0).as_chan() @ idn([2]), 
     #                             ket(1).as_chan() @ x_chan)).array,
     #                    cnot.array) )
     print("* copy")
@@ -2053,8 +2056,8 @@ def kappa_copy():
            copy(3, 2) << truth(3) @ q == q )
     print( copy(4,7) << truth(4, 7) == truth(7), 
            kappa(5,2,4) << truth(5,4) == truth(4) )
-    print( ((discard(3) @ idn(2)) * copy(3, 2)) == idn(2),
-           ((idn(3) @ discard(2)) * copy(3, 2)) == 
+    print( ((discard([3]) @ idn(2)) * copy(3, 2)) == idn(2),
+           ((idn(3) @ discard([2])) * copy(3, 2)) == 
            channel_from_states(uniform_probabilistic_state(3), 
                                uniform_probabilistic_state(3)) ) 
     t = random_state(2)

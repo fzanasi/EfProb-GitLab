@@ -7049,7 +7049,7 @@ composition \pythoninline{@}, for instance in defining the Bell states
 from the end of Section~\ref{sec:qstate} more systematically via the
 Bell channel\index{Bell!channel} as:
 \begin{python}
-bell_chan = cnot * (hadamard @ idn(2))
+bell_chan = cnot * (hadamard @ idn([2]))
 bell00 = bell_chan >> ket(0,0)
 bell01 = bell_chan >> ket(0,1)
 bell10 = bell_chan >> ket(1,0)
@@ -7059,7 +7059,7 @@ bell11 = bell_chan >> ket(1,1)
 \noindent We can draw the channel \pythoninline{c} as a circuit:
 $$\mbox{\pythoninline{bell\_chan}} 
 \quad=\quad 
-\mbox{\pythoninline{cnot * (hadamard @ idn(2))}} 
+\mbox{\pythoninline{cnot * (hadamard @ idn([2]))}} 
 \quad=\;\quad 
 \vcenter{\Qcircuit@R-1pc@C-1pc{
 & \gate{H} & \ctrl{1} & \qw
@@ -7073,7 +7073,7 @@ composition works in the other direction, since \pythoninline{*} is
 read as `after'.
 
 But the important thing to note is that the identity channel
-\pythoninline{idn(2)} in the definition of \pythoninline{bell\_chan}
+\pythoninline{idn([2])} in the definition of \pythoninline{bell\_chan}
 is the wire in parallel with the Hadamard channel $H$, written below
 $H$ in the above circuit.
 
@@ -7089,7 +7089,7 @@ eight Greenberger-Horne-Zeilinger (GHZ) states concretely via
 matrices. At this stage we can give a more abstract description,
 using state transformation via various channels:
 \begin{python}
-ghz = (idn(2) @ cnot) >> ((bell_chan @ idn(2)) >> ket(0,0,0))
+ghz = (idn([2]) @ cnot) >> ((bell_chan @ idn([2])) >> ket(0,0,0))
 \end{python}
 
 \noindent This state is called \pythoninline{ghz1} in
@@ -7110,7 +7110,7 @@ In \EfProb an identity channel can work on an arbitary domain, given
 as list of dimentions.  In circuits, wires represent qubit channels,
 of dimension $2$.  Hence three qubit wires in parallel can be
 described as:
-$$\mbox{\pythoninline{idn(2,2,2)}}
+$$\mbox{\pythoninline{idn([2,2,2])}}
 \quad=\;\quad
 \vcenter{\Qcircuit@R-1pc{
 & \qw 
@@ -7120,7 +7120,7 @@ $$\mbox{\pythoninline{idn(2,2,2)}}
 & \qw 
 }}
 \quad\;=\quad
-\mbox{\pythoninline{idn(2) @ idn(2) @ idn(2)}}$$
+\mbox{\pythoninline{idn([2]) @ idn([2]) @ idn([2])}}$$
 
 \paragraph{Discard channels} Recall that in quantum theory we can
 discard\index{discard~channel!quantum~--}\index{channel!quantum~discard~--}
@@ -7132,7 +7132,7 @@ The discard channel has type \pythoninline{dom -> []} for an
 arbitrary list of dimensions \pythoninline{dom}. It simply terminates
 everything coming through. A discard channel \pythoninline{[2] -> []}
 is drawn as:
-$$\mbox{\pythoninline{discard(2)}}
+$$\mbox{\pythoninline{discard([2])}}
 \quad=\;\quad
 \vcenter{\Qcircuit@R-1pc{
 & \qw {\Qdiscard}
@@ -7141,9 +7141,9 @@ $$\mbox{\pythoninline{discard(2)}}
 \noindent The outcome of a discard channel is independent of the
 input, see for instance:
 \begin{python}
->>> discard(2) >> ket(0)
+>>> discard([2]) >> ket(0)
 [[ 1.+0.j]]
->>> discard(2) >> ket(1)
+>>> discard([2]) >> ket(1)
 [[ 1.+0.j]]
 \end{python}
 
@@ -7176,7 +7176,7 @@ $$\vcenter{\Qcircuit@R-1pc{
 %% & \targ & \qw {\Qdiscard}
 %% }}
 %% \quad\;=\quad
-%% \mbox{\pythoninline{(idn(2) @ discard(2)) * cnot}}$$
+%% \mbox{\pythoninline{(idn([2]) @ discard([2])) * cnot}}$$
 
 %% $$\mbox{\pythoninline{proj2 * cnot}}
 %% \quad=\;\quad
@@ -7186,7 +7186,7 @@ $$\vcenter{\Qcircuit@R-1pc{
 %% & \targ & \qw & \qw
 %% }}
 %% \quad\;=\quad
-%% \mbox{\pythoninline{(discard(2) @ idn(2)) * cnot}}$$
+%% \mbox{\pythoninline{(discard([2]) @ idn([2])) * cnot}}$$
 
 \noindent Here is a simple test:
 \begin{python}
@@ -7195,7 +7195,7 @@ $$\vcenter{\Qcircuit@R-1pc{
 [[ 0.47726159+0.j        -0.44585810-0.0353013j]
  [-0.44585810+0.0353013j  0.52273841+0.j       ]]
 >>> t = random_state([2])
->>> ((idn(2) @ discard(2)) * cnot) >> (s @ t)
+>>> ((idn([2]) @ discard([2])) * cnot) >> (s @ t)
 [[ 0.47726159+0.j          0.21691432+0.01717443j]
  [ 0.21691432-0.01717443j  0.52273841+0.j        ]]
 >>> (cnot >> (s @ t)) % [1,0]
@@ -7316,19 +7316,19 @@ $$\vcenter{\Qcircuit@R-1pc{
 }}
 \quad
 \begin{array}[t]{l}
-=\quad\mbox{\pythoninline{discard(2) @ ket(0).as\_chan()}}
+=\quad\mbox{\pythoninline{discard([2]) @ ket(0).as\_chan()}}
 \\
-=\quad\mbox{\pythoninline{ket(0).as\_chan() @ discard(2)}}
+=\quad\mbox{\pythoninline{ket(0).as\_chan() @ discard([2])}}
 \end{array}$$
 
 \noindent Indeed, the random state \pythoninline{s} plays no role in
 this construction:
 \begin{python}
 >>> s = random_state([2])
->>> (discard(2) @ ket(0).as_chan()) >> s
+>>> (discard([2]) @ ket(0).as_chan()) >> s
 [[ 1.+0.j  0.+0.j]
  [ 0.+0.j  0.+0.j]]
->>> (ket(0).as_chan() @ discard(2)) >> s
+>>> (ket(0).as_chan() @ discard([2])) >> s
 [[ 1.+0.j  0.+0.j]
  [ 0.+0.j  0.+0.j]]
 \end{python}
@@ -7430,7 +7430,7 @@ from a state except its diagonal:
 [[ 0.32345901+0.j          0.00687158+0.15788094j  0.15185772-0.22324826j]
  [ 0.00687158-0.15788094j  0.34920366+0.j         -0.23730879+0.01392982j]
  [ 0.15185772+0.22324826j -0.23730879-0.01392982j  0.32733733+0.j        ]]
->>> classic(3) >> s
+>>> classic([3]) >> s
 [[ 0.32345901+0.j  0.00000000+0.j  0.00000000+0.j]
  [ 0.00000000+0.j  0.34920366+0.j  0.00000000+0.j]
  [ 0.00000000+0.j  0.00000000+0.j  0.32733733+0.j]]
@@ -7507,7 +7507,7 @@ classical control, but via quantum control. If we restrict
 channel we can make a precise statement, namely that the next two
 channels are the same.
 \begin{itemize}
-\item \pythoninline{cnot * (classic(2) @ idn(2))}
+\item \pythoninline{cnot * (classic([2]) @ idn([2]))}
 
 \item \pythoninline{ccontrol(x\_chan)}
 \end{itemize}
@@ -7523,7 +7523,7 @@ below.
 \begin{python}
 >>> s = probabilistic_state(0.2, 0.3, 0.5)
 >>> t = random_state([2])
->>> w = ccase(x_chan, hadamard, idn(2)) >> (s @ t)
+>>> w = ccase(x_chan, hadamard, idn([2])) >> (s @ t)
 >>> w % [1, 0]
 [[ 0.2+0.j  0.0+0.j  0.0+0.j]
  [ 0.0+0.j  0.3+0.j  0.0+0.j]
@@ -7533,7 +7533,7 @@ below.
  [ 0.22676644+0.j  0.37953187+0.j]]
 >>> convex_state_sum( (0.2, x_chan >> t), \
 ...                   (0.3, hadamard >> t), \
-...                   (0.5, idn(2) >> t) )
+...                   (0.5, idn([2]) >> t) )
 [[ 0.62046813 +0.00000000e+00j  0.22676644 -2.77555756e-17j]
  [ 0.22676644 +2.77555756e-17j  0.37953187 +0.00000000e+00j]]
 \end{python}
@@ -7559,7 +7559,7 @@ The channel \pythoninline{instr(p)} has type \pythoninline{dom ->
   [2]+dom}. By projecting away the second part we obtain measurement:
 \begin{python}
 >>> p = random_pred([5])
->>> (idn(2) @ discard(5)) * instr(p) == meas_pred(p)
+>>> (idn([2]) @ discard([5])) * instr(p) == meas_pred(p)
 True
 \end{python}
 
@@ -7568,7 +7568,7 @@ convex combination of conditional states, as illustrated in:
 \begin{python}
 >>> p = random_pred([5])
 >>> s = random_state([5])
->>> discard(2) @ idn(5) * instr(p) >> s ==
+>>> discard([2]) @ idn([5]) * instr(p) >> s ==
 ...   convex_state_sum( (s >= p, s / p), (s >= ~p, s / ~p) 
 True
 \end{python}
@@ -7658,7 +7658,7 @@ $$\vcenter{\Qcircuit@R-1pc{
 $$\begin{array}{rcl}
 \mbox{\pythoninline{alice}}
 & = &
-\mbox{\pythoninline{(meas0 @ meas0) * (hadamard @ idn(2)) * cnot}}
+\mbox{\pythoninline{(meas0 @ meas0) * (hadamard @ idn([2])) * cnot}}
 \end{array}$$
 
 \noindent The circuit for \pythoninline{bob} is:
@@ -7674,9 +7674,9 @@ $$\vcenter{\Qcircuit@R-1pc{
 $$\begin{array}{rcl}
 \mbox{\pythoninline{bob}}
 & = &
-\mbox{\pythoninline{(discard(2) @ idn(2)) * ccontrol(z_chan)}} \\
+\mbox{\pythoninline{(discard([2]) @ idn([2])) * ccontrol(z_chan)}} \\
 & & \qquad 
-\mbox{\pythoninline{ * (idn(2) @ discard(2) @ idn(2)) * (idn(2) @ ccontrol(x_chan))}}
+\mbox{\pythoninline{ * (idn([2]) @ discard([2]) @ idn([2])) * (idn([2]) @ ccontrol(x_chan))}}
 \end{array}$$
 
 \noindent The circuit for the whole protocol first prepares the
@@ -7694,7 +7694,7 @@ $$\vcenter{\Qcircuit@R-1pc@C-.7pc{
 $$\begin{array}{rcl}
 \mbox{\pythoninline{teleportation}}
 & = &
-\mbox{\pythoninline{bob * (alice @ idn(2)) * (idn(2) @ bell00.as_chan())}}
+\mbox{\pythoninline{bob * (alice @ idn([2])) * (idn([2]) @ bell00.as_chan())}}
 \end{array}$$
 
 \noindent In this way, \pythoninline{teleportation} is a channel
@@ -7724,7 +7724,7 @@ True
 \end{python}
 
 We can actually do a little bit more. If we claim that the
-\pythoninline{teleportation} and \pythoninline{idn(2)} channels are
+\pythoninline{teleportation} and \pythoninline{idn([2])} channels are
 the same, we can check that they have the same matrices, via their
 \pythoninline{array} attribute. Checking actual equality does not work,
 because of the small inaccuracies in floating point calculations. By
@@ -7733,7 +7733,7 @@ because of the small inaccuracies in floating point calculations. By
 \pythoninline{isclose} that tells if all the numbers in the two
 argument matrices are really close.
 \begin{python}
->>> np.isclose(teleportation.array, idn(2).array)
+>>> np.isclose(teleportation.array, idn([2]).array)
 [[[[ True  True]
    [ True  True]]
 
@@ -7754,7 +7754,7 @@ adding the \pythoninline{numpy} function
   and \pythoninline{isclose} exists in \pythoninline{numpy} as
   \pythoninline{allclose}.} as in:
 \begin{python}
->>> np.all(np.isclose(teleportation.array, idn(2).array))
+>>> np.all(np.isclose(teleportation.array, idn([2]).array))
 True
 \end{python}
 
@@ -7763,7 +7763,7 @@ pre-defined equality of channels, which checks equality of domains and
 codomains, and `closedness' of arrays, as described above,
 see also Sidenote~\ref{sidenote:qstateequality}.
 \begin{python}
->>> teleportation == idn(2)
+>>> teleportation == idn([2])
 True
 \end{python}
 
@@ -7787,21 +7787,21 @@ entangled quantum state (again a Bell state). The relevant channels are:
 $$\begin{array}{rcl}
 \mbox{\pythoninline{alice}}
 & = &
-\mbox{\pythoninline{(discard(2) @ idn(2)) * ccontrol(x\_chan) * (idn(2) @ proj2)}}
+\mbox{\pythoninline{(discard([2]) @ idn([2])) * ccontrol(x\_chan) * (idn([2]) @ proj2)}}
 \\
 & & \qquad 
-    \mbox{\pythoninline{* (idn(2) @ ccontrol(z\_chan)) * (swap @ idn(2))}}
+    \mbox{\pythoninline{* (idn([2]) @ ccontrol(z\_chan)) * (swap @ idn([2]))}}
 \\
 \mbox{\pythoninline{bob}}
 & = &
-\mbox{\pythoninline{(meas0 @ meas0) * (hadamard @ idn(2)) * cnot}}
+\mbox{\pythoninline{(meas0 @ meas0) * (hadamard @ idn([2])) * cnot}}
 \end{array}$$
 
 \noindent These two channels are combined with a Bell state in a
 function that takes two probabilities \pythoninline{r,s} as input:
 \begin{python}
 def superdense_coding(r, s):
-    return bob >> ((alice @ idn(2)) >> (cflip(r) @ cflip(s) @ bell00))
+    return bob >> ((alice @ idn([2])) >> (cflip(r) @ cflip(s) @ bell00))
 \end{python}
 
 \noindent We can test this function by feeding it with arbitrary
@@ -7844,12 +7844,12 @@ that its channel is equal to the identity channel. What we can hope
 for is an equality with the classic channel, which extracts the
 probabilistic part from qubits via measurement in the standard basis.
 \begin{python}
->>> sdc = bob * (alice @ idn(2)) * (idn(2,2) @ bell00.as_chan())
+>>> sdc = bob * (alice @ idn([2])) * (idn([2,2]) @ bell00.as_chan())
 >>> sdc.dom
 [2,2]
 >>> sdc.cod
 [2,2]
->>> sdc == classic(2) @ classic(2)
+>>> sdc == classic([2,2])
 True
 \end{python}
 \end{example}
@@ -7892,7 +7892,7 @@ On Alice's side we use the following set-up.
 [2,2]
 >>> meas_bell.cod
 [4]
->>> alice = (meas_bell @ idn(2,2)) * (idn(2) @ ghz.as_chan())
+>>> alice = (meas_bell @ idn([2,2])) * (idn([2]) @ ghz.as_chan())
 >>> alice.dom
 [2]
 >>> alice.cod
@@ -7912,11 +7912,11 @@ case distinctions:
 \begin{python}
 >>> hadamard_test = [plus.as_pred(), minus.as_pred()]
 >>> meas_hadamard = meas_test(hadamard_test)
->>> bob = ( discard(8) @ idn(2) ) \
-...       * ccase(idn(2), z_chan, x_chan, x_chan * z_chan, \
-...               z_chan, idn(2), x_chan * z_chan, x_chan) \
-...     * ( kron(4, 2) @ idn(2) ) \
-...     * ( idn(4) @ meas_hadamard @ idn(2) )
+>>> bob = ( discard([8]) @ idn([2]) ) \
+...       * ccase(idn([2]), z_chan, x_chan, x_chan * z_chan, \
+...               z_chan, idn([2]), x_chan * z_chan, x_chan) \
+...     * ( kron(4, 2) @ idn([2]) ) \
+...     * ( idn([4]) @ meas_hadamard @ idn([2]) )
 >>> bob.dom
 [4, 2, 2] 
 >>> bob.cod
@@ -7934,7 +7934,7 @@ giving us GHZ-teleportation as a single channel. Now we can test it:
 >>> ghz_teleporation >> s 
 [[ 0.33869735+0.j          0.06518770+0.17403915j]
  [ 0.06518770-0.17403915j  0.66130265+0.j        ]]
->>> ghz_teleporation == idn(2)
+>>> ghz_teleporation == idn([2])
 True
 \end{python}
 
@@ -7957,14 +7957,14 @@ It is defined first.
 >>> iy_matrix = np.array([[0,1],
 ...                       [-1,0]])
 >>> iy_chan = channel_from_isometry(iy_matrix, [2], [2])
->>> alice = (discard(8) @ idn(2,2)) * ccase(idn(2) @ idn(2), 
-...                                         idn(2) @ x_chan, 
-...                                         x_chan @ idn(2), 
-...                                         x_chan @ x_chan, 
-...                                         z_chan @ idn(2), 
-...                                         z_chan @ x_chan, 
-...                                         iy_chan @ idn(2), 
-...                                         iy_chan @ x_chan)
+>>> alice = (discard([8]) @ idn([2,2])) * ccase(idn([2]) @ idn([2]), 
+...                                             idn([2]) @ x_chan, 
+...                                             x_chan @ idn([2]), 
+...                                             x_chan @ x_chan, 
+...                                             z_chan @ idn([2]), 
+...                                             z_chan @ x_chan, 
+...                                             iy_chan @ idn([2]), 
+...                                             iy_chan @ x_chan)
 >>> alice.dom
 [8, 2, 2]
 >>> alice.cod
@@ -7979,7 +7979,7 @@ third qubit of the GHZ state in the GHZ basis.
 ...             ghz5.as_pred(), ghz6.as_pred(), ghz7.as_pred(), ghz8.as_pred()]
 >>> meas_ghz = meas_test(ghz_test)
 >>> bob = meas_ghz
->>  ghz_sdc = bob * (alice @ idn(2)) * (idn(8) @ ghz.as_chan())
+>>  ghz_sdc = bob * (alice @ idn([2])) * (idn([8]) @ ghz.as_chan())
 >>> ghz_sdc.dom
 [8]
 >>> ghz_sdc.cod
@@ -8002,8 +8002,8 @@ We can get a better handle on the situation by translating the
 input and output of length 8 into 3 inputs of length 2, via the
 Kronecker channels.
 \begin{python}
->>> k1 = kron(4,2) * (kron(2,2) @ idn(2))
->>> k2 = (kron_inv(2,2) @ idn(2)) * kron_inv(4,2)
+>>> k1 = kron(4,2) * (kron(2,2) @ idn([2]))
+>>> k2 = (kron_inv(2,2) @ idn([2])) * kron_inv(4,2)
 >>> r1 = random_probabilistic_state([2])
 >>> r2 = random_probabilistic_state([2])
 >>> r3 = random_probabilistic_state([2])

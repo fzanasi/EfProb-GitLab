@@ -156,16 +156,19 @@ print( is_positive(sqrmv.as_operator().array) )
 
 print("\nLeifer-Spekkens style\n")
 
-print( random_pred([2,2]) )
+def cap(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    return State(1/dom.size * idn(dom).as_operator().array, dom * 2)
 
-def cap(n):
-    return State(1/n * idn(n).as_operator().array, [n,n])
+print( cap([2]) )
+
+print( classic([2]) @ classic([4]) == classic([2,4]) )
 
 ph = 1.5
 c = x_chan * phase_shift(ph) * z_chan
 
 # from channel to binary state
-bs = (idn(2) @ c) >> cap(2)
+bs = (idn([2]) @ c) >> cap([2])
 #print( bs )
 
 #print( c.as_operator() )
