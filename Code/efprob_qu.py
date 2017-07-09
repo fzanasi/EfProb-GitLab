@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-06-27
+# Date: 2017-07-08
 #
 from functools import reduce
 import functools
@@ -345,8 +345,8 @@ class RandVar:
 
 class Predicate(RandVar):
     def __init__(self, ar, dom):
-        if not is_effect(ar):
-            raise Exception('Predicate creation requires a effect matrix')
+        #if not is_effect(ar):
+        #    raise Exception('Predicate creation requires a effect matrix')
         super().__init__(ar, dom)
 
     # The selection is a dim-length list of 0's and 1's, where 0
@@ -414,14 +414,13 @@ class Predicate(RandVar):
         """De Morgan dual of sequential conjunction."""
         return ~(~self & ~p)
 
-    def as_chan(self):
+    def as_subchan(self):
         """Turn a predicate on n into a channel n -> 0. The validity s >= p is
-        the same as p.as_chan() >> s, except that the latter is a 1x1
+        the same as p.as_subchan() >> s, except that the latter is a 1x1
         matrix, from which the validity can be extracted via indices
         [0][0]. """
         return Channel(self.array.reshape(1,1, self.dom.size, self.dom.size), 
                        self.dom, [])
-
 
 class State:
     def __init__(self, ar, dom):
@@ -531,10 +530,13 @@ class State:
         bringing in extra "ancillary" bits into the system.  Not that
         the empty list [] is the appropriate domain type, where the
         product over this list is 1, as used in the dimension of the
-        matrix. """        
-        return Channel(self.array.reshape(self.dom.size, self.dom.size, 1, 1), 
-                       Dom([]),
-                       self.dom)
+        matrix. """
+        n = self.dom.size
+        mat = np.zeros((n,n,1,1)) + 0j
+        for i in range(n):
+            for j in range(n):
+                mat[i][j][0][0] = self.array[i][j].conjugate()
+        return Channel(mat, [], self.dom)
 
     def variance(self, randvar):
         """ Variance """
@@ -826,6 +828,11 @@ class Kraus:
 # Functions for state, predicate, and channel
 #
 ########################################################################
+
+#
+# Trivial state of type []
+#
+init_state = State(np.ones((1,1)), [])
 
 #
 # Pure state from vector v via outer product |v><v|

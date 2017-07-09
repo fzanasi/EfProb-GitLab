@@ -124,30 +124,31 @@ print("")
 #print( v )
 mv = modifier(v)
 #print( mv )
-print("")
+print("Important equality: reconstruct state from quotient")
 print( v == uniform_probabilistic_state(v.dom) / v.as_pred() )
 print( truth(v.dom) == mv << truth(v.dom) )
 print( v == mv >> uniform_probabilistic_state(v.dom) )
 print( is_positive(mv.as_operator().array) )
 
-print("\nSquare root modifier")
+print("\nSquare root modifier: a subunital channel: 1/(N*N) missing")
 
-def sqr_modifier(stat):
-    n = stat.dom.size
-    s = matrix_square_root(stat.array)
+def sqr_modifier(array, dom):
+    n = array.shape[0]
+    s = matrix_square_root(array)
     mat = np.zeros((n,n,n,n)) + 0j
     for i in range(n):
         for j in range(n):
             mat[i][j] = np.dot(s, np.dot(matrix_base(i,j,n), s))
-    return Channel(mat, stat.dom, stat.dom)
+    return Channel(mat, dom, dom)
 
 
-sqrmv = sqr_modifier(v)
-sqrmvi = sqr_modifier(State(np.linalg.inv(v.array), v.dom))
+sqrmv = sqr_modifier(v.array, v.dom)
+sqrmvi = sqr_modifier(np.linalg.inv(v.array), v.dom)
 
 print( np.all(np.isclose(v.array, 
-                         N * (sqrmv >> uniform_probabilistic_state(v.dom)).array)) )
+                         N * N * (sqrmv >> uniform_probabilistic_state(v.dom)).array)) )
 print( is_positive(sqrmv.as_operator().array) )
+
 # Next outcomes are equal, up to a rather larger error
 #print( np.isclose((sqrmv * sqrmvi).array, idn(N).array) )
 #print( np.isclose((sqrmvi * sqrmv).array, idn(N).array) )
@@ -156,97 +157,228 @@ print( is_positive(sqrmv.as_operator().array) )
 
 print("\nLeifer-Spekkens style\n")
 
-def cap(dom):
+def cup(dom):
     dom = dom if isinstance(dom, Dom) else Dom(dom)
     return State(1/dom.size * idn(dom).as_operator().array, dom * 2)
 
-print( cap([2]) )
+print( cup([2,3]) >= truth([2,3,2,3]) )
 
-print( classic([2]) @ classic([4]) == classic([2,4]) )
+# v2 = np.array([1,0,0,1])
+# print( np.all(2 * cup([2]).array == np.outer(v2.transpose(),v2)) )
 
-ph = 1.5
-c = x_chan * phase_shift(ph) * z_chan
+# v3 = np.array([1,0,0,0,1,0,0,0,1])
+# print( np.all(3 * cup([3]).array == np.outer(v3.transpose(),v3)) )
 
-# from channel to binary state
-bs = (idn([2]) @ c) >> cap([2])
-#print( bs )
+# v4 = np.array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1])
+# print( np.all(4 * cup([4]).array == np.outer(v4.transpose(),v4)) )
 
-#print( c.as_operator() )
+def cup_chan(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
+    ls = [1]
+    for i in range(n-1):
+        ls = ls + n*[0] + [1]
+    v = np.array(ls)
+    mat = np.zeros((n*n,n*n,1,1))
+    # fill with outer product np.outer(v.transpose(), v) of singletons
+    for i in range(n*n):
+        for j in range(n*n):
+            mat[i][j] = [ v[i] * v[j] ]
+    return Channel(1/n * mat, [], dom * 2)
 
-def extract(w):
-    n = w.dom.dims[0]
-    m = w.dom.dims[1]
-    v = Operator(n * w.array, Dom([n]), Dom([m]))
-    return v.as_channel()
+print("Basic cup checks")
+print( cup_chan([2,5]) == cup([2,5]).as_chan() )
+print( truth([]) == cup_chan([3,4]) << truth([3,4,3,4]) )
 
-#print( extract(bs) )
-#print( c )
+def cup_state(dom):
+    return cup_chan(dom) >> init_state
+
+dom=Dom([2,2])
+
+print( cup_state(dom) >= truth(dom+dom) )
 
 
+#
+# |v> = sum_{i} |ii>, giving matrix |v><v|, as in Leifer-Spekkens
+#
+def cap_chan(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
+    ls = [1]
+    for i in range(n-1):
+        ls = ls + n*[0] + [1]
+    v = np.array(ls)
+    mat = np.zeros((1,1,n*n,n*n))
+    mat[0][0] = np.outer(v.transpose(), v)
+    return Channel(n * mat, dom * 2, [])
+    #return Channel(mat, dom * 2, [])
+
+print("\nCap-Cup\n")
+
+print("\nGround after cup is uniform: ",
+      uniform_probabilistic_state(dom) ==
+      (idn(dom) @ discard(dom)) >> cup_state(dom) )
+
+q = random_pred(dom)
+
+print("Predicate p after cup is substate 1/n * p^T: ",
+      np.all(np.isclose(1/q.dom.size * q.array.conjugate(),
+                        ((q.as_subchan() @ idn(dom)) >> cup_state(dom)).array)) )
+
+print("\nAs a result, using snake, cap after uniform is truth: ",
+      truth(dom).as_subchan() == 
+      cap_chan(dom) * (uniform_probabilistic_state(dom).as_chan() @ idn(dom)) )
+
+s = random_state(dom)
+print("Cap after state s is random variable n * s: ",
+      np.all(np.isclose(dom.size * s.array,
+                        (cap_chan(dom) * (s.as_chan() @ idn(dom))).array)) )
+
+
+# Cap is not unital!
+#print( cap_chan([2]) << truth([]) )
+print("\nPositivity of cap:", 
+      is_positive(cap_chan([9]).as_operator().array) )
+
+snake1 = (cap_chan(dom) @ idn(dom)) * (idn(dom) @ cup_chan(dom))
+snake2 = (idn(dom) @ cap_chan(dom)) * (cup_chan(dom) @ idn(dom))
+
+print("Snake equations: ", snake1 == idn(dom), snake2 == idn(dom) )
+
+print("\nChannel-state duality\n")
+
+#ph = 0.5
+#c =  z_chan * x_chan * phase_shift(ph)
+c = hadamard
+
+def channel_to_state(chan):
+    #return (idn(chan.dom) @ chan) * cup_chan(chan.dom) >> init_state
+    mat = ((idn(chan.dom) @ chan) * cup_chan(chan.dom)).array
+    n = mat.shape[0]
+    out = np.zeros((n,n)) + 0j
+    for i in range(n):
+        for j in range(n):
+            out[i][j] = mat[i][j][0][0]
+    return State(out, chan.dom + chan.cod)
+
+def channel_to_state1(chan):
+    return (idn(chan.dom) @ chan) * cup_chan(chan.dom) >> init_state
+
+print("Validity of truth: ", channel_to_state(c) >= truth([2,2]) )
+#e = random_pred(c.dom + c.cod)
+#print( (idn(c.dom) @ c) << e )
+
+def state_to_channel(stat):
+    n = stat.dom.dims[0]
+    m = stat.dom.dims[1]
+    return (cap_chan([n]) @ idn([m])) * (idn([n]) @ stat.as_chan())
+
+bs = random_state([2,2])
+# force one coordinate to be classical; "hybrid operator" by Leifer-Spekkens
+# This one works, second coord. classical, extraction from quantum to classical
+bs = (idn((bs % [1,0]).dom) @ meas0) >> bs
+# not the right one
+# bs = (meas0 @ idn((bs % [0,1]).dom)) >> bs
+
+print("\nPositivity of channel: ", 
+      is_positive(state_to_channel(bs).as_operator().array) )
+
+print("Starting from fixed channel: ", 
+      c == state_to_channel(channel_to_state(c)) )
+print("Starting from random state: ", 
+      bs == channel_to_state(state_to_channel(bs)) )
+    
+#print("\nchannel differences in conjugates??")
+# print( channel_to_state(state_to_channel(bs)) )
+# print("")
+# print( channel_to_state1(state_to_channel(bs)) )
 
 
 """
 
-c = (hadamard @ discard(2))
+print("\nExperiments\n")
 
-#print( c.dom, c.cod )
+p = random_probabilistic_pred((bs % [1,0]).dom)
+#p = random_pred((bs % [1,0]).dom)
+#q = random_probabilistic_pred((bs % [0,1]).dom)
+q = random_pred((bs % [0,1]).dom)
 
-#print( c.as_operator() )
+# The following outcomes are different
 
-unif22 = kron_inv(2,2) >> uniform_probabilistic_state(4)
+print( bs >= (truth((bs % [1,0]).dom) @ q) )
+print( (bs % [1,0]) >= (state_to_channel(bs) << q) )
 
-print("\nCaps and cups")
-
-cap2 = bell00.as_chan()
-# fails:
-cup2 = bell00.as_pred().as_chan()
-
-
-#print( cup2 << Predicate(np.eye(1), []) )
-
-w = kron_inv(2,2) >> random_state(4)
-
-print( pair_extract(w)[1] )
-
-print( (idn(2) @ w.as_chan()).cod )
-
-print( (cap2 @ idn(2)) * (idn(2) @ w.as_chan()) )
-
-snake1 = (unif22.as_pred().as_chan() @ idn(2)) * (idn(2) @ unif22.as_chan())
-snake2 = (bell00.as_pred().as_chan() @ idn(2)) * (idn(2) @ bell00.as_chan())
-
-print("\nsnake")
-#print( snake2 )
-#print( snake2 << truth(2) )
-
-unif2222 = (kron_inv(2,2) @ kron_inv(2,2)) >> (kron_inv(4,4) >> uniform_probabilistic_state(16))
-
-#print( (c @ idn(2,2)) >> unif2222 )
-
-ground22 = unif22.as_pred().as_chan()
-
-print("\nGround types: ", ground22.dom, ground22.cod )
-
-cpred = ground22 * (c @ idn(2))
-
-#print( cpred.dom )
+#print( (bs / (truth((bs % [1,0]).dom) @ q)) % [1,0] )
+#print( (bs % [1,0]) / (state_to_channel(bs) << q) )
 
 
+def extract(stat):
+    sqr_chan = sqr_modifier(1/(stat % [1,0]).dom.size * 
+                            np.linalg.inv((stat % [1,0]).array), 
+                            (stat % [1,0]).dom)
+    return state_to_channel(stat) * sqr_chan
 
+print( truth((bs % [1,0]).dom) == extract(bs) << truth((bs % [0,1]).dom) )
+
+# Validities are the same for probabilistic predicate
+print( bs >= (truth((bs % [1,0]).dom) @ q) )
+print( (bs % [1,0]) >= (extract(bs) << q) )
+
+# The following outcomes are (also) different
+#print( (bs / (truth((bs % [1,0]).dom) @ q)) % [1,0] )
+#print( (bs % [1,0]) / (extract(bs) << q) )
+#print( extract(swap >> bs) >> (bs % [0,1] / q) )
+
+print("\nPredicate experiments")
+
+qs = q.as_subchan()
+print( q )
+print( qs, qs.dom, qs.cod, ket(0) >= q )
+# recover q
+print( qs << truth([]) )
+
+print("\nPredicates and channels")
+
+def predicate_to_channel(pred):
+    n = pred.dom.dims[0]
+    m = pred.dom.dims[1]
+    return (pred.as_subchan() @ idn([m])) * (idn([n]) @ cup_chan([m]))
+
+e = random_pred(dom)
+
+print( e.as_subchan() * (idn([2]) @ uniform_probabilistic_state([2]).as_chan()) )
+print( predicate_to_channel(e) << truth([dom.dims[1]]) )
+
+print("")
+
+
+print("")
+print(q)
+print( np.isclose(q.array.conjugate(),
+                  2 * ((q.as_subchan() @ idn([2])) >> cup_state([2])).array) )
+print( np.isclose(q.array.conjugate(),
+                  2 * ((idn([2]) @ q.as_subchan()) >> cup_state([2])).array) )
+#print( uniform_probabilistic_state(q.dom) / q )
+
+    
+"""
 
 """
 
+print("\nProbabilistic example works appropriately\n")
 
+# Probabilistic disease-mood example
 
+dm = kron_inv(2,2) >> probabilistic_state(0.05, 0.5, 0.4, 0.05)
+pt = probabilistic_pred(0.9, 0.05)
 
-# mvi = mv.inversion(uniform_probabilistic_state(N))
-# print( mvi * mv )
-# print( mv * mvi )
-# print( idn(2) )
-# v_inv = State(np.linalg.inv(v.array), Dom([N]))
-# mv1 = modifier(v_inv)
-# print( mv1 )
-# print( mv1 * mv )
-# print( mv * mv1 )
+print("A priori test likelihood: ", dm % [1,0] >= pt)
 
-#print( modifier(v) >> v_inv )
+print("A posterior state, in three different ways")
+print( (dm / (pt @ truth([2]))) % [0,1] )
+m2d = extract(dm)
+print( m2d >> (dm % [1,0] / pt) )
+d2m = extract( (swap >> dm) )
+print( dm % [0,1] / (d2m << pt) )
+
+"""

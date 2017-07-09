@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-06-27
+# Date: 2017-07-08
 #
 from functools import reduce
 import functools
@@ -1586,6 +1586,7 @@ def andthen(iterable):
 def flip(r, dom=bool_dom):
     return State([r, 1.0-r], dom)
 
+init_state = State(1, [])
 
 def const_statelike(cls, value, subdom, dom=None):
     subdom = asdom(subdom)

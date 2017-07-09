@@ -6,7 +6,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-06-27
+# Date: 2017-07-08
 #
 from efprob_qu import *
 from math import *
@@ -538,6 +538,16 @@ def structural_channels():
     s = random_state([2])
     print( (discard([2]) @ ket(0).as_chan()) >> s )
     print( (ket(0).as_chan() @ discard([2])) >> s )
+
+    print("\n===\n")
+
+    print("* Ancilla, init and validity")
+    dom = [2,5]
+    w = random_state(dom)
+    print( w == w.as_chan() >> init_state )
+    p = random_pred(dom)
+    print( w >= p )
+    print( w.as_chan() << p )
 
 def measurement():
     

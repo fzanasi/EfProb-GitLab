@@ -7333,6 +7333,29 @@ this construction:
  [ 0.+0.j  0.+0.j]]
 \end{python}
 
+\noindent An arbitrary state \pythoninline{w} can be reconstructed
+from the associated channel \pythoninline{w.as\_chan()} of type
+\pythoninline{[] -> dom}, namely by transforming the trivial state
+\pythoninline{init\_state} of type \pythoninline{[]} via this channel.
+Similarly, predicate transformation with \pythoninline{w.as\_chan()}
+corresponds to validity in state \pythoninline{w}.
+\begin{python}
+>>> dom = [2,5]
+>>> w = random_state(dom)
+>>> w == w.as_chan() >> init_state 
+True
+>>> p = random_pred(dom)
+>>> w >= p 
+0.273592934749
+>>> w.as_chan() << p
+[[ 0.27359293 -2.38524478e-18j]]
+\end{python}
+
+\noindent We see that essentially the same probability 
+\pythoninline{w >= p} appears via
+predicate transformation, as a trivial matrix, with an almost-zero imaginary
+part arising from rounding errors.
+
 
 \subsection{Measurement, classical control, and instruments}\label{subsec:qchannel:measurement}
 
@@ -8355,7 +8378,16 @@ $$\begin{array}{rcl}
 \end{array}$$
 
 \noindent The inner expression corresponds to predicate
-transformation~\eqref{eqn:qpredtransform}.
+transformation~\eqref{eqn:qpredtransform}.\marginnote{A more general
+  equation is formulated in~\cite[(61)]{LeiferS13}.}
+
+% LeiferS13, K, Def 6: An instrument is a set of cpt (competely
+% positive trace-preserving) maps whose applications on the identity
+% form a POVM (test). In my own words, a set of subunital channels
+% that add up to a channel, or a set of assert maps whose sum is
+% total.
+
+% Problem: the definition uses trace-preserving maps already.
 
 For a channel $c \colon n \rightarrow m$ and a state $s$ with domain
 $n$ we define a joint state $\gp(s,c)$ with domain $[n,m]$ following
