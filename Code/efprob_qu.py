@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-07-08
+# Date: 2017-07-10
 #
 from functools import reduce
 import functools
@@ -533,9 +533,7 @@ class State:
         matrix. """
         n = self.dom.size
         mat = np.zeros((n,n,1,1)) + 0j
-        for i in range(n):
-            for j in range(n):
-                mat[i][j][0][0] = self.array[i][j].conjugate()
+        mat[...,0,0] = self.array.conjugate()
         return Channel(mat, [], self.dom)
 
     def variance(self, randvar):
