@@ -68,10 +68,12 @@
 %    where the index set usually captures (discrete or continuous) time.
 %    They can also be represented as map Omega x N -> R or Omega x pRR -> R
 %
-%  - Include convex sum example 1/2*plus + 1/2*min = id
-%
-%
-%
+%  - Fréchet inequalities, see
+%    https://en.wikipedia.org/wiki/Fr%C3%A9chet_inequalities
+%    They can be derived using that & and hence | is monotone in both
+%    arguments in classical logic. In parallel form, one part of the
+%    inequality becomes:
+%    (w >= p @ truth(q.dom)) + (w >= truth(p.dom) @ q) - 1 <= (w >= p @ q)
 %
 % Literature
 % ==========
@@ -6296,6 +6298,84 @@ scalar multiplication and addition.
 (The expectation and variance values computed above in the quantum
 framework coincide with the classical ones, see the end of
 Subsection~\ref{subsec:dexp}.)
+
+We conclude this section with the famous Bell inequalities. As we
+shall see, they involve (validities of) random variables, and not
+predicates.
+
+
+\begin{example}
+\label{ex:bellinequalities}
+We show how to obtain the Bell (actually `CHSC')
+inequality\index{Bell!inequality} in \EfProb, where we closely follow
+the description in\cite{NielsenC00}.  We start with x/y/z random
+variables, obtained from the corresponding predicates.
+\begin{python}
+>>> x_rv = ~x_pred - x_pred 
+>>> y_rv = ~y_pred - y_pred 
+>>> z_rv = z_pred - ~z_pred 
+\end{python}
+
+\noindent They are used to define the following four random variables:
+\begin{python}
+>>> Q = z_rv
+>>> R = x_rv
+>>> S = 1/sqrt(2) * (-z_rv - x_rv)
+>>> T = 1/sqrt(2) * (z_rv - x_rv)
+\end{python}
+
+\noindent These random variables \pythoninline{Q}, \pythoninline{R},
+\pythoninline{S}, \pythoninline{T} are really random variables and not
+predicates: they all have eigenvalues $-1$ and $1$, lying outside the
+unit interval $[0,1]$, as must be the case for predicates.
+
+One then considers validities of suitable parallel conjunctions in one
+of the Bell states.
+\begin{python}
+>>> psi = bell11
+>>> psi >= Q @ S; psi >= R @ S; psi >= R @ T; psi >= Q @ T 
+0.707106781187 
+0.707106781187 
+0.707106781187 
+-0.707106781187
+>>> 2 < (psi >= Q @ S + R @ S + R @ T - Q @ T)
+True
+\end{python}
+
+\noindent The latter forms the famous violation. Notice that it used
+parallel conjunction \pythoninline{@}, since in the corresponding
+physical model, measurements are performed in parallel,
+see\cite{NielsenC00} for details.
+
+As an aside, these random variables can be used to show that parallel
+composition is not monotone in its first coordinate. The random
+variable \pythoninline{Q} is below the identity (truth), since:
+\begin{python}
+>>> is_positive(truth([2]).array - Q.array)
+True
+\end{python}
+
+\noindent But:
+\begin{python}
+>>> (psi >= Q @ S) > (psi >= truth([2]) @ S)
+True
+\end{python}
+
+% Bell experiment as in Otfried Guhne
+% http://web.am.qub.ac.uk/quamp2012/slides/guhne.pdf
+
+Other random variables can be used to obtain Bell/CHSH violations.
+For instance:
+\begin{python}
+>>> A1 = -x_rv
+>>> A2 = -y_rv
+>>> B1 = 1/sqrt(2) * (x_rv + y_rv)
+>>> B2 = 1/sqrt(2) * (x_rv - y_rv)
+>>> psi >= A1 @ B1 + A1 @ B2 + A2 @ B1 - A2 @ B2
+2.82842712475
+\end{python}
+\end{example}
+
 
 
 \section{Channels}\label{sec:qchannel}

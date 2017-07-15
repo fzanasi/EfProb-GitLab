@@ -6,7 +6,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-07-10
+# Date: 2017-07-15
 #
 from efprob_qu import *
 from math import *
@@ -416,6 +416,38 @@ def random_variables():
     print( dice >= points )
     print( dice.variance(points) )
 
+    print("\n===\n")
+
+    print("* Bell inequality")
+    x_rv = ~x_pred - x_pred 
+    y_rv = ~y_pred - y_pred 
+    z_rv = z_pred - ~z_pred 
+    # Alternative, with same outcome:
+    # x_rv = RandVar(x_matrix, [2])
+    # y_rv = RandVar(y_matrix, [2])
+    # z_rv = RandVar(z_matrix, [2])
+    Q = z_rv
+    R = x_rv
+    S = 1/math.sqrt(2) * (-z_rv - x_rv)
+    T = 1/math.sqrt(2) * (z_rv - x_rv)
+    print("\nEigenvalues of random variables")
+    print(np.linalg.eigh(Q.array)[0])
+    print(np.linalg.eigh(R.array)[0])
+    print(np.linalg.eigh(S.array)[0])
+    print(np.linalg.eigh(T.array)[0])
+    psi = bell11
+    print( psi >= Q @ S, psi >= R @ S, psi >= R @ T, psi >= Q @ T )
+    print("Bell violation: ", 2 < (psi >= Q @ S + R @ S + R @ T - Q @ T) )
+    A1 = -x_rv
+    A2 = -y_rv
+    B1 = 1/math.sqrt(2) * (x_rv + y_rv)
+    B2 = 1/math.sqrt(2) * (x_rv - y_rv)
+    print("Violations of monotonicity of @:", 
+          is_positive(truth([2]).array - Q.array),
+          (psi >= Q @ S) > (psi >= truth([2]) @ S) )
+    print("Alternative Bell violation: ",
+          psi >= A1 @ B1 + A1 @ B2 + A2 @ B1 - A2 @ B2 )
+
 
 def state_transformation():
 
@@ -792,7 +824,7 @@ def all():
     structural_channels()
     measurement()
     teleportation_and_superdensecoding()
-    order_inference()
+    # order_inference()
 
 
 def main():
