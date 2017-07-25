@@ -141,6 +141,11 @@ def is_hermitian(mat):
     #print("hermitian\n", mat, "\n", conjugate_transpose(mat))
     return is_square(mat) and np.allclose(mat, conjugate_transpose(mat))
 
+#
+# Trick to get a random unitary nxn matrix U: 
+# u = random_pred([n])
+# U = scipy.linalg.expm(complex(0,-1) * u.array)
+#
 def is_unitary(mat):
     out = is_square(mat) 
     n = mat.shape[0]
@@ -320,6 +325,11 @@ class RandVar:
             raise Exception('Power of a random variable must be at least 1')
         return reduce(lambda r1, r2: r1 @ r2, [self] * n)
 
+    def transpose(self):
+        """Experimental: take transpose = (conjugate) of the matrix 
+        of a random variable"""
+        return RandVar(self.array.transpose(), self.dom)
+
     def evolution(self, state):
         if not isinstance(state, State):
             raise Exception('Evolution of a random variable requires a state as first argument')
@@ -407,7 +417,6 @@ class Predicate(RandVar):
         if not isinstance(pred, Predicate):
             raise Exception('Sequential conjunction of predicates requires a predicate argument')
         sq = matrix_square_root(self.array)
-        conj = np.dot(sq, np.dot(pred.array, sq))
         return Predicate(np.dot(sq, np.dot(pred.array, sq)), self.dom)
 
     def __or__(self, p):
@@ -422,6 +431,13 @@ class Predicate(RandVar):
         return Channel(self.array.reshape(1,1, self.dom.size, self.dom.size), 
                        self.dom, [])
 
+    def transpose(self):
+        """ Experimental: take transpose (= conjugate) of the matrix of 
+        a predicate """
+        return Predicate(self.array.transpose(), self.dom)
+
+
+
 class State:
     def __init__(self, ar, dom):
         self.array = ar
@@ -430,8 +446,7 @@ class State:
             print(ar)
             raise Exception('State creation requires a positive matrix')
         if round(np.trace(ar).real) != 1.0 or round(np.trace(ar).imag) != 0.0:
-            print("\n**Warning**: trace is not (precisely) 1.0 in state creation, but is:") 
-            print(np.trace(ar), "\n")
+            print("  --> Warning: trace is not 1.0 in state creation, but:", np.trace(ar))
 
     # unfinished
     def __repr__(self):
@@ -524,6 +539,19 @@ class State:
     def as_pred(self):
         """ Turn a state into a predicate """
         return Predicate(self.array, self.dom)
+
+    def transpose(self):
+        """ Experimental: take transpose (= conjugate) of the matrix of 
+        a state """
+        return State(self.array.transpose(), self.dom)
+
+    def __xor__(self, pred):
+        """ Experimental: sequential conjunction & """
+        if not isinstance(pred, Predicate):
+            raise Exception('Conditioning requires a predicate argument')
+        sq = matrix_square_root(self.array)
+        conj = 1/(self >= pred) * np.dot(sq, np.dot(pred.array, sq))
+        return State(conj, self.dom)
 
     def as_chan(self):
         """Turn a state on dom into a channel 0 -> dom. This is useful for
@@ -937,8 +965,9 @@ def random_state(dom):
     return State(mat, dom)
 
 #
-# A random probabilistic state of size n, with n probabilities that
-# add up to one on the diagonal of the resulting density matrix.
+# A random probabilistic state with domain dom, given by n = dom.size
+# probabilities that add up to one on the diagonal of the resulting
+# density matrix.
 #
 def random_probabilistic_state(dom):
     dom = dom if isinstance(dom, Dom) else Dom(dom)
@@ -949,6 +978,25 @@ def random_probabilistic_state(dom):
     for i in range(n):
         mat[i,i] = ls[i]/s
     return State(mat, dom)
+
+#
+# A random probabilistic channel dom --> cod
+#
+def random_probabilistic_channel(dom, cod):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    cod = cod if isinstance(cod, Dom) else Dom(cod)
+    n = dom.size
+    m = cod.size
+    rand = np.zeros((n,m))
+    for i in range(n):
+        ls = [random.uniform(0.0, 1.0) for j in range(m)]
+        s = sum(ls)
+        rand[i,...] = 1/s * np.array(ls)
+    mat = np.zeros((m,m,n,n))
+    for j in range(m):
+        for i in range(n):
+            mat[j][j][i][i] = rand[i][j]
+    return Channel(mat, dom, cod)
 
 #
 # 0 <= theta <= pi, 0 <= phi <= 2*pi
@@ -980,6 +1028,9 @@ def probabilistic_pred(*ls):
 
 def point_pred(i, n):
     return probabilistic_pred(*vector_base(i,n))
+
+tt = point_pred(0,2)
+ff = point_pred(1,2)
 
 #
 # A random probabilitisc predicate of dimension n
@@ -1708,6 +1759,96 @@ def mutual_information(js):
         selectors = selectors + [ls]
     marginals = [ js % sel for sel in selectors ]
     return sum(np.vectorize(shannon_entropy)(marginals)) - shannon_entropy(js)
+
+
+########################################################################
+# 
+# Cup-cap channels; experimental
+#
+########################################################################
+
+
+#
+# unitary
+#
+def cup_chan(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
+    ls = [1]
+    for i in range(n-1):
+        ls = ls + n*[0] + [1]
+    v = np.array(ls)
+    mat = np.zeros((n*n,n*n,1,1))
+    mat[...,0,0] = np.outer(v.transpose(), v)
+    return Channel(1/n * mat, [], dom + dom)
+
+#
+# non-unitary version
+#
+def cup_map(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
+    return Channel(n * cup_chan(dom).array, [], dom + dom)
+
+def cup_state(dom):
+    return cup_chan(dom) >> init_state
+
+def cup(dom):
+    return cup_map(dom) >> init_state
+
+#
+# |v> = sum_{i} |ii>, giving matrix |v><v|, as in Leifer-Spekkens
+#
+def cap_chan(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
+    ls = [1]
+    for i in range(n-1):
+        ls = ls + n*[0] + [1]
+    v = np.array(ls)
+    mat = np.zeros((1,1,n*n,n*n))
+    mat[0][0] = np.outer(v.transpose(), v)
+    return Channel(n * mat, dom * 2, [])
+
+def cap_map(dom):
+    dom = dom if isinstance(dom, Dom) else Dom(dom)
+    n = dom.size
+    return Channel(1/n * cap_chan(dom).array, dom * 2, [])
+
+def cap_pred(dom):
+    return cap_chan(dom) << truth([])
+
+def cap(dom):
+    return cap_map(dom) << truth([])
+
+
+def channel_to_state(chan):
+    return (idn(chan.dom) @ chan) * cup_chan(chan.dom) >> init_state
+
+def state_to_channel(stat):
+    n = stat.dom.dims[0]
+    m = stat.dom.dims[1]
+    return (cap_chan([n]) @ idn([m])) * (idn([n]) @ stat.as_chan())
+
+
+def sqr_modifier(array, dom):
+    n = array.shape[0]
+    s = matrix_square_root(array)
+    mat = np.zeros((n,n,n,n)) + 0j
+    for i in range(n):
+        for j in range(n):
+            mat[i][j] = np.dot(s, np.dot(matrix_base(i,j,n), s))
+    return Channel(mat, dom, dom)
+
+def asrt(p):
+    return sqr_modifier(p.array, p.dom)
+
+def extract(stat):
+    sqr_chan = sqr_modifier(1/(stat % [1,0]).dom.size * 
+                            # adding transpose here yields a unital map
+                            np.linalg.inv((stat % [1,0]).array).transpose(), 
+                            (stat % [1,0]).dom)
+    return state_to_channel(stat) * sqr_chan
 
 
 ########################################################################

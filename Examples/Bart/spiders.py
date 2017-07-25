@@ -225,9 +225,9 @@ print("\nGround after cup is uniform: ",
 
 q = random_pred(dom)
 
-print("Predicate p after cup is substate 1/n * p.conj: ",
-      np.all(np.isclose(1/q.dom.size * q.array.conjugate(),
-                        ((q.as_subchan() @ idn(dom)) >> cup_state(dom)).array)) )
+print("Predicate p after cup is substate 1/n * p.T: ",
+      1/q.dom.size * q.transpose() == 
+      ((q.as_subchan() @ idn(dom)) >> cup_state(dom)).as_pred() )
 
 print("\nAs a result, using snake, cap after uniform @ idn is truth: ",
       truth(dom).as_subchan() == 
@@ -235,21 +235,21 @@ print("\nAs a result, using snake, cap after uniform @ idn is truth: ",
 
 s = random_state(dom)
 
-print("Cap after state s is random variable n * s.conj: ",
-      np.all(np.isclose(dom.size * s.array.conjugate(),
+print("Cap after state s is random variable n * s.T: ",
+      np.all(np.isclose(dom.size * s.array.transpose(),
                         (cap_chan(dom) * (s.as_chan() @ idn(dom))).array)) )
 
 print("\nPredicate p is cap after assert_p @ uniform: ",
       q == (sqr_modifier(q.array, dom) @ uniform_probabilistic_state(dom).as_chan()) << cap_pred(dom) )
 
-print("Cap after assert_p @ idn is cap after idn @ assert_p.conj: ",
+print("Cap after assert_p @ idn is cap after idn @ assert_p.T: ",
       (sqr_modifier(q.array, dom) @ idn(dom)) << cap_pred(dom) ==
-      (idn(dom) @ sqr_modifier(q.array.conjugate(), dom)) << cap_pred(dom) )
+      (idn(dom) @ sqr_modifier(q.transpose().array, dom)) << cap_pred(dom) )
 
 print("")
 
-print( np.all(np.isclose((((uniform_probabilistic_state(dom) / q).as_chan() @ idn(dom)) << cap_pred(dom)).array,
-                         1 / (uniform_probabilistic_state(dom) >= q) * q.array.conjugate())) )
+print( 1 / (uniform_probabilistic_state(dom) >= q) * q.transpose() ==
+       ((uniform_probabilistic_state(dom) / q).as_chan() @ idn(dom)) << cap_pred(dom) )
 
 
 # Cap is not unital!
@@ -407,7 +407,6 @@ print("")
 
 
 
-"""
 print("\nPredicate experiments")
 
 qs = q.as_subchan()
@@ -440,7 +439,7 @@ print( np.isclose(q.array.conjugate(),
 #print( uniform_probabilistic_state(q.dom) / q )
 
     
-"""
+
 
 """
 

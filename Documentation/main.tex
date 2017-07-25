@@ -1673,11 +1673,16 @@ $$\Prob{\mbox{\pythoninline{even | atmost4}}}
   $\Prob{-}$ which is applied to events. Hence it suggests that its
   argument \pythoninline{even | atmost4} is an event, and thus that
   \pythoninline{|} is an operation on events. This suggestion is
-  misleading. Conditioning is an operation between states and
-  predicates (events, if you like), and not between two events.
+  misleading, since ``$\Prob{A|B}$ is usually interpreted as
+  "(probability of $A$) given $B$" rather than "probability of ($A$
+  given $B$)," since "$A$ given $B$" is not defined in logic.''
+  (quoted from\cite{Schay68}).  Conditioning is an operation between
+  states and predicates (events, if you like), and not between two
+  events.
 \end{enumerate}
 \end{remark}
 
+% Quote from Schay68 occurs in DuboisP90
 
 Here is the mathematical account, see\cite{Jacobs17a} for details. Let
 $\omega$ be a state and $p$ a predicate, both with domain $X$. If the
