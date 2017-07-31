@@ -343,6 +343,8 @@
 \newcommand{\tensor}{\mathrel{@}}
 \newcommand{\indic}[1]{\mathbf{1}_{#1}}
 \newcommand{\Prob}[1]{\mathrm{Pr}\left({#1}\right)}
+\newcommand{\inprod}[2]{\ensuremath{\langle #1\,|\,#2 \rangle}}
+
 
 
 
@@ -1683,6 +1685,8 @@ $$\Prob{\mbox{\pythoninline{even | atmost4}}}
 \end{remark}
 
 % Quote from Schay68 occurs in DuboisP90
+% Considering conditioning as an operation between events is sometimes
+% called measure-free conditioning, see again DuboisP90.
 
 Here is the mathematical account, see\cite{Jacobs17a} for details. Let
 $\omega$ be a state and $p$ a predicate, both with domain $X$. If the
@@ -5360,7 +5364,7 @@ interval.
  [ 0.    0.    0.    0.  ]]
 \end{python}
 
-\noindent As a special case there are `unit' predicates that put a
+\noindent As a special case there are `point' predicates that put a
 \pythoninline{1} at the given position of the diagonal:
 \begin{python}
 >>> point_pred(2,4)
@@ -5368,6 +5372,13 @@ interval.
  [0 0 0 0]
  [0 0 1 0]
  [0 0 0 0]]
+\end{python}
+
+\noindent The analogues of the classical `yes' and `no' predicates
+have dimension two:
+\begin{python}
+>>> yes_pred = point_pred(0,2)
+>>> no_pred = point_pred(1,2)
 \end{python}
 
 For testing purposes one can use \pythoninline{random_pred([n1,..nk])}
@@ -5640,7 +5651,7 @@ operator that is most similar to `$\models$' is
 \pythoninline{>=}. Hence this what we shall use.
 Equation~\eqref{eqn:qvalidity} describes $\omega\models p$ as the
 trace $\tr(\omega\cdot p)$ of the product. It can be understood as the
-Hilbert-Schmidt inner product $\tuple{\omega\mid p}$, using that $p^*
+Hilbert-Schmidt inner product $\inprod{\omega}{p}$, using that $p^*
 = p$.
 \begin{python}
 >>> v = vector_pred(0.5 * sqrt(3), complex(0, 0.5))
@@ -6522,7 +6533,12 @@ s \models c \ll p.
 \end{equation}
 
 \noindent This is sometimes called the transformation validity
-equation.
+equation.\sidenote{Essentially, $c \gg (-)$ and $c \ll (-)$ are
+  (bounded) linear operators between Hilbert spaces of operators, with
+  the Hilbert-Schmidt inner product $\inprod{A}{B} =
+  \tr(A^{\dag}B)$. The equation~\eqref{eqn:qvaliditytransformation}
+  says that $c \gg (-)$ and $c \ll (-)$ are each other's daggers
+  $(-)^{\dag}$.}
 
 
 \subsection{Channels from isometric matrices}\label{subsec:qchannel:isometries}
@@ -6747,14 +6763,15 @@ $\ll$ works in backward direction.
 
 
 We have seen how states and predicates from discrete classical
-probability can be incorporated in the quantum world by putting
-the relevant probabilities at the diagonal. The next example
-illustrates how discrete channels fit in the quantum picture.
+probability can be incorporated in the quantum world by putting the
+relevant probabilities at the diagonal. The next example illustrates
+how channels from discrete probability fit in the quantum picture.
 
 
 \begin{example}
 \label{ex:dqchannel}
-Consider the discrete channel $c \colon 2 \rightarrow 3$ given by:
+Consider the channel $c \colon \{0,1\} \rightarrow \{0,1,2\}$ in
+discrete probability, see Section~\ref{sec:dchannel}, given by:
 $$\begin{array}{rclcrcl}
 c(0)
 & = &
@@ -6765,8 +6782,8 @@ c(1)
 \frac{1}{3}\ket{0} + \frac{1}{2}\ket{1} + \frac{1}{6}\ket{2}.
 \end{array}$$
 
-\noindent We turn it into channel $[2] \rightarrow [3]$ via the
-the follow $3\times 3$ matrix of $2\times 2$ matrices.
+\noindent We turn it into a quantum channel $[2] \rightarrow [3]$ via
+the the follow $3\times 3$ matrix of $2\times 2$ matrices.
 $$\begin{array}{rcl}
 M
 & = &
@@ -7484,7 +7501,11 @@ produces the resulting value as a probabilistic state. Concretely:
  [ 0.00000000+0.j  0.48575961+0.j]]
 \end{python}
 
-\noindent The following abbreviations are convenient for binary
+\noindent The predicate \pythoninline{p} can be recovered as
+\pythoninline{meas\_pred(p) << yes\_pred}, and its orthosupplement
+\pythoninline{\~p} as \pythoninline{meas\_pred(p) << no\_pred}.
+
+The following abbreviations are convenient for binary
 measurement in the standard basis:
 \begin{python}
 meas0 = meas_pred(point_pred(0,2))

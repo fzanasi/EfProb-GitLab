@@ -649,39 +649,6 @@ class Channel:
         #print("rshift out", is_positive(mat), np.trace(mat), "\n", mat)
         return State(mat, self.cod)
 
-    # # backward predicate transformation
-    # def __lshift__(self, p):
-    #     #print(p.dims, self.dom_dims, self.cod_dims)
-    #     if p.dom != self.cod:
-    #         raise Exception('Non-match in predicate transformation')
-    #     m = p.dom.size # = self.cod.size
-    #     n = self.dom.size
-    #     mat = np.zeros((n,n)) + 0j
-    #     # Perform a linear extension of the channel, encoding its
-    #     # behaviour on basisvectors in a matrix to arbitrary matrices.
-    #     for k in range(m):
-    #         for l in range(m):
-    #             mat = mat + p.array[k][l] * self.array[k][l]
-    #     return Predicate(mat, self.dom)
-
-    # # forward state transformation
-    # def __rshift__(self, s):
-    #     #print("rshift dims", s.dims, self.dom_dims)
-    #     if s.dom != self.dom:
-    #         raise Exception('Non-match in state transformation')
-    #     n = s.dom.size # = self.dom.size
-    #     m = self.cod.size
-    #     mat = np.zeros((m, m)) + 0j
-    #     for k in range(m):
-    #         for l in range(m):
-    #             # NB: the order of k,l must be different on the left
-    #             # and right hand side, because in the Hilbert-Schmidt
-    #             # inner product a transpose is used: <A,B> = tr(A*B).
-    #             mat[k][l] = np.trace(np.dot(s.array, 
-    #                                         self.array[l][k]))
-    #     #print("rshift out", is_positive(mat), np.trace(mat), "\n", mat)
-    #     return State(mat, self.cod)
-
     # parallel compositon
     def __matmul__(self, c):
         return Channel(np.kron(self.array, c.array), 
@@ -710,6 +677,7 @@ class Channel:
                                  for k in range(p) for l in range(p)])
         return Channel(mat, c.dom, self.cod)
 
+    # experimental, based on Leifer-Spekkens
     def inversion(self, state):
         if len(self.dom.dims) > 1 or len(self.cod.dims) > 1:
             raise Exception('Inversion is defined only for channels with domain and codomain of dimension one')
@@ -717,6 +685,25 @@ class Channel:
         m = self.cod.dims[0]
         pair = graph_pair(state, self)
         return pair_extract(swaps(n,m) >> pair)[1]
+
+    # turn c << (-) into c >> (-), as Hilbert-Schmidt dagger; the
+    # result may not be a unitary operation. We do have:
+    # c == c.dagger().dagger() 
+    # p == (p.as_subchan().dagger() >> init_state).as_pred() 
+    # s.as_pred() == s.as_chan().dagger() << truth([]) 
+
+    def dagger(self):
+        n = self.dom.size
+        m = self.cod.size
+        mat = np.zeros((n,n,m,m)) + 0j
+        for i in range(n):
+            for j in range(n):
+                # essentially, self >> matrix_base(i,j,n)
+                for k in range(m):
+                    for l in range(m):
+                        mat[i][j][k][l] = np.trace(np.dot(matrix_base(i,j,n), 
+                                                          self.array[l][k]))
+        return Channel(mat, self.cod, self.dom)
 
     def as_operator(self):
         """ Operator from Channel """
@@ -1029,8 +1016,8 @@ def probabilistic_pred(*ls):
 def point_pred(i, n):
     return probabilistic_pred(*vector_base(i,n))
 
-tt = point_pred(0,2)
-ff = point_pred(1,2)
+yes_pred = point_pred(0,2)
+no_pred = point_pred(1,2)
 
 #
 # A random probabilitisc predicate of dimension n

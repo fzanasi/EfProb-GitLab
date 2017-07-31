@@ -581,6 +581,13 @@ def structural_channels():
     print( w >= p )
     print( w.as_chan() << p )
 
+    print("\n===\n")
+
+    print("* Predicate subchannel equivalents")
+    print( p == p.as_subchan() << truth([]) )
+    print( np.all(np.isclose((p.as_subchan() >> w).array,
+                             (w.as_chan() << p).array)) )
+
 def measurement():
     
     print("\nSubsection: Measurement, control and instruments\n")
@@ -590,6 +597,9 @@ def measurement():
     s = random_state([5])
     print( s >= p )
     print( meas_pred(p) >> s )
+    print("Predicate and it orthosupplement can be recovered: ",
+          p == meas_pred(p) << yes_pred,
+          ~p == meas_pred(p) << no_pred )
 
     print("\n===\n")
 
