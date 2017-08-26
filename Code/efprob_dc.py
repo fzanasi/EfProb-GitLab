@@ -440,6 +440,11 @@ class StateLike:
         self.array = array
         self.dom = dom
 
+    def __eq__(self, other):
+        if self.dom.iscont or other.dom.iscont:
+            raise Exception('Equality of states only defined in the discrete case')
+        return self.dom == other.dom and np.all(np.isclose(self.array, other.array))
+
     @staticmethod
     def _fromfun_getelm(fun, dom, disc_args):
         if not dom.iscont:

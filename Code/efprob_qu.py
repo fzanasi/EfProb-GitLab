@@ -572,10 +572,10 @@ class State:
         w = self >= RandVar(np.dot(randvar.array, randvar.array), self.dom)
         return w - (v ** 2)
 
-    def purify(self):
-        v = purify(self.array)
-        mat = np.outer(v, np.conjugate(v))
-        return State(mat, [self.dom.size, self.dom.size])
+    # def purify(self):
+    #     v = purify(self.array)
+    #     mat = np.outer(v, np.conjugate(v))
+    #     return State(mat, [self.dom.size, self.dom.size])
 
 
         
