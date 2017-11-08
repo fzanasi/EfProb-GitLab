@@ -1861,9 +1861,9 @@ def conditional_masked_entwinedness(state, mask1, mask2, base_mask):
     mask1 = mask_restrict(mask, mask1)
     mask2 = mask_restrict(mask, mask2)
     print( mask1, mask2 )
-    base_state = joint % base_mask
+    base_state = state % base_mask
     base_dom = base_state.dom
-    channel = joint[ mask : base_mask ]
+    channel = state[ mask : base_mask ]
     print( channel )
     pred = pred_fromfun(lambda b: tvdist(channel(b), 
                                          (channel(b) % mask1) @ (channel(b) % mask2)), 
