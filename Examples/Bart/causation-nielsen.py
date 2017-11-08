@@ -85,8 +85,26 @@ c = chan_from_states([flip(0.85), flip(0.9), flip(0.05), flip(0.1)],
                      [smoke_dom, tar_dom])
 
 print("Get cancer: ", c >> st )
+
 print("Smoking, given cancer: ", 
       c >> (st / (point_pred('S', smoke_dom) @ truth(tar_dom))) )
+
+
+print("\nTest")
+print( c >> (point_state('S', smoke_dom) @ (st // [1,0])('S')) )
+
+print("\nChannel update Test") 
+eS = (st // [0,1]) / point_state('S', smoke_dom)
+print( c >> ((eS @ idn(tar_dom)) >> (copy(tar_dom) >> (st % [0,1]))) )
+
+
+print("\nDo intervention: ",
+      c >> (st % [1,0] @ (st // [1,0])('S')) )
+
+"""
+
+
+
 
 print( (graph(c) >> st).disintegration([1,0,0])('S') % [0,1] )
 
@@ -105,13 +123,14 @@ print( c >> do(st, 'S') )
 print("Don't: ", do(st, '~S') )
 print( c >> do(st, '~S') )
 
-print("Do intervention: ",
-      c >> (st % [1,0] @ (st // [1,0])('S')) >= yes_pred,
-      c >> (point_state('S', smoke_dom) @ (st // [1,0])('S')) >= yes_pred )
 
 #print( 0.85 * 0.95 * 0.5 + 0.9 * 0.05 * 0.5 + 0.05 * 0.95 * 0.5 + 0.1 * 0.05 * 0.5 )
 
 #print( 0.85 * 0.95 * 0.51 + 0.9 * 0.05 * 0.51 + 0.05 * 0.95 * 0.49 + 0.1 * 0.05 * 0.49 )
+
+print("Do intervention: ",
+      c >> (st % [1,0] @ (st // [1,0])('S')) >= yes_pred,
+      c >> (point_state('S', smoke_dom) @ (st // [1,0])('S')) >= yes_pred )
 
 print( c * (idn(smoke_dom) @ (st // [1,0])) * copy(smoke_dom) >> point_state('S', smoke_dom) )
 
@@ -154,3 +173,4 @@ print("\nIntervene by enforcing ashtrays: ", alt_intervention )
 print("\nNow cancer is: ", alt_intervention % [0,1,0] )
 print("and smoking: ", alt_intervention % [0,0,1] )
 print("and ashtray: ", alt_intervention % [1,0,0] )
+"""

@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-07-15
+# Date: 2017-08-26
 #
 from functools import reduce
 import functools
@@ -207,6 +207,9 @@ class Dom:
         di, ci = iter(disc_list), iter(cont_list)
         return [next(ci) if isinstance(d, Interval) else next(di)
                 for d in self]
+
+    def to_string(self):
+        return "domain"
 
 
 def asdom(dom):
@@ -660,6 +663,16 @@ def mask_sum(mask1, mask2):
     if any([i > 1 for i in sum_mask]):
         raise Exception('Non-disjoint masks in mask summation')
     return sum_mask
+
+#
+# Check disjointness of two masks: there are no two 1's at a
+# particular position.
+#
+def mask_disjointness(mask1, mask2):
+    n = len(mask1)
+    if len(mask2) != n:
+        raise Exception('Length mismatch in mask disjointness')
+    return any([mask1[i] + mask2[i] <= 1 for i in range(n)])
 
 #
 # return conditional probability channel stat[ concl_mask | cond_mask ]
@@ -1797,6 +1810,65 @@ def cross_infl(pred, joint_state):
     marg2 = joint_state % [0,1]
     dom2 = marg2.dom
     return tvdist(marg2, (joint_state / (pred @ truth(dom2))) % [0,1])
+
+#
+# For a discrete state on domain [D1, ..., Dn] return the distance
+# between the state itself and the product of its n marginals on
+# domains Di.
+#
+def atomic_entwinedness(state):
+    if state.dom.iscont:
+        raise Exception('Entwinedness is defined only for discrete states')
+    l = len(state.dom)
+    if l <= 1:
+        raise Exception('Entwinedness is defined only for joint states')
+    marginals = []
+    for i in range(l):
+        ls = l * [0] 
+        ls[i] = 1
+        marginals.append(state % ls)
+    product_of_marginals = reduce(lambda s1, s2: s1 @ s2, marginals)
+    return tvdist(state, product_of_marginals)
+
+#
+# For a (discrete) state and two masks, return the distance between:
+# - the marginal given by the sum/union and these masks
+# - the product of the marginals given by the two masks individually.
+# This can be understood as the value in [0,1] of the independence
+# assertion (mask1 perp mask2)
+#
+def masked_entwinedness(state, mask1, mask2):
+    if state.dom.iscont:
+        raise Exception('Entwinedness is defined only for discrete states')
+    if not mask_disjointness(mask1, mask2):
+        raise Exception('Entwinedness is defined only for disjoint masks')
+    mask = mask_sum(mask1, mask2)
+    return tvdist(state % mask, (state % mask1) @ (state % mask2))
+
+#
+# For a (discrete) state and two masks, plus a base_mask return as
+# weighted distance the value of the independence assertion
+# (mask1 perp mask2 | base_mask)
+#
+def conditional_masked_entwinedness(state, mask1, mask2, base_mask):
+    if state.dom.iscont:
+        raise Exception('Entwinedness is defined only for discrete states')
+    if not (mask_disjointness(mask1, mask2) and \
+            mask_disjointness(mask1, base_mask) and \
+            mask_disjointness(mask2, base_mask)):
+        raise Exception('Entwinedness is defined only for disjoint masks')
+    mask = mask_sum(mask1, mask2)
+    mask1 = mask_restrict(mask, mask1)
+    mask2 = mask_restrict(mask, mask2)
+    print( mask1, mask2 )
+    base_state = joint % base_mask
+    base_dom = base_state.dom
+    channel = joint[ mask : base_mask ]
+    print( channel )
+    pred = pred_fromfun(lambda b: tvdist(channel(b), 
+                                         (channel(b) % mask1) @ (channel(b) % mask2)), 
+                     base_dom)
+    return base_state >= pred
 
 
 

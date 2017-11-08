@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-07-15
+# Date: 2017-08-26
 #
 from functools import reduce
 import functools
@@ -546,7 +546,7 @@ class State:
         return State(self.array.transpose(), self.dom)
 
     def __xor__(self, pred):
-        """ Experimental: sequential conjunction & """
+        """ Experimental: upper conditioning """
         if not isinstance(pred, Predicate):
             raise Exception('Conditioning requires a predicate argument')
         sq = matrix_square_root(self.array)
@@ -655,7 +655,7 @@ class Channel:
                        self.dom + c.dom,
                        self.cod + c.cod)
 
-    # sequential composition
+    # sequential composition self * c, read as "self after c"
     def __mul__(self, c):
         if self.dom != c.cod:
             raise Exception('Non-matching dimensions in channel composition')
@@ -689,6 +689,7 @@ class Channel:
     # turn c << (-) into c >> (-), as Hilbert-Schmidt dagger; the
     # result may not be a unitary operation. We do have:
     # c == c.dagger().dagger() 
+    # (c >> s).as_pred() == c.dagger() << s.as_pred()
     # p == (p.as_subchan().dagger() >> init_state).as_pred() 
     # s.as_pred() == s.as_chan().dagger() << truth([]) 
 
@@ -1812,6 +1813,16 @@ def cap(dom):
 def channel_to_state(chan):
     return (idn(chan.dom) @ chan) * cup_chan(chan.dom) >> init_state
 
+#
+# <i|<k|state_to_channel(t)|l>|j>
+#   equals
+# n * <ik|t|jl>.conjugate
+#   i.e.
+# state_to_channel(t).array[k,l][i,j]
+#   equals
+# n * t.array[a,b].conjugate()   
+#   for  a = i*dom.dims[1] + k,  b = j*dom.dims[1] + l
+#
 def state_to_channel(stat):
     n = stat.dom.dims[0]
     m = stat.dom.dims[1]
@@ -1834,6 +1845,7 @@ def extract(stat):
     sqr_chan = sqr_modifier(1/(stat % [1,0]).dom.size * 
                             # adding transpose here yields a unital map
                             np.linalg.inv((stat % [1,0]).array).transpose(), 
+                            #np.linalg.inv((stat % [1,0]).array.transpose()), 
                             (stat % [1,0]).dom)
     return state_to_channel(stat) * sqr_chan
 
