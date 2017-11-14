@@ -220,7 +220,7 @@ class Dom:
         return " * ".join(str(d) if n is None
                           else "{}<{}>".format(d, n)
                           for d, n
-                          in itertools.product(self, self.names))
+                          in zip(self, self.names))
 
     def __eq__(self, other):
         return (self.names == other.names
