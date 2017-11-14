@@ -126,9 +126,36 @@ def _ensure_list(dom):
     return dom
 
 
+class Name:
+    """Identifiers for domains"""
+    _ids = itertools.count(0)
+
+    def __init__(self, name=None):
+        self.id = next(self._ids)
+        self.name = name
+
+    def __repr__(self):
+        if self.name is None:
+            return "#{}".format(self.id)
+        return "{}#{}".format(repr(self.name), self.id)
+
+    def __str__(self):
+        if self.name is None:
+            return repr(self)
+        return str(self.name)
+
+    def __eq__(self, other):
+        if isinstance(other, Name):
+            return self.id == other.id
+        return False
+
+    def __ne__(self, other):
+        return not self == other
+
+
 class Dom:
     """(Co)domains of states, predicates and channels"""
-    def __init__(self, dom, disc=None, cont=None):
+    def __init__(self, dom, disc=None, cont=None, names=None):
         dom = _ensure_list(dom)
         if disc is None or cont is None:
             dom_ = dom
@@ -147,6 +174,13 @@ class Dom:
         self.disc = disc
         self.cont = cont
         self.iscont = bool(self.cont)
+        # Initialize `names`
+        if names is None:
+            self.names = [None] * len(dom)
+        elif isinstance(names, list):
+            self.names = names
+        else:
+            self.names = [names]
 
     def __iter__(self):
         return iter(self._dom)
@@ -160,7 +194,8 @@ class Dom:
     def __add__(self, other):
         return Dom(self._dom + other._dom,
                    disc=self.disc + other.disc,
-                   cont=self.cont + other.cont)
+                   cont=self.cont + other.cont,
+                   names=self.names + other.names)
 
     def __matmul__(self, other):
         return self + other
@@ -168,21 +203,28 @@ class Dom:
     def __mul__(self, n):
         return Dom(self._dom * n,
                    disc=self.disc * n,
-                   cont=self.cont * n)
+                   cont=self.cont * n,
+                   names=self.names * n)
 
     def __bool__(self):
         return bool(self._dom)
 
     def __repr__(self):
-        return repr(self._dom)
+        return "dom: {}; disc: {}; cont: {}; names: {}".format(
+            repr(self._dom), repr(self.disc),
+            repr(self.cont), repr(self.names))
 
     def __str__(self):
         if not self:
             return "()"
-        return " * ".join(str(d) for d in self)
+        return " * ".join(str(d) if n is None
+                          else "{}<{}>".format(d, n)
+                          for d, n
+                          in itertools.product(self, self.names))
 
     def __eq__(self, other):
-        return self._dom == other._dom
+        return (self.names == other.names
+                and self._dom == other._dom)
 
     def __ne__(self, other):
         return not self == other
@@ -759,9 +801,11 @@ class State(StateLike):
     def marginal(self, selectors):
         """Return a marginal state."""
         dom_marg, disc_sel, cont_sel = [], [], []
-        for d, s in zip(self.dom, selectors):
+        names = []
+        for d, n, s in zip(self.dom, self.dom.names, selectors):
             if s:
                 dom_marg.append(d)
+                names.append(n)
             if isinstance(d, Interval):
                 cont_sel.append(s)
             else:
@@ -776,7 +820,7 @@ class State(StateLike):
         if not all(disc_sel):
             axes = tuple(n for n, s in enumerate(disc_sel) if not s)
             array = array.sum(axes)
-        return State(array, dom_marg)
+        return State(array, Dom(dom_marg, names=names))
 
     def __mod__(self, selectors):
         return self.marginal(selectors)
@@ -849,13 +893,16 @@ class State(StateLike):
     def disintegration(self, selectors):
         """Disintegration of the joint state"""
         dom, cod = [], []
-        for d, s in zip(self.dom, selectors):
+        dom_names, cod_names = [], []
+        for d, n, s in zip(self.dom, self.dom.names, selectors):
             if s:
                 dom.append(d)
+                dom_names.append(n)
             else:
                 cod.append(d)
-        dom = Dom(dom)
-        cod = Dom(cod)
+                cod_names.append(n)
+        dom = Dom(dom, names=dom_names)
+        cod = Dom(cod, names=cod_names)
         s = self % selectors
         def f(*x):
             m = s.getvalue(*x)
