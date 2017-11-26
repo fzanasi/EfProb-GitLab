@@ -188,6 +188,10 @@ class Dom:
     def __getitem__(self, key):
         return self._dom[key]
 
+    def get_nameditem(self, key):
+        return Dom(self._dom[key], 
+                   names = self.names[key])
+
     def __len__(self):
         return len(self._dom)
 
@@ -705,6 +709,12 @@ def mask_sum(mask1, mask2):
     if any([i > 1 for i in sum_mask]):
         raise Exception('Non-disjoint masks in mask summation')
     return sum_mask
+
+#
+# Repeated sum of masks
+#
+def mask_summation(mask_list):
+    return reduce(lambda m1, m2: mask_sum(m1, m2), mask_list)
 
 #
 # Check disjointness of two masks: there are no two 1's at a
@@ -1480,6 +1490,8 @@ def copy2(dom):
     return Channel(array, dom, dom+dom)
 
 def copy(dom, n=2):
+    if n == 1:
+        return idn(dom)
     if n % 2 == 0:
         if n==2:
             return copy2(dom)

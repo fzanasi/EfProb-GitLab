@@ -11,6 +11,9 @@ disease_dom = Dom(bool_list, names=disease_name)
 w = State([0.05, 0.4, 0.5, 0.05], mood_dom+disease_dom)
 print("Prior joint state")
 print( w )
+print("with domains and names")
+print( w.dom )
+print( w.dom.names )
 print("with marginals")
 w1 = w % [1,0]
 w2 = w % [0,1]
