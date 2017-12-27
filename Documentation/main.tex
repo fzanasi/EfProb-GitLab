@@ -75,6 +75,9 @@
 %    inequality becomes:
 %    (w >= p @ truth(q.dom)) + (w >= truth(p.dom) @ q) - 1 <= (w >= p @ q)
 %
+%  - include Monty Hall problem, see:
+%    https://github.com/pgmpy/pgmpy/blob/dev/examples/Monte%20Hall%20Problem.ipynb
+% 
 % Literature
 % ==========
 %
@@ -4603,6 +4606,8 @@ a different meaning.
 0.5|True> + 0.5|False>
 \end{python}
 
+% Side-remark: this channel is the isomorphism [0,1] --> D(2)
+
 \noindent We use the same head (1) and coin (0) observations as
 in the discrete case. This allows us to compare the resulting
 pictures.
@@ -4658,7 +4663,13 @@ pictures.
 \noindent These nine plots have the same shape as the (unnormalised)
 beta function $x \mapsto x^{\alpha-1}\cdot (1-x)^{\beta-1}$ on $[0,1]$
 for consecutively $(\alpha,\beta)$-values $(1,1)$, $(1,2)$, $(2,2)$,
-$(3,2)$, $(4,2)$, $(4,3)$, $(4,4)$, $(5,4)$, $(6,4)$.
+$(3,2)$, $(4,2)$, $(4,3)$, $(4,4)$, $(5,4)$, $(6,4)$. The reason is
+that the beta function is the `conjugate prior'\index{conjugate~prior}
+of the flip distribution, see~\textit{e.g.}~\cite{Jacobs17d}. The big
+advantage of such conjugate priors is that they allow us to do updates
+via the `hyper' parameters $\alpha, \beta$, instead of via the
+distribution itself, as in the updates \pythoninline{s / (chan <<
+  pred)} in the above code fragment.
 
 We can now calculate for the final state \pythoninline{s} after the
 above loop the best bias of the coin:

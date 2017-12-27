@@ -231,7 +231,7 @@ class Dom:
                 and self._dom == other._dom)
 
     def __ne__(self, other):
-        return not self == other
+        return not self._dom == other._dom
 
     def disc_get(self, index):
         return [self.disc[n][i] for n, i in enumerate(index)]
@@ -1762,6 +1762,11 @@ def random_pred(dom):
     array = np.random.random_sample(shape)
     return Predicate(array, dom)
 
+def random_chan(dom, cod):
+    dom = asdom(dom)
+    cod = asdom(cod)
+    s = random_state(dom @ cod)
+    return s // [1,0]
 
 @functools.lru_cache(maxsize=None)
 def gaussian_compensation(mu, sigma, lb, ub):

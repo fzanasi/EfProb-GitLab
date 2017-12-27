@@ -1,10 +1,6 @@
 from efprob_dc import *
 from baynet import *
 
-from os import path
-
-from PIL import Image
-
 ##############################################
 #
 # sac = smoking-ashtray-cancer
@@ -36,6 +32,10 @@ cancer = chan_from_states([flip(0.4,cd), flip(0.05,cd)], sd)
 
 sac_joint = (ashtray @ cancer @ idn(sd)) * copy(sd,3) >> smoking
 
+print( sac_joint )
+
+print("")
+
 #
 # Graph 
 #
@@ -52,11 +52,12 @@ sm_ash = pydot.Edge(sm, ash)
 sm_ca = pydot.Edge(sm, ca)
 sac_graph.add_edge(sm_ash)
 sac_graph.add_edge(sm_ca)
+#sac_graph.add_edge(pydot.Edge("ashtray", "cancer"))
 
 #
 # Save and display graph
 #
-graph_image(sac_graph, "sac")
+#graph_image(sac_graph, "sac")
 
 #
 # Form Bayesian network
@@ -67,17 +68,16 @@ print( sac_cpts["smoking"] )
 print( sac_cpts["ashtray"]('S'), " and ", sac_cpts["ashtray"]('~S') )
 print( sac_cpts["cancer"]('S'), " and ", sac_cpts["cancer"]('~S') )
 
-print("\nReconstructed state after flattening sac")
+#print("\nReconstructed state after flattening sac")
 
-reconstructed_sac = flatten(sac_graph, sac_cpts)
-print( reconstructed_sac )
+#reconstructed_sac = flatten(sac_graph, sac_cpts)
+#print( reconstructed_sac )
 
-reordered_reconstructed_sac = reorder_state_domains(reconstructed_sac, 
-                                                    sac_joint.dom)
-print("\nReconstruction equal to orginal: ", 
-      reordered_reconstructed_sac == sac_joint )
+#reordered_reconstructed_sac = reorder_state_domains(reconstructed_sac, 
+#                                                    sac_joint.dom)
+#print("\nReconstruction equal to orginal: ", 
+#      reordered_reconstructed_sac == sac_joint )
 print("Match distance: ", state_graph_match(sac_joint, sac_graph))
-
 
 
 ##############################################
@@ -126,10 +126,16 @@ tuberculosis = chan_from_states([flip(0.05, tuberculosis_dom),
                                  flip(0.01, tuberculosis_dom)], 
                                 asia_dom)
 
-disjunction = chan_from_states([flip(0.9, disjunction_dom),
-                                flip(0.7, disjunction_dom),
-                                flip(0.7, disjunction_dom),
-                                flip(0.1, disjunction_dom)],
+# disjunction = chan_from_states([flip(0.9, disjunction_dom),
+#                                 flip(0.7, disjunction_dom),
+#                                 flip(0.7, disjunction_dom),
+#                                 flip(0.1, disjunction_dom)],
+#                                tuberculosis_dom + cancer_dom)
+
+disjunction = chan_from_states([flip(1, disjunction_dom),
+                                flip(0, disjunction_dom),
+                                flip(0, disjunction_dom),
+                                flip(0, disjunction_dom)],
                                tuberculosis_dom + cancer_dom)
 
 cancer = chan_from_states([flip(0.1, cancer_dom),
@@ -173,6 +179,13 @@ visit_joint = \
    >> asia @ smoking
 
 
+print( visit_joint )
+
+#print( visit_joint % [0,0,0,1,1,0,0,0] )
+
+"""
+
+
 visit_graph = pydot.Dot(graph_type='digraph')
 #
 visit_graph.add_node(pydot.Node("asia"))
@@ -196,7 +209,7 @@ visit_graph.add_edge(pydot.Edge("bronchitis", "dyspnoea"))
 #
 # Save and display graph
 #
-graph_image(visit_graph, "visit")
+#graph_image(visit_graph, "visit")
 
 # visit_cpts = factorise(visit_joint, visit_graph)
 # reconstructed_visit_state = flatten(visit_graph, visit_cpts)
@@ -245,8 +258,8 @@ DC_graph.add_edge(pydot.Edge("D", "C"))
 #
 # Save and display graph
 #
-graph_image(CD_graph, "cd")
-graph_image(DC_graph, "dc")
+#graph_image(CD_graph, "cd")
+#graph_image(DC_graph, "dc")
 
 
 random_state = random_state(A + B + C + D)
@@ -330,6 +343,9 @@ weather_play_graph.add_edge(pydot.Edge("Windy", "Play"))
 #
 # Save and display graph
 #
-graph_image(weather_play_graph, "weather")
+#graph_image(weather_play_graph, "weather")
 
 print("Weather-play match: ", state_graph_match(table, weather_play_graph))
+
+
+"""

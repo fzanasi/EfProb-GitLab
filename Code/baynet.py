@@ -1,7 +1,7 @@
 #
-# Bayesian networ library, prototype version
+# Bayesian network library, prototype version
 #
-# Copyright: Bart Jacobs, Kenta Cho; 
+# Copyright: Bart Jacobs; 
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
@@ -37,6 +37,8 @@ from efprob_dc import *
 # and display it. When no name is provided, the file name is graph.png
 #
 # In case of errors, do: pip3 install --upgrade pillow
+#
+# Kill all images with: pkill display
 #
 def graph_image(graph, name=None):
     if name == None:
@@ -137,10 +139,9 @@ def domain_swaps(state, swap_list):
 #
 # 
 #
-def reorder_state_domains(state, domain):
-    ld = len(domain)
-    domain_names = [domain.names[i].name for i in range(ld)]
+def reorder_state_domains(state, domain_names):
     ls = len(state.dom)
+    ld = len(domain_names)
     state_names = [state.dom.names[i].name for i in range(ls)]
     if ld != ls or set(domain_names) != set(state_names):
         raise Exception('Non-matching domains in domain-reordering')
@@ -178,6 +179,9 @@ def flatten(graph, cpts):
     graph_nodes = graph.get_nodes()
     graph_node_names = [n.get_name() for n in graph_nodes]
     if set(cpts.keys()) != set(graph_node_names):
+        print("\nMismatch between:")
+        print( cpts.keys() )
+        print( graph_node_names )
         raise Exception('Non-matching graph and mapping in flattening')
     #
     # Handle initial nodes from graph, without parents
@@ -189,7 +193,7 @@ def flatten(graph, cpts):
         if len(get_parents(n)) == 0:
             initial_nodes.append(n)
             unprocessed_nodes.remove(n)
-    state = reduce(lambda s1, s2: s1 @ s2, [cpts[n.get_name()] 
+    state = reduce(lambda s1, s2: s1 @ s2, [cpts[n.get_name()]
                                             for n in initial_nodes])
     # print("Initial state: ", state )
     #
@@ -241,7 +245,7 @@ def flatten(graph, cpts):
                 if not found_i:
                     # stop handling parent i
                     found_all = False
-                    #print("Stop handling parent: ", parents[i])
+                    # print("Stop handling parent: ", parents[i])
                     break
                 # i-th parent found at j
                 #print("==> Parent found! ", i, "=", parents[i], "at", j)
@@ -297,6 +301,17 @@ def flatten(graph, cpts):
     return state
 
 
+# def KLdivergence(state1, state2):
+#     #print("sum", [ state1.array(i) / state2.array(i) for i in state1] )
+#     z = zip(list(state1.array), list(state2.array))
+#     print("zip ", map(lambda x, y: x * math.log(x/y), z))
+#     return -sum(map(lambda x, y: x * math.log(x/y), z))
+#     # dom = state1.dom
+#     # for d in dom:
+#     #     print(d)
+#     # print("Dom is ", dom)
+#     # return -sum([state1(d) * math.log(state1(d) / state2(d)) for d in dom])
+
 
 #
 # Factorise a joint state and a graph first into a Bayesian network,
@@ -309,7 +324,24 @@ def flatten(graph, cpts):
 def state_graph_match(state, graph):
     cpts = factorise(state, graph)
     reconstructed_state = flatten(graph, cpts)
+    ld = len(state.dom)
+    domain_names = [state.dom.names[i].name for i in range(ld)]
     reordered_reconstructed_state = reorder_state_domains(reconstructed_state,
-                                                          state.dom)
-    return tvdist(state, reordered_reconstructed_state)
-
+                                                          domain_names)
+    # Alternative outputs:
+    # - validity reordered_reconstructed_state >= state.as_pred()
+    #   But this is not zero (or one) for equal states
+    return tvdist(state, reordered_reconstructed_state) 
+    # return (tvdist(state, reordered_reconstructed_state), 
+    #         KLdivergence(state, reordered_reconstructed_state),
+    #         KLdivergence(reordered_reconstructed_state, state))
+            
+#
+# Afterthoughts: here the Bayesian network is derived from the initial
+# data (state). One can also "somehow" construct a Bayesian network,
+# turn it into a joint state, and compare this to the original data
+# (state). Then one asks the question: What is the likelihood of the
+# date, given the model (Bayesian network). For this the
+# Kullback-Leibner divergence is standardly used (or also
+# log-likelihood??). This alternative approach is often used when
+# there is limited coverage and/or faith in the data.
