@@ -16,6 +16,7 @@ from pgmpy.inference import VariableElimination
 import pydot
 from PIL import Image
 
+"""
 
 sac_model = BayesianModel([('Smoking', 'Ashtray'), 
                            ('Smoking', 'Cancer')])
@@ -89,6 +90,8 @@ student_model.add_cpds(cpd_d, cpd_i, cpd_g, cpd_l, cpd_s)
 
 print("\nModel correct: ",  student_model.check_model() )
 
+"""
+
 def efprob_domain(name, card):
     items = [ name + "_" + str(i) for i in range(card)]
     return Dom(items, names = Name(name))
@@ -145,7 +148,7 @@ def pydot_graph_of_pgm(model):
     return graph
 
 
-print("\nChannels\n")
+#print("\nChannels\n")
 
 #print( efprob_channel_from_tabularCPD(cpd_ashtray) )
 #print( efprob_channel_from_tabularCPD(cpd_g) )
@@ -153,11 +156,11 @@ print("\nChannels\n")
 
 #print("\nGraphs:")
 
-sac_graph = pydot_graph_of_pgm(sac_model)
+#sac_graph = pydot_graph_of_pgm(sac_model)
 
 #graph_image(sac_graph, "sac")
 
-sac_cpts = efprob_channels_of_pgm(sac_model)
+#sac_cpts = efprob_channels_of_pgm(sac_model)
 
 # print( sac_cpts["Smoking"] )
 # print( sac_cpts["Ashtray"] )
@@ -167,22 +170,22 @@ sac_cpts = efprob_channels_of_pgm(sac_model)
 # print( sac_cpts["Cancer"]("Smoking_0") )
 # print( sac_cpts["Cancer"]("Smoking_1") )
 
-print( flatten(sac_graph, sac_cpts) )
+#print( flatten(sac_graph, sac_cpts) )
 
 #0.114|A,C,S> + 0.00875|A,C,~S> + 0.171|A,~C,S> + 0.166|A,~C,~S> + 0.006|~A,C,S> + 0.0263|~A,C,~S> + 0.009|~A,~C,S> + 0.499|~A,~C,~S>
 
-print("\nStudent joint")
+#print("\nStudent joint")
 
 
-student_graph = pydot_graph_of_pgm(student_model)
+#student_graph = pydot_graph_of_pgm(student_model)
 #graph_image(student_graph, "student")
 
-student_cpts = efprob_channels_of_pgm(student_model)
-student_domain = reduce(lambda d1, d2: d1 + d2, 
-                        efprob_domains_of_pgm(student_model))
+#student_cpts = efprob_channels_of_pgm(student_model)
+#student_domain = reduce(lambda d1, d2: d1 + d2, 
+#                        efprob_domains_of_pgm(student_model))
 
-student_joint = reorder_state_domains(flatten(student_graph, student_cpts), 
-                                      ['D', 'I', 'G', 'L', 'S'])
+#student_joint = reorder_state_domains(flatten(student_graph, student_cpts), 
+#                                      ['D', 'I', 'G', 'L', 'S'])
 
 #print( student_joint )
 
@@ -209,19 +212,19 @@ student_joint = reorder_state_domains(flatten(student_graph, student_cpts),
 
 
 
-print("\nUpdate test")
+#print("\nUpdate test")
 
-student_dom = student_joint.dom
+#student_dom = student_joint.dom
 
-p = point_pred('S_0', student_dom[4])
+#p = point_pred('S_0', student_dom[4])
 
-print( student_joint / (truth(student_dom[0:4]) @ p) % [0,0,0,1,0] )
+#print( student_joint / (truth(student_dom[0:4]) @ p) % [0,0,0,1,0] )
 
-print( student_cpts['L'] >> (student_cpts['G'] >> ((student_cpts['I']/(student_cpts['S'] << p)) @ student_cpts['D'])) )
+#print( student_cpts['L'] >> (student_cpts['G'] >> ((student_cpts['I']/(student_cpts['S'] << p)) @ student_cpts['D'])) )
 
-student_inference = VariableElimination(student_model)
+#student_inference = VariableElimination(student_model)
 
-print( student_inference.query(['L'], evidence={'S': 0})['L'] )
+#print( student_inference.query(['L'], evidence={'S': 0})['L'] )
 
 
 import timeit
@@ -239,7 +242,7 @@ N = 100
 #                     number=N))
 
 
-print("\nVisit to Asia")
+#print("\nVisit to Asia")
 
 # https://github.com/pgmpy/pgmpy_notebook/blob/72e2eb65777ddde9bc48554de2b07290f94d1d3d/notebooks/8.%20Reading%20and%20Writing%20from%20pgmpy%20file%20formats.ipynb
 
@@ -383,38 +386,41 @@ asia_model.add_cpds(cpd_smoker, cpd_visittoasia,
                     cpd_bronchitis, cpd_tuberculosisorcancer,
                     cpd_dyspnea, cpd_xray)
 
-print("\nAsia correct: ", asia_model.check_model() )
+
+#print("\nAsia correct: ", asia_model.check_model() )
+
+asia_inference = VariableElimination(asia_model)
 
 asia_graph = pydot_graph_of_pgm(asia_model)
 #graph_image(asia_graph, "asia")
 
-
-
 asia_cpts = efprob_channels_of_pgm(asia_model)
 
-print( asia_cpts['Smoker'] )
-print( asia_cpts['VisitToAsia'] )
-print( asia_cpts['LungCancer']('Smoker_0') )
-print( asia_cpts['LungCancer']('Smoker_1') )
-#print( asia_cpts['Tuberculosis'] )
-print( asia_cpts['Tuberculosis']('VisitToAsia_0') )
-print( asia_cpts['Tuberculosis']('VisitToAsia_1') )
-#print( asia_cpts['Bronchitis'] )
-print( asia_cpts['Bronchitis']('Smoker_0') )
-print( asia_cpts['Bronchitis']('Smoker_1') )
-#print( asia_cpts['TuberculosisOrCancer'] )
-print( asia_cpts['TuberculosisOrCancer']('LungCancer_0', 'Tuberculosis_0') )
-print( asia_cpts['TuberculosisOrCancer']('LungCancer_0', 'Tuberculosis_1') )
-print( asia_cpts['TuberculosisOrCancer']('LungCancer_1', 'Tuberculosis_0') )
-print( asia_cpts['TuberculosisOrCancer']('LungCancer_1', 'Tuberculosis_1') )
-#print( asia_cpts['Dyspnea'] )
-print( asia_cpts['Dyspnea']('Bronchitis_0', 'TuberculosisOrCancer_0') )
-print( asia_cpts['Dyspnea']('Bronchitis_0', 'TuberculosisOrCancer_1') )
-print( asia_cpts['Dyspnea']('Bronchitis_1', 'TuberculosisOrCancer_0') )
-print( asia_cpts['Dyspnea']('Bronchitis_1', 'TuberculosisOrCancer_1') )
-#print( asia_cpts['Xray'])
-print( asia_cpts['Xray']('TuberculosisOrCancer_0') )
-print( asia_cpts['Xray']('TuberculosisOrCancer_1') )
+# print( asia_cpts['Smoker'] )
+# print( asia_cpts['VisitToAsia'] )
+# print( asia_cpts['LungCancer']('Smoker_0') )
+# print( asia_cpts['LungCancer']('Smoker_1') )
+# #print( asia_cpts['Tuberculosis'] )
+# print( asia_cpts['Tuberculosis']('VisitToAsia_0') )
+# print( asia_cpts['Tuberculosis']('VisitToAsia_1') )
+# #print( asia_cpts['Bronchitis'] )
+# print( asia_cpts['Bronchitis']('Smoker_0') )
+# print( asia_cpts['Bronchitis']('Smoker_1') )
+# #print( asia_cpts['TuberculosisOrCancer'] )
+# print( asia_cpts['TuberculosisOrCancer']('LungCancer_0', 'Tuberculosis_0') )
+# print( asia_cpts['TuberculosisOrCancer']('LungCancer_0', 'Tuberculosis_1') )
+# print( asia_cpts['TuberculosisOrCancer']('LungCancer_1', 'Tuberculosis_0') )
+# print( asia_cpts['TuberculosisOrCancer']('LungCancer_1', 'Tuberculosis_1') )
+# #print( asia_cpts['Dyspnea'] )
+# print( asia_cpts['Dyspnea']('Bronchitis_0', 'TuberculosisOrCancer_0') )
+# print( asia_cpts['Dyspnea']('Bronchitis_0', 'TuberculosisOrCancer_1') )
+# print( asia_cpts['Dyspnea']('Bronchitis_1', 'TuberculosisOrCancer_0') )
+# print( asia_cpts['Dyspnea']('Bronchitis_1', 'TuberculosisOrCancer_1') )
+# #print( asia_cpts['Xray'])
+# print( asia_cpts['Xray']('TuberculosisOrCancer_0') )
+# print( asia_cpts['Xray']('TuberculosisOrCancer_1') )
+
+"""
 
 
 asia_joint = reorder_state_domains(flatten(asia_graph,
@@ -437,11 +443,6 @@ p = point_pred('Tuberculosis_0', asia_domain[1])
 p1 = truth(asia_domain[0]) @ p @ truth(asia_domain[2:])
 
 print( asia_joint / p1 % [0,0,0,0,1,0,0,0] )
-
-asia_inference = VariableElimination(asia_model)
-
-"""
-
 
 print( asia_inference.query(['Dyspnea'], evidence={'Tuberculosis': 0})['Dyspnea'] )
 
@@ -478,40 +479,65 @@ print( timeit.timeit(lambda: asia_cpts['Bronchitis']
 """
 
 
-print("\nExperiments")
-print("===========\n")
+#print("\nExperiments")
+#print("===========\n")
 
 
 def node_num(node, num):
     return node + "!" + str(num)
 
-
-def stretch(pgm, flatten=False):
+#
+# Turn a Probabilistic Graphical Model (pgm, as in pgmpy) into a
+# sequence of channels, together with a node_pointer dictionary which
+# tells for each node in the model where it occurs in this sequence.
+#
+# Optionally, via additional True/False settings
+#
+# - a pydot graph is produced of the pgm (with additional copy and
+#   identity nodes), indicating the burocratic channels for copying
+#   and reordering
+#
+# - an 'observed' version, both of the sequence of channels and of the
+#   graph, is produced, in which internal nodes become 'observable'
+#   (or accessible). This version is useful for producing the joint
+#   distribution from the model.
+#
+def stretch(pgm, graph_output=True, observed=False):
     #
     # Extraction of relevant data from input
     #
     nodes = pgm.nodes
     domains = efprob_domains_of_pgm(pgm)
     channels = efprob_channels_of_pgm(pgm)
+    parents = {}
+    children = {}
+    for n in pgm.nodes():
+        parents[n] = []
+        children[n] = []
+    for e in pgm.edges():
+        children[e[0]].append(e[1])
+        parents[e[1]].append(e[0])
     #
     # Initialisation of data structures that will be built up:
-    # (a) graph, (b) list of channels, (c) nodes pointers
+    # (a) list of channels, (b) nodes pointers, (c) graph, optionally
     #
-    # (a) Graph of the linearised graph; original nodes are in green
-    #
-    stretched_graph = pydot.Dot(graph_type='digraph')
-    graph_length = 2
-    #
-    # (b) List of channels, where the first entry consists of the
+    # (1) List of channels, where the first entry consists of the
     # (product of the) initial states.
     #
     channel_list = []
     # 
-    # (c) Dictionary with index level (natural number) for each node
+    # (b) Dictionary with index level (natural number) for each node
     #
     node_pointer = {}
+    pointer = 2
     #
-    # List of available domains for finding a match of
+    # (c) Optional graph of the linearised graph; original nodes are
+    # in green
+    #
+    if graph_output:
+        stretched_graph = pydot.Dot(graph_type='digraph')
+    #
+    # List of available nodes for finding a match of
     # channels. Elements of this list will be pairs, consisting of the
     # node (name) 'n' together with its name node_name(n,i) in the
     # graph. Since nodes may occur multiple times, we need to use
@@ -519,50 +545,64 @@ def stretch(pgm, flatten=False):
     #
     available_nodes = []
     #
-    # Step 1: handling of initial nodes; this can be done more
-    # efficiently together with extracting the channels
+    # Step 1: handling of initial nodes; 
     #
     # deep copy
     unprocessed_nodes = [n for n in nodes]
     initial_nodes = []
     initial_copy_channels = []
-    #unprocessed_nodes = nodes[:]
     for n in nodes:
         # print("Handling node: ", n)
-        parents_n = [u for u, v in pgm.edges() if v == n]
+        parents_n = parents[n]
         if len(parents_n) == 0:
+            # n is an initial node
             initial_nodes.append(n)
             unprocessed_nodes.remove(n)
-            node_pointer[n] = 0            
-            stretched_graph.add_node(pydot.Node(n, 
-                                                style="filled", 
-                                                fillcolor="green"))
-            if flatten:
-                available_nodes.append((n,n))
-                stretched_graph.add_edge(pydot.Edge(n, node_num(n,0)))
-            children_n = [v for u, v in pgm.edges() if u == n]
+            node_pointer[n] = 0          
+            if graph_output:
+                stretched_graph.add_node(pydot.Node(n, 
+                                                    style="filled", 
+                                                    fillcolor="green"))
+            if observed:
+                available_nodes.append(n)
+            children_n = children[n] 
             children_num = len(children_n)
             # print("Children of: ", n, children_n)
             #
-            # Make copies of the initial states: one more copy than
-            # needed by the children so that each initial state
-            # remains accessible / observable in the returned state.
+            # Make copies of the initial states, depending on the
+            # number of children (and on whether or not we want an
+            # 'observed' version)
             #
-            for i in range(children_num):
-                n_i = node_num(n, i)
-                stretched_graph.add_edge(pydot.Edge(n, n_i))
-                available_nodes.append((n, n_i))
-            initial_copy_channels.append(copy(channels[n].dom, 
-                                              children_num + 
-                                              (1 if flatten else 0)))
+            if children_num > 0:
+                if graph_output:
+                    stretched_graph.add_node(pydot.Node(n + "!copy", 
+                                                        width=0.15,
+                                                        height=0.15,
+                                                        fixedsize=True,
+                                                        style="filled", 
+                                                        fillcolor="black",
+                                                        fontsize=0))
+                    stretched_graph.add_edge(pydot.Edge(n, n + "!copy"))
+                    if observed:
+                        stretched_graph.add_edge(pydot.Edge(n + "!copy",
+                                                            " " + n + " "))
+                available_nodes += children_num * [n]
+                initial_copy_channels.append(copy(channels[n].dom, 
+                                                  children_num + 
+                                                  (1 if observed else 0)))
     if len(initial_nodes) == 0:
         raise Exception('Error: the model does not have initial nodes')
     state = reduce(lambda s1, s2: s1 @ s2, [channels[n]
                                             for n in initial_nodes])
     channel_list.append(state)
-    initial_copy_chan = reduce(lambda c1, c2: c1 @ c2, initial_copy_channels)
-    channel_list.append(initial_copy_chan)
-    # print("Initial state: ", state )
+    if len(initial_copy_channels) == 0:
+        # Initial nodes have no children; extremely simple graph
+        channel_list.append(idn(state))
+    else:
+        initial_copy_chan = reduce(lambda c1, c2: c1 @ c2, 
+                                   initial_copy_channels)
+        channel_list.append(initial_copy_chan)
+    #print("Initial state: ", channel_list[1] >> state )
     #
     # Step 2: continue with non-initial nodes from the model: cycle
     # through the set of unprocessed nodes until all associated
@@ -578,15 +618,18 @@ def stretch(pgm, flatten=False):
             parents_un = [n.name for n in un_chan.dom.names]
             num_parents_un = len(parents_un)
             #print("Parents of: ", un, parents_un)
-            #print("Available nodes to connect to: ", [nn[0] for nn in available_nodes], [d.name for d in channel_list[len(channel_list)-1].cod.names])
+            search_copy_of_nodes = [u for u in available_nodes]
             swaps = list(range(len(available_nodes)))
-            search_copy_of_nodes = [u for u,v in available_nodes]
+            #
             # find occurrences of un's parents in domains
+            #
             i = 0
             found_all = True
             while i < num_parents_un:
                 #print("... searching for parent: ", parents_un[i] )
+                #
                 # try to find i-th parent among domains
+                #
                 j = 0
                 found_i = False
                 while j < len(available_nodes):
@@ -595,13 +638,19 @@ def stretch(pgm, flatten=False):
                         break
                     j += 1
                 if not found_i:
+                    #
                     # stop handling parent i
+                    #
                     found_all = False
                     #print("Stop handling node: ", un)
                     break
+                #
                 # i-th parent found at j
+                #
                 #print("=> Parent found of:", un, "=", parents_un[i], "at", j)
+                #
                 # swap j |-> i
+                #
                 swaps[j] = swaps[i]
                 swaps[i] = j
                 search_copy_of_nodes[j] = search_copy_of_nodes[i]
@@ -609,15 +658,19 @@ def stretch(pgm, flatten=False):
                 # print("Search copy: ", search_copy_of_nodes)
                 i += 1
             if found_all:
+                #
                 # all parents found; now update the state with channel of un
+                #
                 #print("==> All parents found of:", un)
-                stretched_graph.add_node(pydot.Node(un, 
-                                                    style="filled", 
-                                                    fillcolor="green"))
-                #node_pointer[un] = graph_length
-                #graph_length += 1
+                #print("Available domains: ", available_nodes)
+                if graph_output:
+                    stretched_graph.add_node(pydot.Node(un, 
+                                                        style="filled", 
+                                                        fillcolor="green"))
                 #print("Swaps:", swaps )
-                # incorporate swaps
+                #
+                # incorporate swaps into available nodes and arguments
+                #
                 swaps_len = len(swaps)
                 argument_swaps = list(range(swaps_len))
                 for i in range(num_parents_un):
@@ -627,78 +680,88 @@ def stretch(pgm, flatten=False):
                     tmp = argument_swaps[i]
                     argument_swaps[i] = argument_swaps[swaps[i]]
                     argument_swaps[swaps[i]] = tmp
-                    stretched_graph.add_edge(pydot.Edge(available_nodes[i][1], un))
-                    #print(i, swaps[i], available_nodes[i][0], available_nodes[swaps[i]][0], [an[0] for an in available_nodes])
-                #print("Swapped domains: ", [an[0] for an in available_nodes])
-                current_dom = channel_list[len(channel_list)-1].cod
-                #print("State domain before swap: ", [d.name for d in current_dom.names])
+                    if graph_output:
+                        stretched_graph.add_edge(pydot.Edge(
+                            available_nodes[i] + "!copy", un))
+                #print("Swapped domains: ", available_nodes)
                 #
                 # Build the channel that does the swapping
                 #
+                current_dom = channel_list[len(channel_list)-1].cod
                 swapped_doms = []
                 for i in range(swaps_len):
-                    swapped_doms.append(current_dom.get_nameditem(argument_swaps[i]))
+                    swapped_doms.append(current_dom.get_nameditem(
+                        argument_swaps[i]))
                 swapped_dom = reduce(lambda d1, d2: d1 + d2, swapped_doms)
                 swap_chan = chan_fromklmap(lambda *xs: 
-                                           point_state(tuple([xs[argument_swaps[i]] 
-                                                              for i in range(swaps_len)]),
-                                                       swapped_dom),
+                                           point_state(
+                                               tuple([xs[argument_swaps[i]] 
+                                                      for i in range(swaps_len)]),
+                                               swapped_dom),
                                            current_dom, swapped_dom)
-                #print("State domain after swap: ", [d.name for d in swapped_dom.names])
                 diff = len(available_nodes) - num_parents_un
                 un_chan_id = un_chan
                 identities = None
                 if diff > 0:
-                    #print("Difference:", diff)
                     identities_doms = []
                     for i in range(diff):
                         d_i = swapped_dom.get_nameditem(i + num_parents_un)
-                        #print( i, d_i )
                         identities_doms.append(d_i)
                     identities_dom = reduce(lambda d1, d2: d1 + d2, 
                                             identities_doms)
                     identities = idn(identities_dom)
                     un_chan_id = un_chan @ identities
-                #print("State before channel: ", [d.name for d in un_chan.dom.names])
-                # Add un_chan to the list of channels
+                #
+                # Add un_chan, extended with identities and preceded
+                # by swaps, to the list of channels
+                #
                 channel_list.append(un_chan_id * swap_chan)
-                graph_length += 1
-                node_pointer[un] = graph_length
-                #print("Domains after channel: ", [d.name for d in channel_list[len(channel_list)-1].cod.names])
+                pointer += 1
+                node_pointer[un] = pointer
                 #
                 # Update the available nodes
                 #
                 tails = available_nodes[num_parents_un:]
-                un_0 = node_num(un, 0)
-                heads = [(un, un_0)]
-                childred_un = [v for u, v in pgm.edges() if u == un]
+                heads = [un]
+                childred_un = children[un] 
                 num_children_un = len(childred_un)
                 #print("Children of: ", un, childred_un)
                 if num_children_un > 0:
-                    stretched_graph.add_edge(pydot.Edge(un, un_0))
-                    if num_children_un > 1:
-                        # introduce additional copies
-                        for i in range(num_children_un - 1 + (1 if flatten else 0)):
-                            un_i = node_num(un, i+1)
-                            heads.append((un, un_i))
-                            stretched_graph.add_edge(pydot.Edge(un, un_i))
-                            copies = copy(un_chan.cod, 
-                                          num_children_un + (1 if flatten else 0))
+                    if graph_output:
+                        stretched_graph.add_node(pydot.Node(un + "!copy", 
+                                                            width=0.15,
+                                                            height=0.15,
+                                                            fixedsize=True,
+                                                            style="filled", 
+                                                            fillcolor="black",
+                                                            fontsize=0))
+                        stretched_graph.add_edge(pydot.Edge(un, un + "!copy"))
+                        if observed:
+                            stretched_graph.add_edge(pydot.Edge(un + "!copy",
+                                                                " " + un + " "))
+                    if num_children_un > 1 or observed:
+                        heads += (num_children_un - 1 + 
+                                  (1 if observed else 0)) * [un]
+                        copies = copy(un_chan.cod, 
+                                      num_children_un + (1 if observed else 0))
                         if diff > 0:
                             copies = copies @ identities
                         channel_list.append(copies)
-                        graph_length += 1
-                        #print("Domains after copy: ", [d.name for d in channel_list[len(channel_list)-1].cod.names])
+                        pointer += 1
                 available_nodes = heads + tails
+                #
+                # Terminate handling node un and return to for-loop
+                #
                 unprocessed_nodes.remove(un)
     #
     # Collect the results in a dictionary
     # 
     result = {
-        'graph'    : stretched_graph,
         'pointer'  : node_pointer,
         'channels' : channel_list
     }
+    if graph_output:
+        result['graph'] = stretched_graph
     return result
 
 
@@ -723,22 +786,46 @@ def marginals_stretch(stretch_dict):
             print(n, "->", state % mask )
     return None
 
+#
+# This function operates on the output of the 'stretch' function and
+# uses it for inference. It takes two additional arguments:
+#
+# - 'marginal', which is a node in the original model, at which
+#   position the probability is computed, given the evidence
+#
+# - 'evidence_dict', which is a dictionary mapping nodes to list of
+#   probabilities in [0,1], acting as predicate values. If the node
+#   has cardinality n, the list must have length n.
+#
 def inference_query(stretch_dict, marginal, evidence_dict):
-    cl = stretch_dict['channels']
-    lcl = len(cl)
-    state = cl[0]
+    chan_list = stretch_dict['channels']
+    chan_list_len = len(chan_list)
+    state = chan_list[0]
     init_pred = truth(state.dom)
-    pr = stretch_dict['pointer']
-    prkeys = pr.keys()
+    ptr = stretch_dict['pointer']
+    ptrkeys = ptr.keys()
     evkeys = evidence_dict.keys()
-    if not (marginal in prkeys):
+    if not (marginal in ptrkeys):
         raise Exception('Marginal does not occur')
-    if not any([k in prkeys for k in evkeys]):
+    if not any([k in ptrkeys for k in evkeys]):
         raise Exception('Some of the evidence keys do not occur')
-    evidence_list = lcl * [(0,None)]
+    #
+    # The evidence is inserted into a list in parallel to the list of
+    # channels, so that updates can happen locally. This evidence-list
+    # contains two kinds of entries: 
+    #
+    # - (0,None) --- nothing will happen here 
+    # - (1,pred)
+    #
+    evidence_list = chan_list_len * [(0,None)]
     for k in evkeys:
-        position_k = pr[k]
+        position_k = ptr[k]
         if position_k == 0:
+            #
+            # evidence at an initial node; the state is then updated
+            # immediately with the corresponding (weakened) predicate;
+            # nothing is added to the evidence list.
+            #
             dom = state.dom
             preds = []
             for i in range(len(dom)):
@@ -746,71 +833,92 @@ def inference_query(stretch_dict, marginal, evidence_dict):
                     preds.append(Predicate(evidence_dict[k], dom[i]))
                 else:
                     preds.append(truth(dom[i]))
-            pred = reduce(lambda p1, p2: p1 @ p2, preds)
-            state = state / pred
+            weakened_pred = reduce(lambda p1, p2: p1 @ p2, preds)
+            state = state / weakened_pred
         else:
-            dom = cl[position_k-1].cod
-            #print("Evidence at:", k, position_k, lcl, dom)
-            #print("One step further", cl[position_k + 1].dom)
+            dom = chan_list[position_k-1].cod
+            #print("Evidence at:", k, position_k, chan_list_len, dom)
+            #
+            # By construction, the domain of the predicate is at the
+            # first position in the codomain of channel at this
+            # position
+            #
             pred = Predicate(evidence_dict[k], dom[0])
             if len(dom) > 0:
+                # weaken
                 pred = pred @ truth(dom[1:])
             evidence_list[position_k - 1] = (1,pred)
-    position_marginal = pr[marginal]
-    #print( pr )
-    #print( evidence_list )
-    #print("Marginal at:", marginal, position_marginal )
+    position_marginal = ptr[marginal]
+    #
+    # Start with forward state transformation up to the marginal
+    # position, updating with predicates, if any, along the way
+    #
     for i in range(position_marginal-1):
         if evidence_list[i][0] == 0:
-            state = cl[i+1] >> state
+            # no predicate at this point, transform existing state
+            state = chan_list[i+1] >> state
         else:
-            #print("Update:", state.dom, evidence_list[i][1].dom)
+            # update the current state with the predicate first, then
+            # transform, i.e. do forward inference
             state = state / evidence_list[i][1]
-            state = cl[i+1] >> state
-    pred = truth(cl[lcl-1].cod)
-    for i in range(lcl - position_marginal):
-        if evidence_list[lcl-i-1][0] == 0:
-            pred = cl[lcl-i-1] << pred
+            state = chan_list[i+1] >> state
+    #
+    # Continue with backward predicate transformation, starting from
+    # the truth predicate, adding predicates, if any, along the way,
+    # via conjunction &
+    #
+    pred = truth(chan_list[chan_list_len-1].cod)
+    for i in range(chan_list_len - position_marginal):
+        if evidence_list[chan_list_len - i - 1][0] == 0:
+            # no predicate at this point, transform existing predicate
+            pred = chan_list[chan_list_len - i - 1] << pred
         else:
-            pred = pred & evidence_list[lcl-i-1][1]
-            pred = cl[lcl-i-1] << pred
+            # take the conjunction of the current predicate with the
+            # predicate at this point, then transform
+            pred = pred & evidence_list[chan_list_len - i - 1][1]
+            pred = chan_list[chan_list_len - i - 1] << pred
+    #
+    # Combine the results of the forward and backward operations by
+    # updating the state once more, and taking the appropriate (first)
+    # marginal.
+    #
     state = state / pred
     mask = len(state.dom) * [0]
     mask[0] = 1
     return state % mask
 
 
-print("SAC stretch output\n")
+#print("SAC stretch output\n")
 
-sac_stretch = stretch(sac_model)
+#sac_stretch = stretch(sac_model)
 
 #graph_image(sac_stretch['graph'], "experiment1")
 
 #print("\nSAC pointer:", sac_stretch['pointer'] )
-print("\nSAC state:", evaluate_stretch(sac_stretch['channels']) )
+#print("\nSAC state:", evaluate_stretch(sac_stretch['channels']) )
 
-print("\nStudent stretch output\n")
+#print("\nStudent stretch output\n")
 
-student_stretch = stretch(student_model)
+#student_stretch = stretch(student_model)
 
 #graph_image(student_stretch['graph'], "experiment2")
 
 #print("\nStudent pointer:", student_stretch['pointer'] )
-print("\nStudent state:", evaluate_stretch(student_stretch['channels']) )
+#print("\nStudent state:", evaluate_stretch(student_stretch['channels']) )
 
-print("\nStudent marginals:")
-marginals_stretch(student_stretch)
+#print("\nStudent marginals:")
+#marginals_stretch(student_stretch)
 
-print("\nStudent inference:")
-print( student_inference.query(['L'], evidence={'I': 0, 'D' : 1})['L'] )
-print( inference_query(student_stretch, 'L', {'I' : [1,0], 'D' : [0,1]}) )
+#print("\nStudent inference:")
+#print( student_inference.query(['L'], evidence={'I': 0, 'D' : 1})['L'] )
+#print( inference_query(student_stretch, 'L', {'I' : [1,0], 'D' : [0,1]}) )
 
-t1 = timeit.timeit(lambda: student_inference.query(['L'], evidence={'I': 0, 'D' : 1})['L'],
-                   number = N)
+# t1 = timeit.timeit(lambda: student_inference.query(['L'], evidence={'I': 0, 'D' : 1})['L'],
+#                    number = N)
 
-t2 = timeit.timeit(lambda: inference_query(student_stretch, 'L', {'I' : [1,0], 'D' : [0,1]}),
-                   number = N)
-print(t1, t2, t1/t2)
+# t2 = timeit.timeit(lambda: inference_query(student_stretch, 'L', {'I' : [1,0], 'D' : [0,1]}),
+#                    number = N)
+# print(t1, t2, t1/t2)
 
 
 # print( student_inference.query(['L'])['L'] )
@@ -819,12 +927,15 @@ print(t1, t2, t1/t2)
 
 print("\nAsia stretch output\n")
 
-asia_stretch = stretch(asia_model)
+print(timeit.timeit(lambda: stretch(asia_model, graph_output=False), number=1))
+
+asia_stretch = stretch(asia_model, graph_output=True,observed=True)
 
 #graph_image(asia_stretch['graph'], "experiment2")
 
 #print("\nAsia pointer:", asia_stretch['pointer'] )
-#print("\nAsia state:", evaluate_stretch(asia_stretch['channels']) )
+asia_joint = evaluate_stretch(asia_stretch['channels'])
+#print("\nAsia state:", asia_joint )
 
 #print("\nAsia marginals:"); marginals_stretch(asia_stretch)
 
@@ -835,146 +946,41 @@ asia_stretch = stretch(asia_model)
 # print( asia_inference.query(['Xray'])['Xray'] )
 # print( asia_inference.query(['Dyspnea'])['Dyspnea'] )
 
-print("\nAsia inference:")
+# print("\nAsia inference:")
 
-print( asia_inference.query(['Bronchitis'], evidence={'Xray': 0, 'Smoker' : 1})['Bronchitis'] )
-print( inference_query(asia_stretch, 'Bronchitis', {'Xray' : [1,0], 'Smoker' : [0,1]}) )
+# print( asia_inference.query(['Bronchitis'], evidence={'Xray': 0, 'Smoker' : 1})['Bronchitis'] )
+# print( inference_query(asia_stretch, 'Bronchitis', {'Xray' : [1,0], 'Smoker' : [0,1]}) )
 
-t1 = timeit.timeit(lambda: asia_inference.query(['Bronchitis'], evidence={'Xray': 0, 'Smoker' : 1})['Bronchitis'],
-                   number = N)
-t2 = timeit.timeit(lambda: inference_query(asia_stretch, 'Bronchitis', {'Xray' : [1,0], 'Smoker' : [0,1]}),
-                   number = N) 
+# asia_joint = reorder_state_domains(asia_joint,
+#                                    ['VisitToAsia', 
+#                                     'Tuberculosis', 
+#                                     'TuberculosisOrCancer', 
+#                                     'Xray', 
+#                                     'Dyspnea',
+#                                     'LungCancer',
+#                                     'Bronchitis',
+#                                     'Smoker'])
 
-print(t1, t2, t1/t2)
+# asia_domain = asia_joint.dom
+
+# p = point_pred('Xray_0', asia_domain[3])
+
+# p1 = truth(asia_domain[:3]) @ p @ truth(asia_domain[4:])
+
+# q = point_pred('Smoker_1', asia_domain[7])
+
+# q1 = truth(asia_domain[:7]) @ q
+
+# print( asia_joint / (p1 & q1) % [0,0,0,0,0,0,1,0] )
+
+
+# t1 = timeit.timeit(lambda: asia_inference.query(['Bronchitis'], evidence={'Xray': 0, 'Smoker' : 1})['Bronchitis'],
+#                    number = N)
+# t2 = timeit.timeit(lambda: inference_query(asia_stretch, 'Bronchitis', {'Xray' : [1,0], 'Smoker' : [0,1]}),
+#                    number = N) 
+
+# print(t1, t2, t1/t2)
 
 
 
 
-"""
-
-Def Flatten(Graph, Cpts):
-    graph_nodes = graph.get_nodes()
-    graph_node_names = [n.get_name() for n in graph_nodes]
-    if set(cpts.keys()) != set(graph_node_names):
-        print("\nMismatch between:")
-        print( cpts.keys() )
-        print( graph_node_names )
-        raise Exception('Non-matching graph and mapping in flattening')
-    #
-    # Handle initial nodes from graph, without parents
-    #
-    initial_nodes = []
-    # deep copy
-    unprocessed_nodes = graph_nodes[:]
-    for n in graph_nodes:
-        if len(get_parents(n)) == 0:
-            initial_nodes.append(n)
-            unprocessed_nodes.remove(n)
-    state = reduce(lambda s1, s2: s1 @ s2, [cpts[n.get_name()]
-                                            for n in initial_nodes])
-    # print("Initial state: ", state )
-    #
-    # Make copies of the initial states: one more copy than needed by
-    # the children so that each initial state remains accessible /
-    # observable in the returned state.
-    #
-    copy_chan = reduce(lambda c1, c2: c1 @ c2, [copy(cpts[n.get_name()].dom, 
-                                                     len(get_children(n)) + 1)
-                                                for n in initial_nodes])
-    state = copy_chan >> state
-    #
-    # Keep a list of available domains for finding a match of types
-    #
-    domains = []
-    for n in initial_nodes:
-        domains += (len(get_children(n)) + 1) * [n.get_name()]
-    #
-    # Continue with non-initial nodes from graph: cycle through the
-    # set of unprocessed nodes until all associated channels have been
-    # applied to the current state, and the list of unprocessed nodes
-    # is empty.
-    #
-    iterations = 0
-    while len(unprocessed_nodes) > 0:
-        for un in unprocessed_nodes:
-            iterations += 1
-            un_name = un.get_name()
-            # print(cpts[un_name])
-            parents = [n.name for n in cpts[un_name].dom.names]
-            print("* Iteration:", iterations, un_name)
-            #print("Parents: ", parents)
-            #print("Available nodes to connect to: ", domains)
-            swaps = list(range(len(domains)))
-            search_copy_of_domains = domains[:]
-            # find occurrences of un's parents in domains
-            i = 0
-            found_all = True
-            while i < len(parents):
-                #print("Searching for parent: ", parents[i] )
-                # try to find i-th parent among domains
-                j = 0
-                found_i = False
-                while j < len(domains):
-                    if search_copy_of_domains[j] == parents[i]:
-                        found_i = True
-                        break
-                    j += 1
-                if not found_i:
-                    # stop handling parent i
-                    found_all = False
-                    # print("Stop handling parent: ", parents[i])
-                    break
-                # i-th parent found at j
-                #print("==> Parent found! ", i, "=", parents[i], "at", j)
-                # swap j |-> i
-                swaps[j] = swaps[i]
-                swaps[i] = j
-                search_copy_of_domains[j] = search_copy_of_domains[i]
-                search_copy_of_domains[i] = parents[i]
-                # print("Search copy: ", search_copy_of_domains)
-                i += 1
-            if found_all:
-                # all parents found; now update the state with channel of un
-                #print("\nAll parents found; domains: ", domains)
-                #print( swaps )
-                # incorporate swaps
-                argument_swaps = list(range(len(swaps)))
-                for i in range(len(parents)):
-                    tmp = domains[i]
-                    domains[i] = domains[swaps[i]]
-                    domains[swaps[i]] = tmp
-                    tmp = argument_swaps[i]
-                    argument_swaps[i] = argument_swaps[swaps[i]]
-                    argument_swaps[swaps[i]] = tmp
-                    #print(i, swaps[i], domains[i], domains[swaps[i]], domains)
-                #print("Swapped domains: ", domains)
-                #print("State domain before swap: ", state.dom)
-                state = domain_swaps(state, argument_swaps)
-                dom = state.dom
-                #print("State domain after swap: ", dom)
-                un_chan = cpts[un_name]
-                identities_dom = []
-                for i in range(len(parents), len(domains)):
-                    d_i = dom.get_nameditem(i)
-                    identities_dom.append(d_i)
-                identities_dom = reduce(lambda d1, d2: d1 + d2, identities_dom)
-                identities = idn(identities_dom)
-                num_children = len(get_children(un))
-                if num_children > 0:
-                    copies = copy(un_chan.cod, num_children + 1)
-                    chan = (copies * un_chan) @ identities
-                else:
-                    chan = un_chan @ identities
-                #print("Channel domain: ", chan.dom)
-                # remove domains of channel, and add codomain, several times
-                heads = (num_children + 1) * [un_name]
-                tails = domains[len(parents):]
-                domains = heads + tails
-                #print("Domain after update: ", domains)
-                state = chan >> state
-                # print( state )
-                unprocessed_nodes.remove(un)
-    #print("Required number of node searches: ", iterations)
-    return state
-
-"""
