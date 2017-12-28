@@ -1491,8 +1491,10 @@ def copy2(dom):
         raise ValueError("Cannot make a continuous copy channnel")
     size = _prod(len(s) for s in dom)
     array = np.zeros((size, size, size))
-    for n in range(size):
-        array[n, n, n] = 1.0
+    np.einsum('iii->i', array)[:] = 1.0
+    # This is same as
+    # for n in range(size):
+    #     array[n, n, n] = 1.0
     return Channel(array, dom, dom+dom)
 
 def copy(dom, n=2):
@@ -1591,6 +1593,24 @@ def perm_chan(chan, dom_perm=None, cod_perm=None):
     chan: channel
     dom_perm: permutation for domain, e.g. [3, 1, 0, 2]
     cod_perm: permutation for codomain
+
+    Example
+    -------
+    >>> c = Channel(np.random.rand(2,3,2,3,4), [range(2),range(3),range(4)], [range(2),range(3)])
+    >>> c
+    Channel of type: range(0, 2) * range(0, 3) * range(0, 4) --> range(0, 2) * range(0, 3)
+    >>> d = perm_chan(c, [2,0,1], [1,0])
+    >>> d
+    Channel of type: range(0, 4) * range(0, 2) * range(0, 3) --> range(0, 3) * range(0, 2)
+
+    This d is equal to the following composite:
+
+    >>> e = swap(range(2),range(3)) * c * (idn(range(2)) @ swap(range(4), range(3))) * (swap(range(4), range(2)) @ idn(range(3)))
+
+    Indeed, we have:
+
+    >>> np.array_equal(d.array, e.array)
+    True
     """
     if chan.iscont:
         raise ValueError("Cannot permute a continuous channel")
@@ -1607,6 +1627,44 @@ def perm_chan(chan, dom_perm=None, cod_perm=None):
     dom = [chan.dom[dom_perm[i]] for i in range(len(chan.dom))]
     cod = [chan.cod[cod_perm[i]] for i in range(len(chan.cod))]
     return Channel(array, dom, cod)
+
+def copy_chan(chan, copylist):
+    """
+    Copy the codomain of a channel acording to `copylist`
+
+    Example
+    -------
+    >>> c = Channel(np.random.rand(2,3,4,2,3), [range(2),range(3)], [range(2),range(3),range(4)])
+    >>> c
+    Channel of type: range(0, 2) * range(0, 3) --> range(0, 2) * range(0, 3) * range(0, 4)
+    >>> d = copy_chan(c, [3,2,1])
+    >>> d
+    Channel of type: range(0, 2) * range(0, 3) --> range(0, 2) * range(0, 2) * range(0, 2) * range(0, 3) * range(0, 3) * range(0, 4)
+
+    The d is equal to the following composite:
+
+    >>> e = (copy(range(2), 3) @ copy(range(3)) @ idn(range(4))) * c
+
+    Indeed we have:
+
+    >>> np.array_equal(d.array, e.array)
+    True
+    """
+    if chan.iscont:
+        raise ValueError("Cannot copy a continuous channel")
+    if len(copylist) != len(chan.cod):
+        raise ValueError("Invalid length of copy list")
+    cod_shape = tuple(sum([[d] * n for d, n in zip(chan.cod_shape, copylist)],
+                          []))
+    array = np.zeros(cod_shape+chan.dom_shape)
+    einsum_s = (sum([[i] * n for i, n in zip(range(len(chan.cod)), copylist)],
+                    [])
+                + [i + len(chan.cod) for i in range(len(chan.dom))])
+    einsum_t = list(range(len(chan.cod)+len(chan.dom)))
+    np.einsum(array, einsum_s, einsum_t)[:] = chan.array
+    cod = sum([[d] * n for d, n in zip(chan.cod, copylist)],
+              [])
+    return Channel(array, chan.dom, cod)
 
 
 class DetChan:
