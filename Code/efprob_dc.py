@@ -1626,7 +1626,9 @@ def perm_chan(chan, dom_perm=None, cod_perm=None):
     array = np.transpose(chan.array, perm)
     dom = [chan.dom[dom_perm[i]] for i in range(len(chan.dom))]
     cod = [chan.cod[cod_perm[i]] for i in range(len(chan.cod))]
-    return Channel(array, dom, cod)
+    dom_names = [chan.dom.names[dom_perm[i]] for i in range(len(chan.dom))]
+    cod_names = [chan.cod.names[cod_perm[i]] for i in range(len(chan.cod))]
+    return Channel(array, Dom(dom, names=dom_names), Dom(cod, names=cod_names))
 
 def copy_chan(chan, copylist):
     """
@@ -1664,7 +1666,9 @@ def copy_chan(chan, copylist):
     np.einsum(array, einsum_s, einsum_t)[:] = chan.array
     cod = sum([[d] * n for d, n in zip(chan.cod, copylist)],
               [])
-    return Channel(array, chan.dom, cod)
+    cod_names = sum([[d] * n for d, n in zip(chan.cod.names, copylist)],
+                    [])
+    return Channel(array, chan.dom, Dom(cod, names=cod_names))
 
 
 class DetChan:
