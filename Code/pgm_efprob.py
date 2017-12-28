@@ -236,15 +236,17 @@ def stretch(pgm, graph_output=True, observed=False):
     while len(unprocessed_nodes) > 0:
         for un in unprocessed_nodes:
             iterations += 1
+            if iterations > 15:
+                print( 0/0 )
             un_chan = channels[un]
             parents_un = [n.name for n in un_chan.dom.names]
             num_parents_un = len(parents_un)
             current_dom = channel_list[len(channel_list)-1].cod
             print("* Iteration", iterations, "for", un, "of size:",
                   reduce(operator.mul, [len(d) for d in current_dom], 1))
-            # print("Parents of: ", un, parents_un)
             search_copy_of_nodes = [u for u in available_nodes]
             len_available_nodes = len(available_nodes)
+            # print("Parents of: ", un, parents_un, "searching in", available_nodes)
             swaps = list(range(len_available_nodes))
             #
             # find occurrences of un's parents in domains
@@ -274,8 +276,9 @@ def stretch(pgm, graph_output=True, observed=False):
                 #
                 # i-th parent found at j; now swap j |-> i
                 #
+                tmp = swaps[j]
                 swaps[j] = swaps[i]
-                swaps[i] = j
+                swaps[i] = tmp
                 search_copy_of_nodes[j] = search_copy_of_nodes[i]
                 search_copy_of_nodes[i] = parents_un[i]
                 i += 1
@@ -283,7 +286,7 @@ def stretch(pgm, graph_output=True, observed=False):
                 #
                 # all parents found; now update the state with channel of un
                 #
-                print("==> All parents found of:", un)
+                # print("==> All parents found of:", un)
                 # print("Available domains: ", available_nodes)
                 if graph_output:
                     stretched_graph.add_node(pydot.Node(un, 
@@ -292,48 +295,44 @@ def stretch(pgm, graph_output=True, observed=False):
                 #
                 # incorporate swaps into available nodes and arguments
                 #
-                argument_swaps = list(range(len_available_nodes))
-                for i in range(num_parents_un):
-                    tmp = available_nodes[i]
-                    available_nodes[i] = available_nodes[swaps[i]]
-                    available_nodes[swaps[i]] = tmp
-                    tmp = argument_swaps[i]
-                    argument_swaps[i] = argument_swaps[swaps[i]]
-                    argument_swaps[swaps[i]] = tmp
-                    if graph_output:
-                        stretched_graph.add_edge(pydot.Edge(
-                            available_nodes[i] + "!copy", un))
-                # print("Swaps:", swaps, argument_swaps )
-                # print("Swapped domains: ", available_nodes)
+                inv_swaps = len_available_nodes * [0]
+                swapped_doms = []
+                swapped_available_nodes = []
+                for i in range(len_available_nodes):
+                    inv_swaps[swaps[i]] = i
+                    swapped_doms.append(current_dom.get_nameditem(
+                        #argument_swaps[i]))
+                        swaps[i]))
+                    swapped_available_nodes.append(available_nodes[swaps[i]])
+                swapped_dom = reduce(lambda d1, d2: d1 + d2, swapped_doms)
+                # print("Swaps:", swaps, inv_swaps )
                 #
                 # Build the channel that does the swapping
                 #
-                swapped_doms = []
-                for i in range(len_available_nodes):
-                    swapped_doms.append(current_dom.get_nameditem(
-                        argument_swaps[i]))
-                swapped_dom = reduce(lambda d1, d2: d1 + d2, swapped_doms)
-                diff = len(available_nodes) - num_parents_un
+                available_nodes = swapped_available_nodes
+                # print("Swapped domains: ", available_nodes)
+                if graph_output:
+                    for i in range(num_parents_un):
+                        stretched_graph.add_edge(pydot.Edge(
+                            available_nodes[i] + "!copy", un))
                 un_chan_id = un_chan
-                identities = None
+                diff = len_available_nodes - num_parents_un
                 if diff > 0:
-                    # identities_doms = []
-                    # for i in range(diff):
-                    #     d_i = swapped_dom.get_nameditem(i + num_parents_un)
-                    #     identities_doms.append(d_i)
-                    # identities_dom = reduce(lambda d1, d2: d1 + d2, 
-                    #                         identities_doms)
-                    identities_dom = swapped_dom[num_parents_un:]
+                    identities_doms = []
+                    for i in range(diff):
+                        d_i = swapped_dom.get_nameditem(i + num_parents_un)
+                        identities_doms.append(d_i)
+                    identities_dom = reduce(lambda d1, d2: d1 + d2, 
+                                            identities_doms)
                     identities = idn(identities_dom)
                     un_chan_id = un_chan @ identities
                 #
                 # Add the channel to the list, with its domains permuted
                 # 
                 channel_list.append(perm_chan(un_chan_id, 
-                                              dom_perm = argument_swaps))
+                                              dom_perm = inv_swaps))
                 pointer += 1
                 node_pointer[un] = pointer
-                # print("Channel added, going into copying...")
                 #
                 # Update the available nodes
                 #

@@ -62,14 +62,10 @@ print("Asia correct: ", asia_model.check_model() )
 # For timing of stretching:
 print(timeit.timeit(lambda: stretch(asia_model, graph_output=False), number=1))
 
-
 asia_inference = VariableElimination(asia_model)
 
 asia_graph = pydot_graph_of_pgm(asia_model)
 #graph_image(asia_graph, "asia")
-
-"""
-
 
 asia_cpts = efprob_channels_of_pgm(asia_model)
 
@@ -169,8 +165,6 @@ N = 100
 
 print("\nInference timing comparison,", N, "times\n")
 
-
-
 t1 = timeit.timeit(lambda: 
                    asia_inference.query(['Bronchitis'], 
                                         evidence={'Xray': 0, 'Smoker' : 1})
@@ -182,10 +176,9 @@ t2 = timeit.timeit(lambda:
                                    {'Xray' : [1,0], 'Smoker' : [0,1]}),
                    number = N) 
 
-print("Times for: transformations, variable elimination, fraction")
+print("Times for: variable elimination, transformations, fraction")
 print(t1)
 print(t2)
 print(t1/t2)
 
 
-"""
