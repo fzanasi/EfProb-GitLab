@@ -284,7 +284,7 @@ def stretch(pgm, graph_output=True, observed=False):
                 #
                 # all parents found; now update the state with channel of un
                 #
-                # print("==> All parents found of:", un)
+                print("==> All parents found of:", un)
                 # print("Available domains: ", available_nodes)
                 if graph_output:
                     stretched_graph.add_node(pydot.Node(un, 
