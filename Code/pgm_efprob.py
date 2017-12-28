@@ -236,8 +236,6 @@ def stretch(pgm, graph_output=True, observed=False):
     while len(unprocessed_nodes) > 0:
         for un in unprocessed_nodes:
             iterations += 1
-            if iterations > 15:
-                print( 0/0 )
             un_chan = channels[un]
             parents_un = [n.name for n in un_chan.dom.names]
             num_parents_un = len(parents_un)

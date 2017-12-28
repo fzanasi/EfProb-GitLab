@@ -14,7 +14,7 @@ print( model.nodes )
 
 graph = pydot_graph_of_pgm(model)
 
-graph_image(graph, "child")
+#graph_image(graph, "child")
 
 #inference = VariableElimination(model)
 
