@@ -4,7 +4,10 @@ from pgm_efprob import *
 # from pgmpy.inference import VariableElimination
 from pgmpy.readwrite.BIF import *
 
-# sudo sysctl -w vm.swappiness=5
+# ask for swappiness:
+#   sysctl vm.swappiness
+# normally it as at 60; set it to 0 to prevent freezing, via:
+#   sudo sysctl -w vm.swappiness=0
 
 # http://www.bnlearn.com/bnrepository/discrete-small.html#sachs
 
@@ -19,13 +22,13 @@ model = reader.get_model()
 
 graph = pydot_graph_of_pgm(model)
 
-#graph_image(graph, "sachs")
+graph_image(graph, "sachs")
 
 inference = VariableElimination(model)
 
 #print( inference.query(['Erk'], evidence={'P38': 2}) ['Erk'] )
 
-print( efprob_domains_of_pgm(model) )
+#print( efprob_domains_of_pgm(model) )
 
 # P38_dom = efprob_domain('P38', 3)
 
@@ -33,7 +36,7 @@ print( efprob_domains_of_pgm(model) )
 
 # p = point_pred('P38_2', P38_dom)
 
-channels = efprob_channels_of_pgm(model)
+#channels = efprob_channels_of_pgm(model)
 
 #print( channels )
 

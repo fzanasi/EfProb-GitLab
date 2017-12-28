@@ -14,17 +14,17 @@ print( model.nodes )
 
 graph = pydot_graph_of_pgm(model)
 
-#graph_image(graph, "child")
+graph_image(graph, "child")
 
-inference = VariableElimination(model)
+#inference = VariableElimination(model)
 
 #print( inference.query(['Erk'], evidence={'P38': 2}) ['Erk'] )
 
-print( efprob_domains_of_pgm(model) )
+#print( efprob_domains_of_pgm(model) )
 
-channels = efprob_channels_of_pgm(model)
+#channels = efprob_channels_of_pgm(model)
 
-print( channels )
+#print( channels )
 
 stretch = stretch(model)
 
