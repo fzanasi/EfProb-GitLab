@@ -246,26 +246,31 @@ def stretch(pgm, graph_output=True, observed=False):
     while len(unprocessed_nodes) > 0:
         for un in unprocessed_nodes:
             iterations += 1
-            print("* Iteration:", iterations, un)
+            #if iterations == 8:
+            #    print( 0/0 )
             un_chan = channels[un]
             parents_un = [n.name for n in un_chan.dom.names]
             num_parents_un = len(parents_un)
-            #print("Parents of: ", un, parents_un)
+            current_dom = channel_list[len(channel_list)-1].cod
+            print("* Iteration", iterations, "for", un, "of size:",
+                  reduce(operator.mul, [len(d) for d in current_dom], 1))
+            print("Parents of: ", un, parents_un)
             search_copy_of_nodes = [u for u in available_nodes]
-            swaps = list(range(len(available_nodes)))
+            len_available_nodes = len(available_nodes)
+            swaps = list(range(len_available_nodes))
             #
             # find occurrences of un's parents in domains
             #
             i = 0
             found_all = True
             while i < num_parents_un:
-                #print("... searching for parent: ", parents_un[i] )
+                print("... searching for parent: ", parents_un[i] )
                 #
                 # try to find i-th parent among domains
                 #
                 j = 0
                 found_i = False
-                while j < len(available_nodes):
+                while j < len_available_nodes:
                     if search_copy_of_nodes[j] == parents_un[i]:
                         found_i = True
                         break
@@ -275,7 +280,7 @@ def stretch(pgm, graph_output=True, observed=False):
                     # stop handling parent i
                     #
                     found_all = False
-                    #print("Stop handling node: ", un)
+                    print("Stop handling node: ", un)
                     break
                 #
                 # i-th parent found at j
@@ -294,18 +299,17 @@ def stretch(pgm, graph_output=True, observed=False):
                 #
                 # all parents found; now update the state with channel of un
                 #
-                #print("==> All parents found of:", un)
-                #print("Available domains: ", available_nodes)
+                print("==> All parents found of:", un)
+                print("Available domains: ", available_nodes)
                 if graph_output:
                     stretched_graph.add_node(pydot.Node(un, 
                                                         style="filled", 
                                                         fillcolor="green"))
-                #print("Swaps:", swaps )
+                print("Swaps:", swaps )
                 #
                 # incorporate swaps into available nodes and arguments
                 #
-                swaps_len = len(swaps)
-                argument_swaps = list(range(swaps_len))
+                argument_swaps = list(range(len_available_nodes))
                 for i in range(num_parents_un):
                     tmp = available_nodes[i]
                     available_nodes[i] = available_nodes[swaps[i]]
@@ -320,18 +324,25 @@ def stretch(pgm, graph_output=True, observed=False):
                 #
                 # Build the channel that does the swapping
                 #
-                current_dom = channel_list[len(channel_list)-1].cod
                 swapped_doms = []
-                for i in range(swaps_len):
+                for i in range(len_available_nodes):
+                    #for i in range(max_swap):
                     swapped_doms.append(current_dom.get_nameditem(
                         argument_swaps[i]))
                 swapped_dom = reduce(lambda d1, d2: d1 + d2, swapped_doms)
+                print("Building swap channel")
                 swap_chan = chan_fromklmap(lambda *xs: 
                                            point_state(
                                                tuple([xs[argument_swaps[i]] 
-                                                      for i in range(swaps_len)]),
+                                                      for i in range(len_available_nodes)]),
                                                swapped_dom),
                                            current_dom, swapped_dom)
+                # swap_det_chan = DetChan(lambda *xs: 
+                #                                tuple([xs[argument_swaps[i]] 
+                #                                       for i in range(len_available_nodes)]),
+                #                         current_dom)
+                # print("Det chan", swap_det_chan.dom )
+                print("Finished building swap channel")
                 diff = len(available_nodes) - num_parents_un
                 un_chan_id = un_chan
                 identities = None
@@ -348,6 +359,11 @@ def stretch(pgm, graph_output=True, observed=False):
                 # Add un_chan, extended with identities and preceded
                 # by swaps, to the list of channels
                 #
+                # channel_list.append(
+                #     chan_fromklmap(lambda *xs:
+                #                    un_chan_id(tuple([xs[argument_swaps[i]] 
+                #                                      for i in range(len_available_nodes)])),
+                #                    un_chan_id.cod, current_dom))
                 channel_list.append(un_chan_id * swap_chan)
                 pointer += 1
                 node_pointer[un] = pointer
@@ -358,7 +374,7 @@ def stretch(pgm, graph_output=True, observed=False):
                 heads = [un]
                 childred_un = children[un] 
                 num_children_un = len(childred_un)
-                #print("Children of: ", un, childred_un)
+                print("Children of: ", un, childred_un)
                 if num_children_un > 0:
                     if graph_output:
                         stretched_graph.add_node(pydot.Node(un + "!copy", 
@@ -417,14 +433,16 @@ def marginals_stretch(stretch_dict):
     chan_list = stretch_dict['channels']
     state_list = [chan_list[0]]
     for i in range(len(chan_list) - 1):
-        state_list.append(chan_list[i+1] >> chan_list[i])
+        state_list.append(chan_list[i+1] >> state_list[i])
     ptr = stretch_dict['pointer']
     result = []
     for n in ptr.keys():
-        state = state_list[ptr[n]]
-        mask = len(state.dom) * [0]
-        mask[0] = 1
-        result.append(state % mask)
+        if ptr[n] > 0:
+            # print(n, ptr[n], len(state_list) )
+            state = state_list[ptr[n]-1]
+            mask = len(state.dom) * [0]
+            mask[0] = 1
+            result.append(state % mask)
     return result
 
 

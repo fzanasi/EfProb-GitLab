@@ -15,6 +15,8 @@ from pgmpy.inference import VariableElimination
 
 import pydot
 from PIL import Image
+import timeit
+
 
 """
 
@@ -117,8 +119,6 @@ print("\nModel correct: ",  student_model.check_model() )
 
 #print( student_inference.query(['L'], evidence={'S': 0})['L'] )
 
-
-import timeit
 
 N = 100
     

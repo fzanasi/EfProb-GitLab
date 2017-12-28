@@ -1384,7 +1384,13 @@ class Channel:
         return Channel(array, other.dom, self.cod)
 
     def __mul__(self, other):
-        return self.comp(other)
+        if isinstance(other, Channel):
+            return self.comp(other)
+        else:
+            if isinstance(other, DetChan):
+                print("To be done")
+            else:
+                raise Exception('Channel composition not defined')
 
     def joint(self, other):
         selfa = self.array.reshape(self.cod_size,

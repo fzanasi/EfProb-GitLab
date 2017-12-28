@@ -1,4 +1,6 @@
 from pgm_efprob import *
+import timeit
+
 
 print("\nVisit to Asia")
 print("=============\n")
@@ -57,6 +59,11 @@ asia_model.add_cpds(cpd_smoker, cpd_visittoasia,
 
 print("Asia correct: ", asia_model.check_model() )
 
+# For timing of stretching:
+print(timeit.timeit(lambda: stretch(asia_model, graph_output=False), number=1))
+
+"""
+
 asia_inference = VariableElimination(asia_model)
 
 asia_graph = pydot_graph_of_pgm(asia_model)
@@ -64,46 +71,119 @@ asia_graph = pydot_graph_of_pgm(asia_model)
 
 asia_cpts = efprob_channels_of_pgm(asia_model)
 
-print( asia_cpts['Smoker'] )
-print( asia_cpts['VisitToAsia'] )
-print( asia_cpts['LungCancer']('Smoker_0') )
-print( asia_cpts['LungCancer']('Smoker_1') )
-#print( asia_cpts['Tuberculosis'] )
-print( asia_cpts['Tuberculosis']('VisitToAsia_0') )
-print( asia_cpts['Tuberculosis']('VisitToAsia_1') )
-#print( asia_cpts['Bronchitis'] )
-print( asia_cpts['Bronchitis']('Smoker_0') )
-print( asia_cpts['Bronchitis']('Smoker_1') )
-#print( asia_cpts['TuberculosisOrCancer'] )
-print( asia_cpts['TuberculosisOrCancer']('LungCancer_0', 'Tuberculosis_0') )
-print( asia_cpts['TuberculosisOrCancer']('LungCancer_0', 'Tuberculosis_1') )
-print( asia_cpts['TuberculosisOrCancer']('LungCancer_1', 'Tuberculosis_0') )
-print( asia_cpts['TuberculosisOrCancer']('LungCancer_1', 'Tuberculosis_1') )
-#print( asia_cpts['Dyspnea'] )
-print( asia_cpts['Dyspnea']('Bronchitis_0', 'TuberculosisOrCancer_0') )
-print( asia_cpts['Dyspnea']('Bronchitis_0', 'TuberculosisOrCancer_1') )
-print( asia_cpts['Dyspnea']('Bronchitis_1', 'TuberculosisOrCancer_0') )
-print( asia_cpts['Dyspnea']('Bronchitis_1', 'TuberculosisOrCancer_1') )
-#print( asia_cpts['Xray'])
-print( asia_cpts['Xray']('TuberculosisOrCancer_0') )
-print( asia_cpts['Xray']('TuberculosisOrCancer_1') )
+# print( asia_cpts['Smoker'] )
+# print( asia_cpts['VisitToAsia'] )
+# print( asia_cpts['LungCancer']('Smoker_0') )
+# print( asia_cpts['LungCancer']('Smoker_1') )
+# #print( asia_cpts['Tuberculosis'] )
+# print( asia_cpts['Tuberculosis']('VisitToAsia_0') )
+# print( asia_cpts['Tuberculosis']('VisitToAsia_1') )
+# #print( asia_cpts['Bronchitis'] )
+# print( asia_cpts['Bronchitis']('Smoker_0') )
+# print( asia_cpts['Bronchitis']('Smoker_1') )
+# #print( asia_cpts['TuberculosisOrCancer'] )
+# print( asia_cpts['TuberculosisOrCancer']('LungCancer_0', 'Tuberculosis_0') )
+# print( asia_cpts['TuberculosisOrCancer']('LungCancer_0', 'Tuberculosis_1') )
+# print( asia_cpts['TuberculosisOrCancer']('LungCancer_1', 'Tuberculosis_0') )
+# print( asia_cpts['TuberculosisOrCancer']('LungCancer_1', 'Tuberculosis_1') )
+# #print( asia_cpts['Dyspnea'] )
+# print( asia_cpts['Dyspnea']('Bronchitis_0', 'TuberculosisOrCancer_0') )
+# print( asia_cpts['Dyspnea']('Bronchitis_0', 'TuberculosisOrCancer_1') )
+# print( asia_cpts['Dyspnea']('Bronchitis_1', 'TuberculosisOrCancer_0') )
+# print( asia_cpts['Dyspnea']('Bronchitis_1', 'TuberculosisOrCancer_1') )
+# #print( asia_cpts['Xray'])
+# print( asia_cpts['Xray']('TuberculosisOrCancer_0') )
+# print( asia_cpts['Xray']('TuberculosisOrCancer_1') )
 
-# 0.5|Smoker_0> + 0.5|Smoker_1>
-# 0.01|VisitToAsia_0> + 0.99|VisitToAsia_1>
-# 0.1|LungCancer_0> + 0.9|LungCancer_1>
-# 0.01|LungCancer_0> + 0.99|LungCancer_1>
-# 0.05|Tuberculosis_0> + 0.95|Tuberculosis_1>
-# 0.01|Tuberculosis_0> + 0.99|Tuberculosis_1>
-# 0.6|Bronchitis_0> + 0.4|Bronchitis_1>
-# 0.3|Bronchitis_0> + 0.7|Bronchitis_1>
-# 1|TuberculosisOrCancer_0> + 0|TuberculosisOrCancer_1>
-# 0|TuberculosisOrCancer_0> + 1|TuberculosisOrCancer_1>
-# 0|TuberculosisOrCancer_0> + 1|TuberculosisOrCancer_1>
-# 0|TuberculosisOrCancer_0> + 1|TuberculosisOrCancer_1>
-# 0.9|Dyspnea_0> + 0.1|Dyspnea_1>
-# 0.7|Dyspnea_0> + 0.3|Dyspnea_1>
-# 0.8|Dyspnea_0> + 0.2|Dyspnea_1>
-# 0.1|Dyspnea_0> + 0.9|Dyspnea_1>
-# 0.98|Xray_0> + 0.02|Xray_1>
-# 0.05|Xray_0> + 0.95|Xray_1>
+asia_stretch = stretch(asia_model, graph_output=True,observed=False)
 
+#graph_image(asia_stretch['graph'], "experiment2")
+
+#print("\nAsia pointer:", asia_stretch['pointer'] )
+asia_joint = evaluate_stretch(asia_stretch['channels'])
+print("\nAsia final state:", asia_joint )
+
+#print("\nAsia marginals:", marginals_stretch(asia_stretch))
+
+#print( asia_inference.query(['Tuberculosis'])['Tuberculosis'] )
+#print( asia_inference.query(['LungCancer'])['LungCancer'] )
+#print( asia_inference.query(['Bronchitis'])['Bronchitis'] )
+# print( asia_inference.query(['TuberculosisOrCancer'])['TuberculosisOrCancer'] )
+# print( asia_inference.query(['Xray'])['Xray'] )
+# print( asia_inference.query(['Dyspnea'])['Dyspnea'] )
+
+
+
+print("\nAsia inference 1, by hand\n")
+
+asia_stretch = stretch(asia_model, graph_output=True,observed=True)
+
+#graph_image(asia_stretch['graph'], "asia")
+
+asia_joint = evaluate_stretch(asia_stretch['channels'])
+
+asia_joint = reorder_state_domains(asia_joint,
+                                   ['VisitToAsia', 
+                                    'Tuberculosis', 
+                                    'TuberculosisOrCancer', 
+                                    'Xray', 
+                                    'Dyspnea',
+                                    'LungCancer',
+                                    'Bronchitis',
+                                    'Smoker'])
+
+asia_domain = asia_joint.dom
+
+p = point_pred('Tuberculosis_0', asia_domain[1])
+
+p1 = truth(asia_domain[0]) @ p @ truth(asia_domain[2:])
+
+print("* Via joint state:")
+print( asia_joint / p1 % [0,0,0,0,1,0,0,0] )
+
+print("* Via transformations:")
+print( asia_cpts['Dyspnea'] \
+       >> ((asia_cpts['Bronchitis'] @ asia_cpts['TuberculosisOrCancer']) \
+           >> ((idn(asia_domain[7]) @ asia_cpts['LungCancer'] @ idn(asia_domain[1])) \
+               >> ((copy(asia_domain[7]) @ idn(asia_domain[1])) \
+                   >> (asia_cpts['Smoker'] @ ((asia_cpts['Tuberculosis'] >> asia_cpts['VisitToAsia']) / p))))) )
+
+print("* Via variable elimination")
+print( asia_inference.query(['Dyspnea'], 
+                            evidence={'Tuberculosis': 0})['Dyspnea'] )
+
+
+
+print("\nAsia inference 2, automated\n")
+
+print("* Via transformation-inference:")
+print( inference_query(asia_stretch, 'Bronchitis', {'Xray' : [1,0], 'Smoker' : [0,1]}) )
+
+print("* Via variable elimination")
+print( asia_inference.query(['Bronchitis'], evidence={'Xray': 0, 'Smoker' : 1})['Bronchitis'] )
+
+
+N = 100
+
+print("\nInference timing comparison,", N, "times\n")
+
+
+
+t1 = timeit.timeit(lambda: 
+                   asia_inference.query(['Bronchitis'], 
+                                        evidence={'Xray': 0, 'Smoker' : 1})
+                   ['Bronchitis'],
+                   number = N)
+
+t2 = timeit.timeit(lambda: 
+                   inference_query(asia_stretch, 'Bronchitis', 
+                                   {'Xray' : [1,0], 'Smoker' : [0,1]}),
+                   number = N) 
+
+print("Times for: transformations, variable elimination, fraction")
+print(t1)
+print(t2)
+print(t1/t2)
+
+
+"""

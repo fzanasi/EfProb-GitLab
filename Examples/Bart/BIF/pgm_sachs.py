@@ -4,13 +4,18 @@ from pgm_efprob import *
 # from pgmpy.inference import VariableElimination
 from pgmpy.readwrite.BIF import *
 
+# sudo sysctl -w vm.swappiness=5
+
 # http://www.bnlearn.com/bnrepository/discrete-small.html#sachs
+
+# Memory problems:
+# https://askubuntu.com/questions/41778/computer-freezing-on-almost-full-ram-possibly-disk-cache-problem
 
 reader=BIFReader('sachs.bif')
 
 model = reader.get_model()
 
-print( model.nodes )
+#print( model.nodes )
 
 graph = pydot_graph_of_pgm(model)
 
@@ -18,9 +23,9 @@ graph = pydot_graph_of_pgm(model)
 
 inference = VariableElimination(model)
 
-print( inference.query(['Erk'], evidence={'P38': 2}) ['Erk'] )
+#print( inference.query(['Erk'], evidence={'P38': 2}) ['Erk'] )
 
-#print( efprob_domains_of_pgm(model) )
+print( efprob_domains_of_pgm(model) )
 
 # P38_dom = efprob_domain('P38', 3)
 
@@ -30,9 +35,9 @@ print( inference.query(['Erk'], evidence={'P38': 2}) ['Erk'] )
 
 channels = efprob_channels_of_pgm(model)
 
-print( channels )
+#print( channels )
 
-stretch = stretch(model)
+stretch = stretch(model,graph_output=False)
 
-graph_image(stretch['graph'], "sachs")
+#graph_image(stretch['graph'], "sachs")
 
