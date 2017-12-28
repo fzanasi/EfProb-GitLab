@@ -1583,6 +1583,32 @@ def chan_from_test(*ts):
     return chan_fromklmap(lambda *x: State([p(*x) for p in ts], range(n)),
                           dom, range(n))
 
+
+def perm_chan(chan, dom_perm=None, cod_perm=None):
+    """
+    Permute the domain and codomain of a channel
+
+    chan: channel
+    dom_perm: permutation for domain, e.g. [3, 1, 0, 2]
+    cod_perm: permutation for codomain
+    """
+    if chan.iscont:
+        raise ValueError("Cannot permute a continuous channel")
+    if dom_perm is None:
+        dom_perm = list(range(len(chan.dom)))
+    elif len(dom_perm) != len(chan.dom):
+        raise ValueError("Invalid length of permutation for domain")
+    if cod_perm is None:
+        cod_perm = list(range(len(chan.cod)))
+    elif len(cod_perm) != len(chan.cod):
+        raise ValueError("Invalid length of permutation for codomain")
+    perm = cod_perm + [i + len(cod_perm) for i in dom_perm]
+    array = np.transpose(chan.array, perm)
+    dom = [chan.dom[dom_perm[i]] for i in range(len(chan.dom))]
+    cod = [chan.cod[cod_perm[i]] for i in range(len(chan.cod))]
+    return Channel(array, dom, cod)
+
+
 class DetChan:
     """Deterministic channels."""
     def __init__(self, funs, dom):
