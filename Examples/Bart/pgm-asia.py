@@ -62,6 +62,8 @@ print("Asia correct: ", asia_model.check_model() )
 # For timing of stretching:
 print(timeit.timeit(lambda: stretch(asia_model, graph_output=False), number=1))
 
+"""
+
 asia_inference = VariableElimination(asia_model)
 
 asia_graph = pydot_graph_of_pgm(asia_model)
@@ -182,3 +184,4 @@ print(t2)
 print(t1/t2)
 
 
+"""

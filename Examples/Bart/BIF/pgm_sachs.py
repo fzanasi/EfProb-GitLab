@@ -3,6 +3,7 @@ from pgm_efprob import *
 # from pgmpy.factors.discrete import TabularCPD
 # from pgmpy.inference import VariableElimination
 from pgmpy.readwrite.BIF import *
+import timeit
 
 # ask for swappiness:
 #   sysctl vm.swappiness
@@ -11,8 +12,8 @@ from pgmpy.readwrite.BIF import *
 
 # http://www.bnlearn.com/bnrepository/discrete-small.html#sachs
 
-# Memory problems:
-# https://askubuntu.com/questions/41778/computer-freezing-on-almost-full-ram-possibly-disk-cache-problem
+print("\nSachs Bayesian network")
+print("======================\n")
 
 reader=BIFReader('sachs.bif')
 
@@ -22,25 +23,38 @@ model = reader.get_model()
 
 graph = pydot_graph_of_pgm(model)
 
-graph_image(graph, "sachs")
+#graph_image(graph, "sachs")
+
+print("\nStretching the graph:")
+
+stretch = stretch(model,graph_output=True)
+
+#graph_image(stretch['graph'], "sachs")
+
+print("\nVariable elimination inference")
+
+N = 10
 
 inference = VariableElimination(model)
 
-#print( inference.query(['Erk'], evidence={'P38': 2}) ['Erk'] )
+print( inference.query(['Erk'], evidence={'P38': 2})['Erk'] )
 
-#print( efprob_domains_of_pgm(model) )
+t1 = timeit.timeit(lambda: 
+                   inference.query(['Erk'], evidence={'P38': 2}) ['Erk'],
+                   number = N)
 
-# P38_dom = efprob_domain('P38', 3)
+print("\nTransformations inference")
 
-# print( P38_dom )
+print( inference_query(stretch, 'Erk', {'P38' : [0,0,1]}) )
 
-# p = point_pred('P38_2', P38_dom)
+t2 = timeit.timeit(lambda: 
+                   inference_query(stretch, 'Erk', {'P38' : [0,0,1]}),
+                   number = N)
 
-#channels = efprob_channels_of_pgm(model)
+print("\nTimes for: variable elimination, transformations, fraction, for", 
+N, "runs")
+print(t1)
+print(t2)
+print("How much beter is transformations inference:", t1/t2)
 
-#print( channels )
-
-stretch = stretch(model,graph_output=False)
-
-#graph_image(stretch['graph'], "sachs")
 
