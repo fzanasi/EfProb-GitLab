@@ -25,7 +25,10 @@ from PIL import Image
 #
 # The main functions in this file are:
 #
-# - stretch: linearising a Bayesian model in pgmpy to a list of
+# - factorise: it turns an EfProb joint state together with a pydot
+#   graph into a pmgpy Bayesian model
+#
+# - stretch: it linearises a pgmpy Bayesian model to a list of
 #   composable EfProb channels, where the first entry is a state
 #
 # - inference_query: it computes, starting from the output of the
@@ -35,9 +38,99 @@ from PIL import Image
 #####################################################################
 
 
+
+#####################################################################
 #
-# Auxiliary functions, from pgm to efprob (or pydot)
+# Auxiliary pydot graph functions
 #
+#####################################################################
+
+#
+# Save graph as image in the directory where the function is called
+# and display it. When no name is provided, the file name is graph.png
+#
+# In case of errors, do: pip3 install --upgrade pillow
+#
+# Kill all images with: pkill display
+#
+def graph_image(graph, name=None):
+    if name == None:
+        name = "graph"
+    working_directory = os.getcwd()
+    file_path = working_directory + "/" + name + ".png"
+    graph.write_png(file_path) 
+    f = open(file_path, "rb")
+    Image.open(f).show()
+
+#
+# Return list of parents of a node in a graph; this list contains an
+# arbitrary order, and may be different if the function is run twice
+# on the same node, since the edges of a node form a ***set***, not a
+# ***list***.
+#
+def get_parents(node):
+    return [e.get_source() for \
+            e in node.get_parent_graph().get_edges() if \
+            e.get_destination() == node.get_name() ]
+
+#
+# Return the list of children of a node, in arbitrary order.
+#
+def get_children(node):
+    return [e.get_destination() for \
+            e in node.get_parent_graph().get_edges() if \
+            e.get_source() == node.get_name() ]
+
+
+#
+# Swap the entries in a joint state (in EfProb), using a permutation
+# given by a list of positions.
+#
+def domain_swaps(state, swap_list):
+    l = len(swap_list)
+    doms = state.dom
+    if l != len(doms):
+        raise Exception('Swapping requires equal lenght inputs')
+    # form the new domain, first as list of domains, then as joint domain
+    swapped_doms = []
+    for i in range(l):
+        swapped_doms.append(doms.get_nameditem(swap_list[i]))
+    swapped_doms = reduce(lambda d1, d2: d1 + d2, swapped_doms)
+    # form the channel that does the swapping
+    swap_chan = chan_fromklmap(lambda *xs: 
+                               point_state(tuple([xs[swap_list[i]] 
+                                                  for i in range(l)]),
+                                           swapped_doms),
+                               doms, swapped_doms)
+    return swap_chan >> state
+
+#
+# Reorder the domains of an EfProb state, in accordance with the
+# provided list of domains 'domain_names'
+#
+def reorder_state_domains(state, domain_names):
+    ls = len(state.dom)
+    ld = len(domain_names)
+    state_names = [state.dom.names[i].name for i in range(ls)]
+    if ld != ls or set(domain_names) != set(state_names):
+        raise Exception('Non-matching domains in domain-reordering')
+    swaps = []
+    for i in range(ld):
+        # find domain_names[i] in state_names, and extend the swap list
+        # with its position
+        for j in range(ld):
+            if state_names[j] == domain_names[i]:
+                swaps.append(j)
+                break
+    return domain_swaps(state, swaps)
+
+
+
+#####################################################################
+#
+# Auxiliary functions, from pgmpy to efprob (or pydot)
+#
+#####################################################################
 
 #
 # Turn a name (string) and cardinality (number) into a named EfProb
@@ -108,6 +201,87 @@ def pydot_graph_of_pgm(model):
         graph.add_edge(pydot.Edge(e))
     return graph
 
+
+#####################################################################
+
+
+#
+# Turn an EfProb state and a pydot graph into pmgpy Bayesian model via
+# disintegration, following the graph structure. The resulting model
+# has the same underlying graph.
+#
+# Assumptions:
+# - all domains in the state have a name; all these names are unique
+# - the set of these names from the state is the same as the set of 
+#   names in the graph
+#
+# This function requires more testing, esp. wrt. how cpd_array is formed
+#
+def factorise(state, graph):
+    state_names = [n.name for n in state.dom.names]
+    graph_nodes = graph.get_nodes()
+    graph_names = [n.get_name() for n in graph_nodes]
+    l = len(state_names)
+    if l != len(graph_names):
+        raise Exception('Missing domain names of state in factorisation')
+    if set(state_names) != set(graph_names):
+        raise Exception('Non-matching graph and state names in factorisation')
+    # make dictionary of names and corresponding masks
+    masks = {}
+    for i in range(l):
+        ls = l * [0]
+        ls[i] = 1
+        masks[state_names[i]] = ls
+    # dictionary to be filled with cpts = conditional probability tables
+    model = BayesianModel()
+    model.add_nodes_from(graph_names)
+    for node in graph_nodes:
+        parents = get_parents(node)
+        key = node.get_name()
+        mask_cod = masks[key]
+        if len(parents) == 0:
+            # marginalise for initial nodes
+            initial_state = state % mask_cod
+            if len(initial_state.dom) > 1:
+                raise Exception('Initial states must have dimension 1')
+            dom_card = len(initial_state.dom[0])
+            state_array = initial_state.array
+            cpd_array = np.zeros((dom_card,1))
+            for i in range(dom_card):
+                cpd_array[i][0] = state_array[i]
+            cpd = TabularCPD(variable = key, 
+                             variable_card = dom_card,
+                             values = cpd_array)
+            model.add_cpds(cpd)
+        else:
+            # add edges and form conditional probility for internal nodes
+            for p in parents:
+                model.add_edge(p, key)
+            mask_dom = mask_summation([masks[p] for p in parents])
+            chan = state[ mask_cod : mask_dom ]
+            cod = chan.cod
+            dom = chan.dom
+            if len(cod) > 1:
+                raise Exception('Domains must have dimension 1')
+            chan_array = chan.array
+            print("* ", key, len(dom[0]), len(cod[0]), chan_array.shape )
+            prod = reduce(operator.mul, [len(d) for d in dom], 1)
+            cpd_array = np.zeros((len(cod[0]), prod))
+            for i in range(len(dom[0])): 
+                cpd_array[i] = [ chan_array[i][j] for 
+                                 j in np.ndindex(*chan_array[i].shape) ]
+            cpd = TabularCPD(variable = key, 
+                             variable_card = len(cod[0]), 
+                             values = cpd_array,
+                             evidence = parents,
+                             evidence_card = [len(d) for d in dom])
+            model.add_cpds(cpd)
+    if not model.check_model():
+        raise Exception('Constructed model does not pass check')
+    return model
+
+
+#####################################################################
 
 #
 # Turn a Probabilistic Graphical Model (pgm, as in pgmpy) into a
@@ -575,7 +749,6 @@ def inference_query(stretch_dict, marginal, evidence_dict):
                 pred = pred & evidence_list[pos_i][1]
                 pred = chan_list[pos_i] << pred
     if not hit:
-        print("No hits")
         return state % mask
     #
     # Combine the results of the forward and backward operations by

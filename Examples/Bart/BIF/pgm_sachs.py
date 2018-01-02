@@ -27,28 +27,34 @@ graph = pydot_graph_of_pgm(model)
 
 print("\nStretching the graph:")
 
-stretch = stretch(model,graph_output=True)
+#stretch = stretch(model,graph_output=True)
+#stretch = stretch(model,graph_output=True,observed=True)
 
 #graph_image(stretch['graph'], "sachs")
 
 print("\nVariable elimination inference")
 
-N = 10
+N = 1
 
 inference = VariableElimination(model)
 
-print( inference.query(['Erk'], evidence={'P38': 2})['Erk'] )
+print( inference.query(['PKC'], 
+                       evidence={'P38' : 2, 'Jnk' : 1})['PKC'] )
 
 t1 = timeit.timeit(lambda: 
-                   inference.query(['Erk'], evidence={'P38': 2}) ['Erk'],
+                   inference.query(['PKC'], 
+                                   evidence={'P38': 2, 'Jnk' : 1}) ['PKC'],
                    number = N)
 
 print("\nTransformations inference")
 
-print( inference_query(stretch, 'Erk', {'P38' : [0,0,1]}) )
+stretch = stretch(model)
+
+print( inference_query(stretch, 'PKC', {'P38' : [0,0,1], 'Jnk' : [0,1,0]}) )
 
 t2 = timeit.timeit(lambda: 
-                   inference_query(stretch, 'Erk', {'P38' : [0,0,1]}),
+                   inference_query(stretch, 'PKC', 
+                                   {'P38' : [0,0,1], 'Jnk' : [0,1,0]}),
                    number = N)
 
 print("\nTimes for: variable elimination, transformations, fraction, for", 

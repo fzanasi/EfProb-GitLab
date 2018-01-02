@@ -40,7 +40,6 @@ cpd_tuberculosisorcancer = TabularCPD(variable='TuberculosisOrCancer', variable_
                    evidence_card=[2, 2])
 
 cpd_dyspnea = TabularCPD(variable='Dyspnea', variable_card=2, 
-                    # [[0.9, 0.1,  0.3,  0.7], [0.2,  0.8,  0.1,  0.9]]
                    values=[[0.9, 0.7, 0.8, 0.1],
                            [0.1, 0.3, 0.2, 0.9]],
                    evidence=['Bronchitis', 'TuberculosisOrCancer'],
@@ -60,9 +59,8 @@ asia_model.add_cpds(cpd_smoker, cpd_visittoasia,
 print("Asia correct: ", asia_model.check_model() )
 
 # For timing of stretching:
-print(timeit.timeit(lambda: stretch(asia_model, graph_output=False), number=1))
-
-"""
+print(timeit.timeit(lambda: stretch(asia_model, graph_output=False), 
+                    number=1))
 
 asia_inference = VariableElimination(asia_model)
 
@@ -95,13 +93,13 @@ asia_cpts = efprob_channels_of_pgm(asia_model)
 # print( asia_cpts['Xray']('TuberculosisOrCancer_0') )
 # print( asia_cpts['Xray']('TuberculosisOrCancer_1') )
 
-asia_stretch = stretch(asia_model, graph_output=True,observed=False)
+#asia_stretch = stretch(asia_model, graph_output=True,observed=False)
 
 #graph_image(asia_stretch['graph'], "experiment2")
 
 #print("\nAsia pointer:", asia_stretch['pointer'] )
-asia_joint = evaluate_stretch(asia_stretch['channels'])
-print("\nAsia final state:", asia_joint )
+#asia_joint = evaluate_stretch(asia_stretch['channels'])
+#print("\nAsia final state:", asia_joint )
 
 #print("\nAsia marginals:", marginals_stretch(asia_stretch))
 
@@ -117,6 +115,7 @@ print("\nAsia final state:", asia_joint )
 print("\nAsia inference 1, by hand\n")
 
 asia_stretch = stretch(asia_model, graph_output=True,observed=True)
+#asia_stretch = stretch(asia_model, graph_output=True,observed=False)
 
 #graph_image(asia_stretch['graph'], "asia")
 
@@ -156,6 +155,8 @@ print( asia_inference.query(['Dyspnea'],
 
 print("\nAsia inference 2, automated\n")
 
+asia_stretch = stretch(asia_model, graph_output=True,observed=False)
+
 print("* Via transformation-inference:")
 print( inference_query(asia_stretch, 'Bronchitis', {'Xray' : [1,0], 'Smoker' : [0,1]}) )
 
@@ -163,7 +164,7 @@ print("* Via variable elimination")
 print( asia_inference.query(['Bronchitis'], evidence={'Xray': 0, 'Smoker' : 1})['Bronchitis'] )
 
 
-N = 100
+N = 1
 
 print("\nInference timing comparison,", N, "times\n")
 
@@ -184,4 +185,3 @@ print(t2)
 print(t1/t2)
 
 
-"""

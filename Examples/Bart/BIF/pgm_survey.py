@@ -14,7 +14,7 @@ print( model.nodes )
 
 graph = pydot_graph_of_pgm(model)
 
-graph_image(graph, "survey")
+#graph_image(graph, "survey")
 
 #inference = VariableElimination(model)
 
@@ -26,8 +26,8 @@ graph_image(graph, "survey")
 
 #print( channels )
 
-#stretch = stretch(model)
-stretch = stretch(model,observed=True)
+stretch = stretch(model,graph_output=True)
+#stretch = stretch(model,graph_output=True,observed=True)
 
 graph_image(stretch['graph'], "sachs")
 

@@ -7,32 +7,38 @@ import timeit
 
 # http://www.bnlearn.com/bnrepository/
 
-reader=BIFReader('child.bif')
+reader=BIFReader('hepar2.bif')
 
 model = reader.get_model()
 
-print( efprob_domains_of_pgm(model) )
+#print( efprob_domains_of_pgm(model) )
 
 graph = pydot_graph_of_pgm(model)
 
-#graph_image(graph, "child")
+#graph_image(graph, "hepar2")
 
-stretch = stretch(model,graph_output=False)
+stretch = stretch(model,graph_output=True)
 
-#graph_image(stretch['graph'], "child")
+graph_image(stretch['graph'], "insurance")
 
-N = 10
+N = 1
 
 inference = VariableElimination(model)
 
-print( inference.query(['LowerBodyO2'], evidence={'Age': 2, 'LungFlow' : 1})
-       ['LowerBodyO2'] )
+# This inference takes at least an hour
 
-t1 = timeit.timeit(lambda: 
-                   inference.query(['LowerBodyO2'], 
-                                   evidence={'Age': 2, 'LungFlow' : 1})
-                   ['LowerBodyO2'],
-                   number = N)
+#print( inference.query(['Theft'], evidence={'GoodStudent': 0})['Theft'] )
+
+
+
+# t1 = timeit.timeit(lambda: 
+#                    inference.query(['Theft'], evidence={'GoodStudent': 0})['Theft'],
+#                    number = N)
+
+
+
+"""
+
 
 print("\nTransformations inference")
 
@@ -51,3 +57,4 @@ print(t2)
 print("How much beter is transformations inference:", t1/t2)
 
 
+"""

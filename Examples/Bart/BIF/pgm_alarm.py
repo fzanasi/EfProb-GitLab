@@ -7,23 +7,25 @@ import timeit
 
 # http://www.bnlearn.com/bnrepository/
 
-reader=BIFReader('child.bif')
+reader=BIFReader('alarm.bif')
 
 model = reader.get_model()
 
-print( efprob_domains_of_pgm(model) )
+#print( efprob_domains_of_pgm(model) )
 
 graph = pydot_graph_of_pgm(model)
 
-#graph_image(graph, "child")
+#graph_image(graph, "alarm")
 
-stretch = stretch(model,graph_output=False)
+stretch = stretch(model)
 
-#graph_image(stretch['graph'], "child")
+#graph_image(stretch['graph'], "alarm")
 
 N = 10
 
 inference = VariableElimination(model)
+
+"""
 
 print( inference.query(['LowerBodyO2'], evidence={'Age': 2, 'LungFlow' : 1})
        ['LowerBodyO2'] )
@@ -51,3 +53,4 @@ print(t2)
 print("How much beter is transformations inference:", t1/t2)
 
 
+"""
