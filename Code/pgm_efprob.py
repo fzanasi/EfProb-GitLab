@@ -125,7 +125,7 @@ def pydot_graph_of_pgm(model):
 #   (or accessible). This version is useful for producing the joint
 #   distribution from the model.
 #
-def stretch(pgm, graph_output=True, observed=False):
+def stretch(pgm, graph_output=False, observed=False):
     #
     # Extraction of relevant data from input
     #
@@ -166,8 +166,21 @@ def stretch(pgm, graph_output=True, observed=False):
     #
     if graph_output:
         stretched_graph = pydot.Dot(graph_type='digraph')
+        # auxiliary function for addition of a named black bullet to
+        # the graph, to be used as copy node; set fontsize to 12 to
+        # see the names of the copy nodes, for debugging. Otherwise
+        # the name is suppressed
+        def add_copy_node(name):
+            stretched_graph.add_node(
+                pydot.Node(name,
+                           width=0.15,
+                           height=0.15,
+                           fixedsize=True,
+                           style="filled", 
+                           fillcolor="black",
+                           fontsize=0))
     #
-    # List of available nodes for finding a match of
+    # A list of available nodes is introduced for finding a match of
     # channels. Elements of this list will be pairs, consisting of the
     # node (name) 'n' together with its name node_name(n,i) in the
     # graph. Since nodes may occur multiple times, we need to use
@@ -192,10 +205,9 @@ def stretch(pgm, graph_output=True, observed=False):
                 stretched_graph.add_node(pydot.Node(n, 
                                                     style="filled", 
                                                     fillcolor="green"))
-            if observed:
-                available_nodes.append(n)
             children_n = children[n] 
             children_num = len(children_n)
+            node_copies[n] = children_num + (1 if observed else 0)
             # print("Children of: ", n, children_n)
             #
             # Make copies of the initial states, depending on the
@@ -205,19 +217,14 @@ def stretch(pgm, graph_output=True, observed=False):
             if children_num > 0:
                 # n is not a final node
                 available_nodes.append(n)
-                node_copies[n] = children_num + (1 if observed else 0)
-                if graph_output:
-                    stretched_graph.add_node(pydot.Node(n + "!copy", 
-                                                        width=0.15,
-                                                        height=0.15,
-                                                        fixedsize=True,
-                                                        style="filled", 
-                                                        fillcolor="black",
-                                                        fontsize=0))
-                    stretched_graph.add_edge(pydot.Edge(n, n + "!copy"))
-                    if observed:
-                        stretched_graph.add_edge(pydot.Edge(n + "!copy",
-                                                            " " + n + " "))
+                if graph_output and observed:
+                    copy_name = n + "!copy" + str(node_copies[n])
+                    # add copy nodes
+                    add_copy_node(copy_name)
+                    stretched_graph.add_edge(
+                        pydot.Edge(n, copy_name))
+                    stretched_graph.add_edge(
+                        pydot.Edge(copy_name, " " + n + " "))
     if len(initial_nodes) == 0:
         raise Exception('Error: the model does not have initial nodes')
     initial_state = reduce(lambda s1, s2: s1 @ s2, [channels[n]
@@ -256,7 +263,7 @@ def stretch(pgm, graph_output=True, observed=False):
             if not proceed:
                 # handle this node un later
                 continue
-            # print("Found parents ", parents_un, "in", available_nodes, proceed)
+            # print("Found parents ",parents_un, "in", available_nodes, proceed)
             # print("Copies", node_copies)
             #
             # Make list for the nodes that should be copied
@@ -280,7 +287,8 @@ def stretch(pgm, graph_output=True, observed=False):
             #
             # Now search for the precise positions of the parent nodes
             #
-            # print("==> Searching locations of parents", parents_un, "with availables", available_nodes)
+            # print("==> Searching locations of parents", parents_un, 
+            #      "with availables", available_nodes)
             search_copy_of_nodes = [u for u in available_nodes]
             swaps = list(range(len(available_nodes)))
             #
@@ -319,13 +327,6 @@ def stretch(pgm, graph_output=True, observed=False):
             #
             # Build the channel that does the swapping
             #
-            if graph_output:
-                stretched_graph.add_node(pydot.Node(un, 
-                                                    style="filled", 
-                                                    fillcolor="green"))
-                for i in range(num_parents_un):
-                    stretched_graph.add_edge(pydot.Edge(
-                        available_nodes[i] + "!copy", un))
             un_chan_id = un_chan
             diff = len(available_nodes) - num_parents_un
             if diff > 0:
@@ -354,19 +355,69 @@ def stretch(pgm, graph_output=True, observed=False):
             num_children_un = len(childred_un)
             node_copies[un] = num_children_un + (1 if observed else 0)
             #print("Children of: ", un, childred_un)
-            if num_children_un > 0:
-                if graph_output:
-                    stretched_graph.add_node(pydot.Node(un + "!copy", 
-                                                        width=0.15,
-                                                        height=0.15,
-                                                        fixedsize=True,
-                                                        style="filled", 
-                                                        fillcolor="black",
-                                                        fontsize=0))
-                    stretched_graph.add_edge(pydot.Edge(un, un + "!copy"))
-                    if observed:
-                        stretched_graph.add_edge(pydot.Edge(un + "!copy",
-                                                            " " + un + " "))
+            #
+            # Add node un to the graph, with links to its parents, if
+            # needed via (binary) copying.
+            #
+            if graph_output:
+                stretched_graph.add_node(
+                    pydot.Node(un, style="filled", fillcolor="green"))
+                for i in range(num_parents_un):
+                    parent_node_i = parents_un[i]
+                    copies_i = node_copies[parent_node_i]
+                    copy_name_i = parent_node_i + "!copy" + \
+                                  str(copies_i)
+                    copy_name_Si = parent_node_i + "!copy" + \
+                                   str(copies_i + 1)
+                    parent_node_i_children_num = len(children[parent_node_i])
+                    if not observed:
+                        if parent_node_i_children_num == 1:
+                            # parent_node_i --> un is the only edge
+                            # parent_node_i --> ...
+                            stretched_graph.add_edge(
+                                pydot.Edge(parent_node_i, un))
+                        else:
+                            if parent_node_i_children_num == copies_i + 1:
+                                # add just one copy and connect its base to parent_i
+                                add_copy_node(copy_name_i)
+                                stretched_graph.add_edge(
+                                    pydot.Edge(parent_node_i, copy_name_i))
+                                stretched_graph.add_edge(
+                                    pydot.Edge(copy_name_i, un))
+                            else:
+                                if copies_i == 0:
+                                    # connect directly to last copy node
+                                    stretched_graph.add_edge(pydot.Edge(
+                                        copy_name_Si, un))
+                                else:
+                                    # add copy node and connect to previous
+                                    add_copy_node(copy_name_i)
+                                    stretched_graph.add_edge(
+                                        pydot.Edge(copy_name_Si, copy_name_i))
+                                    stretched_graph.add_edge(
+                                        pydot.Edge(copy_name_i, un))
+                    else:
+                        # observed case
+                        if copies_i == 1:
+                            # connect directly to last copy node
+                            print("no more copying needed")
+                            stretched_graph.add_edge(pydot.Edge(
+                                copy_name_Si, un))
+                        else:
+                            # add copy node and connect to previous
+                            add_copy_node(copy_name_i)
+                            stretched_graph.add_edge(
+                                pydot.Edge(copy_name_Si, copy_name_i))
+                            stretched_graph.add_edge(
+                                pydot.Edge(copy_name_i, un))
+                if observed and node_copies[un] > 1:
+                    # add copy node for children to connect to in next round
+                    copy_name_i = un + "!copy" + str(node_copies[un])
+                    add_copy_node(copy_name_i)
+                    stretched_graph.add_edge(
+                        pydot.Edge(un, copy_name_i))
+                    stretched_graph.add_edge(
+                        pydot.Edge(copy_name_i, " " + un + " "))
             #
             # Terminate handling node un and return to for-loop
             #
@@ -420,7 +471,7 @@ def marginals_stretch(stretch_dict):
 # uses it for inference. It takes two additional arguments:
 #
 # - 'marginal', which is a node in the original model, at which
-#   position the probability is computed, given the evidence
+#   position the probability distribution is computed, given the evidence
 #
 # - 'evidence_dict', which is a dictionary mapping nodes to list of
 #   probabilities in [0,1], acting as predicate values. If the node
@@ -430,14 +481,14 @@ def inference_query(stretch_dict, marginal, evidence_dict):
     chan_list = stretch_dict['channels']
     chan_list_len = len(chan_list)
     state = chan_list[0]
-    init_pred = truth(state.dom)
     ptr = stretch_dict['pointer']
     ptrkeys = ptr.keys()
     evkeys = evidence_dict.keys()
     if not (marginal in ptrkeys):
         raise Exception('Marginal does not occur')
-    if not any([k in ptrkeys for k in evkeys]):
+    if not all([k in ptrkeys for k in evkeys]):
         raise Exception('Some of the evidence keys do not occur')
+    position_marginal = ptr[marginal]
     #
     # The evidence is inserted into a list in parallel to the list of
     # channels, so that updates can happen locally. This evidence-list
@@ -465,19 +516,18 @@ def inference_query(stretch_dict, marginal, evidence_dict):
             weakened_pred = reduce(lambda p1, p2: p1 @ p2, preds)
             state = state / weakened_pred
         else:
-            dom = chan_list[position_k-1].cod
+            dom = chan_list[position_k - 1].cod
             #print("Evidence at:", k, position_k, chan_list_len, dom)
             #
             # By construction, the domain of the predicate is at the
             # first position in the codomain of channel at this
-            # position
+            # position. 
             #
             pred = Predicate(evidence_dict[k], dom[0])
             if len(dom) > 0:
                 # weaken
                 pred = pred @ truth(dom[1:])
             evidence_list[position_k - 1] = (1,pred)
-    position_marginal = ptr[marginal]
     #
     # Start with forward state transformation up to the marginal
     # position, updating with predicates, if any, along the way
@@ -491,29 +541,48 @@ def inference_query(stretch_dict, marginal, evidence_dict):
             # transform, i.e. do forward inference
             state = state / evidence_list[i][1]
             state = chan_list[i+1] >> state
+    # print("Domain of state:", state.dom.names[0].name)
     #
-    # Continue with backward predicate transformation, starting from
-    # the truth predicate, adding predicates, if any, along the way,
-    # via conjunction &
+    # Continue with backward predicate transformation, adding
+    # predicates, if any, along the way, via conjunction &. This
+    # addition only starts when a predicate is found.
     #
-    pred = truth(chan_list[chan_list_len-1].cod)
-    for i in range(chan_list_len - position_marginal):
-        if evidence_list[chan_list_len - i - 1][0] == 0:
-            # no predicate at this point, transform existing predicate
-            pred = chan_list[chan_list_len - i - 1] << pred
+    mask = len(state.dom) * [0]
+    if position_marginal == 0:
+        # marginal at the beginning requires a special mask
+        for i in range(len(state.dom)):
+            if state.dom.names[i].name == marginal:
+                mask[i] = 1
+                break
+    else:
+        mask[0] = 1
+    # print( position_marginal, chan_list_len, [e[0] for e in evidence_list] )
+    # print( [chan_list[i+1].cod.names[0].name for i in range(chan_list_len-1)])
+    hit = False
+    for i in range(chan_list_len - position_marginal - 
+                   (1 if position_marginal == 0 else 0)):
+        pos_i = chan_list_len - i - 1
+        if evidence_list[pos_i][0] == 0:
+            if hit:
+                pred = chan_list[pos_i] << pred
         else:
-            # take the conjunction of the current predicate with the
-            # predicate at this point, then transform
-            pred = pred & evidence_list[chan_list_len - i - 1][1]
-            pred = chan_list[chan_list_len - i - 1] << pred
+            if not hit:
+                hit = True
+                pred = chan_list[pos_i] << evidence_list[pos_i][1]
+            else:
+                # take the conjunction of the current predicate with the
+                # predicate at this point, then transform
+                pred = pred & evidence_list[pos_i][1]
+                pred = chan_list[pos_i] << pred
+    if not hit:
+        print("No hits")
+        return state % mask
     #
     # Combine the results of the forward and backward operations by
     # updating the state once more, and taking the appropriate (first)
     # marginal.
     #
     state = state / pred
-    mask = len(state.dom) * [0]
-    mask[0] = 1
     return state % mask
 
 
