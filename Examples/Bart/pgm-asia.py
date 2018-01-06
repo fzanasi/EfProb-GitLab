@@ -58,14 +58,15 @@ asia_model.add_cpds(cpd_smoker, cpd_visittoasia,
 
 print("Asia correct: ", asia_model.check_model() )
 
+
+asia_graph = pydot_graph_of_pgm(asia_model)
+#graph_image(asia_graph, "asia")
+
 # For timing of stretching:
 print(timeit.timeit(lambda: stretch(asia_model, graph_output=False), 
                     number=1))
 
 asia_inference = VariableElimination(asia_model)
-
-asia_graph = pydot_graph_of_pgm(asia_model)
-#graph_image(asia_graph, "asia")
 
 asia_cpts = efprob_channels_of_pgm(asia_model)
 
@@ -114,6 +115,8 @@ asia_cpts = efprob_channels_of_pgm(asia_model)
 
 print("\nAsia inference 1, by hand\n")
 
+"""
+
 asia_stretch = stretch(asia_model, graph_output=True,observed=True)
 #asia_stretch = stretch(asia_model, graph_output=True,observed=False)
 
@@ -147,22 +150,25 @@ print( asia_cpts['Dyspnea'] \
                >> ((copy(asia_domain[7]) @ idn(asia_domain[1])) \
                    >> (asia_cpts['Smoker'] @ ((asia_cpts['Tuberculosis'] >> asia_cpts['VisitToAsia']) / p))))) )
 
+
 print("* Via variable elimination")
 print( asia_inference.query(['Dyspnea'], 
                             evidence={'Tuberculosis': 0})['Dyspnea'] )
 
+"""
 
 
 print("\nAsia inference 2, automated\n")
 
-asia_stretch = stretch(asia_model, graph_output=True,observed=False)
+asia_stretch = stretch(asia_model, observed=False)
 
-print("* Via transformation-inference:")
-print( inference_query(asia_stretch, 'Bronchitis', {'Xray' : [1,0], 'Smoker' : [0,1]}) )
+print("\n* Via transformation-inference:")
+print( inference_query(asia_stretch, 'Bronchitis', {'Xray' : [1,0], 'Tuberculosis' : [0,1]}) )
 
-print("* Via variable elimination")
-print( asia_inference.query(['Bronchitis'], evidence={'Xray': 0, 'Smoker' : 1})['Bronchitis'] )
+print("\n* Via variable elimination")
+print( asia_inference.query(['Bronchitis'], evidence={'Xray': 0, 'Tuberculosis' : 1})['Bronchitis'] )
 
+"""
 
 N = 1
 
@@ -185,3 +191,4 @@ print(t2)
 print(t1/t2)
 
 
+"""

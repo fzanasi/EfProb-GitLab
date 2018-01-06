@@ -29,7 +29,7 @@ graph = pydot_graph_of_pgm(model)
 stretch = stretch(model,graph_output=True)
 #stretch = stretch(model,graph_output=True,observed=True)
 
-graph_image(stretch['graph'], "sachs")
+#graph_image(stretch['graph'], "sachs")
 
 #joint = evaluate_stretch(stretch['channels'])
 #print( joint )

@@ -39,22 +39,22 @@ N = 1
 
 inference = VariableElimination(model)
 
-print( inference.query(['PKC'], 
-                       evidence={'P38' : 2, 'Jnk' : 1})['PKC'] )
+print( inference.query(['Erk'], 
+                       evidence={'P38' : 2, 'Jnk' : 1})['Erk'] )
 
 t1 = timeit.timeit(lambda: 
-                   inference.query(['PKC'], 
-                                   evidence={'P38': 2, 'Jnk' : 1}) ['PKC'],
+                   inference.query(['Erk'], 
+                                   evidence={'P38': 2, 'Jnk' : 1}) ['Erk'],
                    number = N)
 
 print("\nTransformations inference")
 
-stretch = stretch(model)
+#stretch = stretch(model)
 
-print( inference_query(stretch, 'PKC', {'P38' : [0,0,1], 'Jnk' : [0,1,0]}) )
+print( inference_query(stretch, 'Erk', {'P38' : [0,0,1], 'Jnk' : [0,1,0]}) )
 
 t2 = timeit.timeit(lambda: 
-                   inference_query(stretch, 'PKC', 
+                   inference_query(stretch, 'Erk', 
                                    {'P38' : [0,0,1], 'Jnk' : [0,1,0]}),
                    number = N)
 
