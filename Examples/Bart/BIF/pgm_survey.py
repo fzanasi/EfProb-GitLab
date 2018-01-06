@@ -10,7 +10,7 @@ reader=BIFReader('survey.bif')
 
 model = reader.get_model()
 
-print( model.nodes )
+#print( model.nodes )
 
 graph = pydot_graph_of_pgm(model)
 
@@ -26,7 +26,7 @@ graph = pydot_graph_of_pgm(model)
 
 #print( channels )
 
-stretch = stretch(model,graph_output=True)
+stretch = stretch(model)
 #stretch = stretch(model,graph_output=True,observed=True)
 
 #graph_image(stretch['graph'], "sachs")
@@ -34,6 +34,6 @@ stretch = stretch(model,graph_output=True)
 #joint = evaluate_stretch(stretch['channels'])
 #print( joint )
 
-#print( inference_query(stretch, 'O', {'S' : [0,1]}) )
+print( inference_query(stretch, 'O', {'S' : [0,1]}) )
 
 

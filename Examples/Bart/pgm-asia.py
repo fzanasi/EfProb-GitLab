@@ -63,12 +63,12 @@ asia_graph = pydot_graph_of_pgm(asia_model)
 #graph_image(asia_graph, "asia")
 
 # For timing of stretching:
-print(timeit.timeit(lambda: stretch(asia_model, graph_output=False), 
-                    number=1))
+#print(timeit.timeit(lambda: stretch(asia_model, graph_output=False), 
+#                    number=1))
 
 asia_inference = VariableElimination(asia_model)
 
-asia_cpts = efprob_channels_of_pgm(asia_model)
+#asia_cpts = efprob_channels_of_pgm(asia_model)
 
 # print( asia_cpts['Smoker'] )
 # print( asia_cpts['VisitToAsia'] )

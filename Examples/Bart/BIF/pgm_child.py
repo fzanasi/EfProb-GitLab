@@ -11,7 +11,7 @@ reader=BIFReader('child.bif')
 
 model = reader.get_model()
 
-print( efprob_domains_of_pgm(model) )
+#print( efprob_domains_of_pgm(model) )
 
 graph = pydot_graph_of_pgm(model)
 
