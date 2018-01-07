@@ -335,6 +335,21 @@ def stretch(pgm, graph_output=False, observed=False, stretch_tries=1000):
             non_initial_nodes.append(n)
             # update with the order as actually used in the channel
             parents[n] = [dn.name for dn in channels[n].dom.names]
+    if graph_output:
+        stretched_graph = pydot.Dot(graph_type='digraph')
+        # auxiliary function for addition of a named black bullet to
+        # the graph, to be used as copy node; set fontsize to 12 to
+        # see the names of the copy nodes, for debugging. Otherwise
+        # the name is suppressed
+        def add_copy_node(name):
+            stretched_graph.add_node(
+                pydot.Node(name,
+                           width=0.15,
+                           height=0.15,
+                           fixedsize=True,
+                           style="filled", 
+                           fillcolor="black",
+                           fontsize=0))
     #
     # Initialisation of data structures that will be build up: (a)
     # list of channels, (b) nodes pointers, (c) node copies, (d)
@@ -411,6 +426,18 @@ def stretch(pgm, graph_output=False, observed=False, stretch_tries=1000):
     available_initial_nodes = [n for n in initial_nodes]
     for n in initial_nodes:
         node_copies[n] = len(children[n]) + (1 if observed else 0)
+        if graph_output:
+            stretched_graph.add_node(pydot.Node(n, 
+                                                style="filled", 
+                                                fillcolor="green"))
+            if len(children[n]) > 0 and observed:
+                # n is not a final node
+                copy_name = n + "!copy" + str(node_copies[n])
+                # add copy nodes
+                add_copy_node(copy_name)
+                stretched_graph.add_edge(pydot.Edge(n, copy_name))
+                stretched_graph.add_edge(
+                    pydot.Edge(copy_name, " " + n + " "))
     for node in stretch_outcome:
         print("==> node", node, "of sizes", 
               [node_sizes[n] for n in available_nodes], 
@@ -530,6 +557,66 @@ def stretch(pgm, graph_output=False, observed=False, stretch_tries=1000):
         available_nodes = available_initial_nodes + [node] + available_nodes
         #print("Nodes at end", available_nodes)
         #print( channel_list[len(channel_list)-1].cod.names )
+        #
+        # Add node to the graph, with links to its parents, if needed
+        # via (binary) copying.
+        #
+        if graph_output:
+            stretched_graph.add_node(
+                pydot.Node(node, style="filled", fillcolor="green"))
+            for i in range(num_parents_node):
+                parent_node_i = parents_node[i]
+                copies_i = node_copies[parent_node_i]
+                copy_name_i = parent_node_i + "!copy" + str(copies_i)
+                copy_name_Si = parent_node_i + "!copy" + str(copies_i + 1)
+                parent_node_i_children_num = len(children[parent_node_i])
+                if not observed:
+                    if parent_node_i_children_num == 1:
+                        # parent_node_i --> node is the only edge
+                        # parent_node_i --> ...
+                        stretched_graph.add_edge(
+                            pydot.Edge(parent_node_i, node))
+                    else:
+                        if parent_node_i_children_num == copies_i + 1:
+                            # add just one copy and connect its base to parent_i
+                            add_copy_node(copy_name_i)
+                            stretched_graph.add_edge(
+                                pydot.Edge(parent_node_i, copy_name_i))
+                            stretched_graph.add_edge(
+                                pydot.Edge(copy_name_i, node))
+                        else:
+                            if copies_i == 0:
+                                # connect directly to last copy node
+                                stretched_graph.add_edge(pydot.Edge(
+                                    copy_name_Si, node))
+                            else:
+                                # add copy node and connect to previous
+                                add_copy_node(copy_name_i)
+                                stretched_graph.add_edge(
+                                    pydot.Edge(copy_name_Si, copy_name_i))
+                                stretched_graph.add_edge(
+                                    pydot.Edge(copy_name_i, node))
+                else:
+                    # observed case
+                    if copies_i == 1:
+                        # connect directly to last copy node
+                        # print("no more copying needed")
+                        stretched_graph.add_edge(pydot.Edge(
+                            copy_name_Si, node))
+                    else:
+                        # add copy node and connect to previous
+                        add_copy_node(copy_name_i)
+                        stretched_graph.add_edge(
+                            pydot.Edge(copy_name_Si, copy_name_i))
+                        stretched_graph.add_edge(
+                            pydot.Edge(copy_name_i, node))
+            if observed and node_copies[node] > 1:
+                # add copy node for children to connect to in next round
+                copy_name_i = node + "!copy" + str(node_copies[node])
+                add_copy_node(copy_name_i)
+                stretched_graph.add_edge(pydot.Edge(node, copy_name_i))
+                stretched_graph.add_edge(
+                    pydot.Edge(copy_name_i, " " + node + " "))
     #
     # Collect the results in a dictionary
     # 
