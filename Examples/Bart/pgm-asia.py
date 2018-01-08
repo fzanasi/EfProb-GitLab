@@ -68,7 +68,7 @@ asia_graph = pydot_graph_of_pgm(asia_model)
 
 asia_inference = VariableElimination(asia_model)
 
-#asia_cpts = efprob_channels_of_pgm(asia_model)
+asia_cpts = efprob_channels_of_pgm(asia_model)
 
 # print( asia_cpts['Smoker'] )
 # print( asia_cpts['VisitToAsia'] )
@@ -94,6 +94,7 @@ asia_inference = VariableElimination(asia_model)
 # print( asia_cpts['Xray']('TuberculosisOrCancer_0') )
 # print( asia_cpts['Xray']('TuberculosisOrCancer_1') )
 
+
 #asia_stretch = stretch(asia_model, graph_output=True,observed=False)
 
 #graph_image(asia_stretch['graph'], "experiment2")
@@ -112,7 +113,6 @@ asia_inference = VariableElimination(asia_model)
 # print( asia_inference.query(['Dyspnea'])['Dyspnea'] )
 
 
-
 print("\nAsia inference 1, by hand\n")
 
 
@@ -121,9 +121,6 @@ asia_stretch = stretch(asia_model, graph_output=True,observed=True)
 #asia_stretch = stretch(asia_model, graph_output=True,observed=False)
 
 graph_image(asia_stretch['graph'], "asia")
-
-"""
-
 
 asia_joint = evaluate_stretch(asia_stretch['channels'])
 
@@ -143,18 +140,19 @@ p = point_pred('Tuberculosis_0', asia_domain[1])
 
 p1 = truth(asia_domain[0]) @ p @ truth(asia_domain[2:])
 
-print("* Via joint state:")
+print("\n* Via joint state:")
 print( asia_joint / p1 % [0,0,0,0,1,0,0,0] )
 
-print("* Via transformations:")
+print("\n* Via transformations:")
+
 print( asia_cpts['Dyspnea'] \
        >> ((asia_cpts['Bronchitis'] @ asia_cpts['TuberculosisOrCancer']) \
            >> ((idn(asia_domain[7]) @ asia_cpts['LungCancer'] @ idn(asia_domain[1])) \
                >> ((copy(asia_domain[7]) @ idn(asia_domain[1])) \
-                   >> (asia_cpts['Smoker'] @ ((asia_cpts['Tuberculosis'] >> asia_cpts['VisitToAsia']) / p))))) )
+                   >> ((asia_cpts['Smoker'] >> init_state)@ ((asia_cpts['Tuberculosis'] >> (asia_cpts['VisitToAsia'] >> init_state)) / p))))) )
 
 
-print("* Via variable elimination")
+print("\n* Via variable elimination")
 print( asia_inference.query(['Dyspnea'], 
                             evidence={'Tuberculosis': 0})['Dyspnea'] )
 
@@ -164,13 +162,15 @@ print("\nAsia inference 2, automated\n")
 asia_stretch = stretch(asia_model, observed=False)
 
 print("\n* Via transformation-inference:")
-print( inference_query(asia_stretch, 'Bronchitis', {'Xray' : [1,0], 'Tuberculosis' : [0,1]}) )
+print( inference_query(asia_stretch, 'Bronchitis', 
+                       {'Xray' : [1,0], 'Tuberculosis' : [0,1]}) )
 
 print("\n* Via variable elimination")
-print( asia_inference.query(['Bronchitis'], evidence={'Xray': 0, 'Tuberculosis' : 1})['Bronchitis'] )
+print( asia_inference.query(['Bronchitis'], 
+                            evidence={'Xray': 0, 'Tuberculosis' : 1})['Bronchitis'] )
 
 
-N = 1
+N = 20
 
 print("\nInference timing comparison,", N, "times\n")
 
@@ -188,7 +188,6 @@ t2 = timeit.timeit(lambda:
 print("Times for: variable elimination, transformations, fraction")
 print(t1)
 print(t2)
-print(t1/t2)
+print("How much beter is transformations inference:", t1/t2)
 
 
-"""

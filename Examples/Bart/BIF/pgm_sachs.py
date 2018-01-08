@@ -27,9 +27,9 @@ graph = pydot_graph_of_pgm(model)
 
 print("\nStretching the graph:")
 
-#stretch = stretch(model,graph_output=True)
+stretch = stretch(model,graph_output=True)
 #stretch = stretch(model,graph_output=False)
-stretch = stretch(model,graph_output=True,observed=True)
+#stretch = stretch(model,graph_output=True,observed=True)
 
 graph_image(stretch['graph'], "sachs")
 

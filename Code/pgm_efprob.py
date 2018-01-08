@@ -335,21 +335,6 @@ def stretch(pgm, graph_output=False, observed=False, stretch_tries=1000):
             non_initial_nodes.append(n)
             # update with the order as actually used in the channel
             parents[n] = [dn.name for dn in channels[n].dom.names]
-    if graph_output:
-        stretched_graph = pydot.Dot(graph_type='digraph')
-        # auxiliary function for addition of a named black bullet to
-        # the graph, to be used as copy node; set fontsize to 12 to
-        # see the names of the copy nodes, for debugging. Otherwise
-        # the name is suppressed
-        def add_copy_node(name):
-            stretched_graph.add_node(
-                pydot.Node(name,
-                           width=0.15,
-                           height=0.15,
-                           fixedsize=True,
-                           style="filled", 
-                           fillcolor="black",
-                           fontsize=0))
     #
     # Initialisation of data structures that will be build up: (a)
     # list of channels, (b) nodes pointers, (c) node copies, (d)
@@ -374,6 +359,29 @@ def stretch(pgm, graph_output=False, observed=False, stretch_tries=1000):
     # (d) Optional graph of the linearised graph; original nodes are
     # in green
     #
+    if graph_output:
+        stretched_graph = pydot.Dot(graph_type='digraph')
+        # auxiliary function for addition of a named black bullet to
+        # the graph, to be used as copy node; set fontsize to 12 to
+        # see the names of the copy nodes, for debugging. Otherwise
+        # the name is suppressed
+        def add_copy_node(name):
+            stretched_graph.add_node(
+                pydot.Node(name,
+                           width=0.15,
+                           height=0.15,
+                           fixedsize=True,
+                           style="filled", 
+                           fillcolor="black",
+                           fontsize=0))
+    #
+    # Phase one: find the most "narrow" way of stretching the Bayesian
+    # network into linear form, via repeated (stretch_tries many
+    # times) random trials. The narrowness of a stretching is
+    # calculated as the size of the states involved, expressed as
+    # product of the number of items of component states. There are
+    # probably more systematic ways of finding a narrow stretching.
+    #
     stretch_size = sys.maxsize
     stretch_outcome = []
     for st in range(stretch_tries):
@@ -386,6 +394,9 @@ def stretch(pgm, graph_output=False, observed=False, stretch_tries=1000):
             node_copies[n] = len(children[n]) + (1 if observed else 0)
         unprocessed_nodes = []
         copy_of_non_initial_nodes = [n for n in non_initial_nodes]
+        # find a random permutation of the non-initial nodes in the
+        # list 'unprocessed_nodes'; the code below will go through
+        # this list in order to find a stretching
         for i in range(len(non_initial_nodes)):
             rand_index = random.randint(0, len(non_initial_nodes) - i - 1)
             rand_node = copy_of_non_initial_nodes[rand_index]
@@ -420,7 +431,8 @@ def stretch(pgm, graph_output=False, observed=False, stretch_tries=1000):
     print("Stretch search done after", stretch_tries, 
           "tries with max size", stretch_size)
     #
-    # Phase two: building the actual channel list
+    # Phase two: building the actual channel list, based on the list
+    # of non-initial nodes 'stretch_outcome'
     #
     available_nodes = [n for n in initial_nodes]
     available_initial_nodes = [n for n in initial_nodes]
@@ -626,322 +638,6 @@ def stretch(pgm, graph_output=False, observed=False, stretch_tries=1000):
     }
     if graph_output:
         result['graph'] = stretched_graph
-    return result
-
-
-
-    """
-    if graph_output:
-        stretched_graph = pydot.Dot(graph_type='digraph')
-        # auxiliary function for addition of a named black bullet to
-        # the graph, to be used as copy node; set fontsize to 12 to
-        # see the names of the copy nodes, for debugging. Otherwise
-        # the name is suppressed
-        def add_copy_node(name):
-            stretched_graph.add_node(
-                pydot.Node(name,
-                           width=0.15,
-                           height=0.15,
-                           fixedsize=True,
-                           style="filled", 
-                           fillcolor="black",
-                           fontsize=0))
-    #
-    # A list of available nodes is introduced for finding a match of
-    # channels. Elements of this list will be pairs, consisting of the
-    # node (name) 'n' together with its name node_name(n,i) in the
-    # graph. Since nodes may occur multiple times, we need to use
-    # different names in the graph.
-    #
-    available_nodes = []
-    #
-    # Step 1: handling of initial nodes; 
-    #
-    # deep copy
-    unprocessed_nodes = [n for n in nodes]
-    initial_nodes = []
-    for n in nodes:
-        # print("Handling node: ", n)
-        parents_n = parents[n]
-        if len(parents_n) == 0:
-            # n is an initial node
-            initial_nodes.append(n)
-            unprocessed_nodes.remove(n)
-            if graph_output:
-                stretched_graph.add_node(pydot.Node(n, 
-                                                    style="filled", 
-                                                    fillcolor="green"))
-            children_n = children[n] 
-            children_num = len(children_n)
-            node_copies[n] = children_num + (1 if observed else 0)
-            # print("Children of: ", n, children_n)
-            #
-            # Make copies of the initial states, depending on the
-            # number of children (and on whether or not we want an
-            # 'observed' version)
-            #
-            if children_num > 0:
-                # n is not a final node
-                available_nodes.append(n)
-                if graph_output and observed:
-                    copy_name = n + "!copy" + str(node_copies[n])
-                    # add copy nodes
-                    add_copy_node(copy_name)
-                    stretched_graph.add_edge(
-                        pydot.Edge(n, copy_name))
-                    stretched_graph.add_edge(
-                        pydot.Edge(copy_name, " " + n + " "))
-    #
-    # Put the initial state at the beginning of the channel list, and
-    # add an identity channel. The latter may be turned into a copy
-    # channel later on.
-    #
-    # print("Initial state: ", channel_list[1] >> initial_state )
-    available_initial_nodes = [n for n in initial_nodes]
-    channel_list.append(idn(Dom([], names=Name("Empty"))))
-    #
-    # Step 2: continue with non-initial nodes from the model: cycle
-    # through the set of unprocessed nodes until all associated
-    # channels have been applied to the current state, and the list of
-    # unprocessed nodes is empty.
-    #
-    iterations = 0
-    nodes_found = len(initial_nodes)
-    while len(unprocessed_nodes) > 0:
-        for un in unprocessed_nodes:
-            iterations += 1
-            un_chan = channels[un]
-            parents_un = [n.name for n in un_chan.dom.names]
-            num_parents_un = len(parents_un)
-            current_dom = channel_list[len(channel_list)-1].cod
-            #
-            # Invariant: (names in) currendom 
-            #      = available_nodes - available_initial_nodes
-            #
-            dom_lens = [len(d) for d in current_dom]
-            print("* Iteration", iterations, "for", un, "of size:", dom_lens,
-                  "is", reduce(operator.mul, dom_lens, 1))
-            #
-            # Just check if all parents nodes are available (not yet where)
-            #
-            proceed = all([pn in available_nodes for pn in parents_un])
-            if not proceed:
-                # handle this node un later
-                continue
-            #print("Found parents ",parents_un, "in", available_nodes, proceed)
-            # print("Copies", node_copies)
-            #
-            # Make list for the nodes that should be copied
-            #
-            copy_list = (len(available_nodes) - len(available_initial_nodes)) * [1]
-            #print("Copy list length", len(copy_list))
-            new_available_nodes = []
-            new_available_initial_nodes = []
-            parent_copy_list = []
-            parent_chan_list = []
-            parent_initial_nodes = []
-            copy_position_correction = 0
-            for i in range(len(available_nodes)):
-                n_i = available_nodes[i]
-                initial_n_i = (n_i in available_initial_nodes)
-                if n_i in parents_un:
-                    node_copies[n_i] -= 1
-                    if initial_n_i:
-                        print("--> initial node", n_i, "added at position", pointer - 1)
-                        copy_position_correction += 1
-                        parent_initial_nodes.append(n_i)
-                        parent_chan_list.append(channels[n_i].as_chan())
-                        # pointer - 1 is used since the initial node is
-                        # added to the previous channel
-                        node_pointer[n_i] = pointer - 1
-                        if node_copies[n_i] > 0:
-                            parent_copy_list.append(2)
-                            parent_initial_nodes.append(n_i)
-                        else:
-                            parent_copy_list.append(1)
-                    else:
-                        new_available_nodes.append(n_i)
-                        if node_copies[n_i] > 0:
-                            # more copies of un needed later on
-                            new_available_nodes.append(n_i)
-                            copy_list[i - copy_position_correction] += 1
-                else:
-                    if initial_n_i:
-                        copy_position_correction += 1
-                        new_available_initial_nodes.append(n_i)
-                    else:
-                        new_available_nodes.append(n_i)
-            #print("  After initial state addition",
-            #      parent_initial_nodes, new_available_initial_nodes, 
-            #      new_available_nodes)
-            #print("  Copy lists", parent_copy_list, copy_list)
-            available_nodes = parent_initial_nodes + new_available_nodes
-                              #new_available_initial_nodes + \
-            available_initial_nodes = new_available_initial_nodes
-            copy_list = parent_copy_list + copy_list
-            # update the last channel with the required copying
-            lcs = len(channel_list)
-            last_channel = channel_list[lcs-1]
-            #print(" Channel codomain", last_channel.cod)
-            if len(parent_initial_nodes) > 0:
-                parent_chan = reduce(lambda c1, c2: c1 @ c2, parent_chan_list)
-                last_channel = parent_chan @ last_channel
-            #print(" Channel codomain", last_channel.cod)
-            channel_list[lcs-1] = copy_chan(last_channel, copy_list)
-            #print(" ", available_nodes, channel_list[lcs-1].cod )
-            #
-            # Now search for the precise positions of the parent nodes
-            #
-            #print("==> Searching locations of parents", parents_un, 
-            #      "with availables", available_nodes)
-            search_copy_of_nodes = [u for u in available_nodes]
-            swaps = list(range(len(available_nodes)))
-            #
-            # find the actual occurrences of un's parents in available domains
-            #
-            for i in range(num_parents_un):
-                # print("... searching for parent: ", parents_un[i] )
-                #
-                # try to locate i-th parent among domains
-                #
-                for j in range(len(available_nodes)):
-                    if search_copy_of_nodes[j] == parents_un[i]:
-                        # print("Parent", i, "found at", j)
-                        tmp = swaps[j]
-                        swaps[j] = swaps[i]
-                        swaps[i] = tmp
-                        search_copy_of_nodes[j] = search_copy_of_nodes[i]
-                        search_copy_of_nodes[i] = parents_un[i]
-                        break
-            nodes_found += 1
-            print("==> All parents located of:", un,
-                  "(", nodes_found, "out of", nodes_num, ")")
-            # print("Available domains: ", available_nodes)
-            #
-            # incorporate swaps into available nodes and arguments
-            #
-            inv_swaps = len(available_nodes) * [0]
-            swapped_doms = []
-            swapped_available_nodes = []
-            for i in range(len(available_nodes)):
-                inv_swaps[swaps[i]] = i
-                swapped_available_nodes.append(available_nodes[swaps[i]])
-            available_nodes = swapped_available_nodes
-            # print(swaps, inv_swaps, available_nodes)
-            swapped_doms = [efprob_domains[n] for n in swapped_available_nodes]
-            swapped_dom = reduce(lambda d1, d2: d1 + d2, swapped_doms)
-            # print(swapped_dom)
-            #
-            # Build the channel that does the swapping
-            #
-            un_chan_id = un_chan
-            diff = len(available_nodes) - num_parents_un
-            if diff > 0:
-                identities_doms = []
-                for i in range(diff):
-                    d_i = swapped_dom.get_nameditem(i + num_parents_un)
-                    identities_doms.append(d_i)
-                identities_dom = reduce(lambda d1, d2: d1 + d2, 
-                                        identities_doms)
-                identities = idn(identities_dom)
-                un_chan_id = un_chan @ identities
-            #
-            # Add the channel to the list, with its domains permuted
-            # 
-            channel_list.append(perm_chan(un_chan_id, 
-                                          dom_perm = inv_swaps))
-            node_pointer[un] = pointer
-            pointer += 1
-            # print("Available nodes", available_nodes)
-            available_nodes = available_nodes[num_parents_un:]
-            available_nodes = available_initial_nodes + [un] + \
-                              available_nodes                              
-            #print("Remaining nodes", available_nodes)
-            #
-            # Finally, update the graph
-            #
-            childred_un = children[un] 
-            num_children_un = len(childred_un)
-            node_copies[un] = num_children_un + (1 if observed else 0)
-            #print("Children of: ", un, childred_un)
-            #
-            # Add node un to the graph, with links to its parents, if
-            # needed via (binary) copying.
-            #
-            if graph_output:
-                stretched_graph.add_node(
-                    pydot.Node(un, style="filled", fillcolor="green"))
-                for i in range(num_parents_un):
-                    parent_node_i = parents_un[i]
-                    copies_i = node_copies[parent_node_i]
-                    copy_name_i = parent_node_i + "!copy" + \
-                                  str(copies_i)
-                    copy_name_Si = parent_node_i + "!copy" + \
-                                   str(copies_i + 1)
-                    parent_node_i_children_num = len(children[parent_node_i])
-                    if not observed:
-                        if parent_node_i_children_num == 1:
-                            # parent_node_i --> un is the only edge
-                            # parent_node_i --> ...
-                            stretched_graph.add_edge(
-                                pydot.Edge(parent_node_i, un))
-                        else:
-                            if parent_node_i_children_num == copies_i + 1:
-                                # add just one copy and connect its base to parent_i
-                                add_copy_node(copy_name_i)
-                                stretched_graph.add_edge(
-                                    pydot.Edge(parent_node_i, copy_name_i))
-                                stretched_graph.add_edge(
-                                    pydot.Edge(copy_name_i, un))
-                            else:
-                                if copies_i == 0:
-                                    # connect directly to last copy node
-                                    stretched_graph.add_edge(pydot.Edge(
-                                        copy_name_Si, un))
-                                else:
-                                    # add copy node and connect to previous
-                                    add_copy_node(copy_name_i)
-                                    stretched_graph.add_edge(
-                                        pydot.Edge(copy_name_Si, copy_name_i))
-                                    stretched_graph.add_edge(
-                                        pydot.Edge(copy_name_i, un))
-                    else:
-                        # observed case
-                        if copies_i == 1:
-                            # connect directly to last copy node
-                            # print("no more copying needed")
-                            stretched_graph.add_edge(pydot.Edge(
-                                copy_name_Si, un))
-                        else:
-                            # add copy node and connect to previous
-                            add_copy_node(copy_name_i)
-                            stretched_graph.add_edge(
-                                pydot.Edge(copy_name_Si, copy_name_i))
-                            stretched_graph.add_edge(
-                                pydot.Edge(copy_name_i, un))
-                if observed and node_copies[un] > 1:
-                    # add copy node for children to connect to in next round
-                    copy_name_i = un + "!copy" + str(node_copies[un])
-                    add_copy_node(copy_name_i)
-                    stretched_graph.add_edge(
-                        pydot.Edge(un, copy_name_i))
-                    stretched_graph.add_edge(
-                        pydot.Edge(copy_name_i, " " + un + " "))
-            #
-            # Terminate handling node un and return to for-loop
-            #
-            unprocessed_nodes.remove(un)
-    #
-    # Collect the results in a dictionary
-    # 
-    result = {
-        'pointer'  : node_pointer,
-        'channels' : channel_list
-    }
-    if graph_output:
-        result['graph'] = stretched_graph
-    """
-    result = None
     return result
 
 

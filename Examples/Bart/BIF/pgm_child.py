@@ -17,9 +17,9 @@ graph = pydot_graph_of_pgm(model)
 
 #graph_image(graph, "child")
 
-stretch = stretch(model,graph_output=False)
+stretch = stretch(model,graph_output=True)
 
-#graph_image(stretch['graph'], "child")
+graph_image(stretch['graph'], "child")
 
 N = 10
 
