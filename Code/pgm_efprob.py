@@ -459,8 +459,8 @@ def stretch(pgm, graph_output=False, observed=False, stretch_tries=1000):
                 stretched_graph.add_edge(
                     pydot.Edge(copy_name, " " + n + " "))
     for node in stretch_outcome:
-        print("==> node", node, "of sizes", 
-              [node_sizes[n] for n in available_nodes], 
+        print("==> node", node, "(", pointer, "of", len(stretch_outcome),
+              ") of sizes", [node_sizes[n] for n in available_nodes], 
               "in total", list_size(available_nodes))
         node_chan = channels[node]
         parents_node = parents[node]
