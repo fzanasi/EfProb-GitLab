@@ -326,13 +326,18 @@ def stretch(pgm, graph_output=False, observed=False, stretch_tries=1000):
     def list_size(node_list):
         return reduce(operator.mul, [node_sizes[n] for n in node_list], 1)
     initial_nodes = []
-    non_initial_nodes = []
+    final_nodes = []
+    # non-initial and non-final nodes
+    intermediate_nodes = []
     for n in nodes:
         if len(parents[n]) == 0:
             initial_nodes.append(n)
             parents[n] = []
         else:
-            non_initial_nodes.append(n)
+            if len(children[n]) == 0:
+                final_nodes.append(n)
+            else:
+                intermediate_nodes.append(n)
             # update with the order as actually used in the channel
             parents[n] = [dn.name for dn in channels[n].dom.names]
     #
@@ -393,15 +398,18 @@ def stretch(pgm, graph_output=False, observed=False, stretch_tries=1000):
         for n in initial_nodes:
             node_copies[n] = len(children[n]) + (1 if observed else 0)
         unprocessed_nodes = []
-        copy_of_non_initial_nodes = [n for n in non_initial_nodes]
-        # find a random permutation of the non-initial nodes in the
+        copy_of_intermediate_nodes = [n for n in intermediate_nodes]
+        # find a random permutation of the intermediate nodes in the
         # list 'unprocessed_nodes'; the code below will go through
         # this list in order to find a stretching
-        for i in range(len(non_initial_nodes)):
-            rand_index = random.randint(0, len(non_initial_nodes) - i - 1)
-            rand_node = copy_of_non_initial_nodes[rand_index]
+        for i in range(len(intermediate_nodes)):
+            rand_index = random.randint(0, len(intermediate_nodes) - i - 1)
+            rand_node = copy_of_intermediate_nodes[rand_index]
             unprocessed_nodes.append(rand_node)
-            copy_of_non_initial_nodes.remove(rand_node)
+            copy_of_intermediate_nodes.remove(rand_node)
+        # put final nodes first, so that they are handled first,
+        # keeping the size down
+        unprocessed_nodes = final_nodes + unprocessed_nodes
         iterations = 0
         while len(unprocessed_nodes) > 0:
             for un in unprocessed_nodes:
