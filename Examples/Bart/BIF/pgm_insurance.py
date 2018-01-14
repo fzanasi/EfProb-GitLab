@@ -15,19 +15,36 @@ model = reader.get_model()
 
 graph = pydot_graph_of_pgm(model)
 
-#graph_image(graph, "alarm")
+#graph_image(graph, "insurance")
 
-stretch = stretch(model,graph_output=True)
+#stretch = stretch(model,graph_output=True)
 
-graph_image(stretch['graph'], "insurance")
+#graph_image(stretch['graph'], "insurance")
 
-N = 1
+picks = pick_from_list(model.nodes, 3)
+
+print( stretch_and_infer(model, picks[0], picks[1:]) )
 
 inference = VariableElimination(model)
 
-# This inference takes at least an hour
+print( inference.query([picks[0]], evidence={picks[1]: 0, picks[2] : 0})
+       [picks[0]] )
 
-#print( inference.query(['Theft'], evidence={'GoodStudent': 0})['Theft'] )
+N = 10
+
+t1 = timeit.timeit(lambda: inference.query([picks[0]], 
+                                           evidence={picks[1]: 0, 
+                                                     picks[2] : 0})[picks[0]], 
+                   number = N)
+
+t2 = timeit.timeit(lambda: stretch_and_infer(model, picks[0], picks[1:]), 
+                   number = N)
+
+print("\nTimes for: variable elimination, transformations, fraction, for", 
+N, "runs")
+print(t1)
+print(t2)
+print("How much beter is transformations inference:", t1/t2)
 
 
 

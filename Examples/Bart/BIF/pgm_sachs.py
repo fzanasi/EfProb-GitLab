@@ -23,11 +23,12 @@ model = reader.get_model()
 
 graph = pydot_graph_of_pgm(model)
 
-#graph_image(graph, "sachs")
+graph_image(graph, "sachs")
 
 print("\nStretching the graph:")
 
 stretch = stretch(model,graph_output=True)
+
 #stretch = stretch(model,graph_output=False)
 #stretch = stretch(model,graph_output=True,observed=True)
 

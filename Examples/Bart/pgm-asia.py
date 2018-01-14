@@ -117,10 +117,11 @@ print("\nAsia inference 1, by hand\n")
 
 
 #asia_stretch = stretch(asia_model, graph_output=True,observed=False)
-asia_stretch = stretch(asia_model, graph_output=True,observed=True)
+asia_stretch = stretch(asia_model, graph_output=True,
+                       observed=True, silent=True)
 #asia_stretch = stretch(asia_model, graph_output=True,observed=False)
 
-graph_image(asia_stretch['graph'], "asia")
+#graph_image(asia_stretch['graph'], "asia")
 
 asia_joint = evaluate_stretch(asia_stretch['channels'])
 
@@ -170,6 +171,14 @@ print( asia_inference.query(['Bronchitis'],
                             evidence={'Xray': 0, 'Tuberculosis' : 1})['Bronchitis'] )
 
 
+print("\n* Via stretch-and-inference")
+print( stretch_and_infer(asia_model, 'Bronchitis', 
+                         {'Xray' : [1,0], 'Tuberculosis' : [0,1]}) )
+
+
+"""
+
+
 N = 20
 
 print("\nInference timing comparison,", N, "times\n")
@@ -191,3 +200,4 @@ print(t2)
 print("How much beter is transformations inference:", t1/t2)
 
 
+"""

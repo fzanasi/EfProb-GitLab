@@ -17,44 +17,36 @@ graph = pydot_graph_of_pgm(model)
 
 #graph_image(graph, "win95pts")
 
-stretch = stretch(model,graph_output=False)
+picks = pick_from_list(model.nodes, 3)
 
-#graph_image(stretch['graph'], "win95pts")
+evidence_dictionary = {}
+for e in picks[1:]:
+    ls = model.get_cardinality(e) * [0]
+    ls[0] = 1
+    evidence_dictionary[e] = ls
 
-N = 1
+print( stretch_and_infer(model, picks[0], evidence_dictionary, silent=False) )
 
 inference = VariableElimination(model)
 
-# This inference takes at least an hour
-
-#print( inference.query(['Theft'], evidence={'GoodStudent': 0})['Theft'] )
-
+print( inference.query([picks[0]], evidence={picks[1]: 0, picks[2] : 0})
+       [picks[0]] )
 
 
-# t1 = timeit.timeit(lambda: 
-#                    inference.query(['Theft'], evidence={'GoodStudent': 0})['Theft'],
-#                    number = N)
+N = 5
 
+t1 = timeit.timeit(lambda: inference.query([picks[0]], 
+                                           evidence={picks[1]: 0, 
+                                                     picks[2] : 0})[picks[0]], 
+                   number = N)
 
+print(t1)
 
-"""
-
-
-print("\nTransformations inference")
-
-print( inference_query(stretch, 'LowerBodyO2', 
-                       {'Age' : [0,0,1], 'LungFlow' : [0,1,0]}) )
-
-t2 = timeit.timeit(lambda: 
-                   inference_query(stretch, 'LowerBodyO2', 
-                   {'Age' : [0,0,1], 'LungFlow' : [0,1,0]}),
+t2 = timeit.timeit(lambda: stretch_and_infer(model, picks[0], 
+                                             evidence_dictionary), 
                    number = N)
 
 print("\nTimes for: variable elimination, transformations, fraction, for", 
 N, "runs")
-print(t1)
 print(t2)
 print("How much beter is transformations inference:", t1/t2)
-
-
-"""
