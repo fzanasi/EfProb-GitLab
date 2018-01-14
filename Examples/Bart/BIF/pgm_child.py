@@ -21,6 +21,11 @@ graph = pydot_graph_of_pgm(model)
 
 picks = pick_from_list(model.nodes, 3)
 
+inference = VariableElimination(model)
+
+print( inference.query([picks[0]], evidence={picks[1]: 0, picks[2] : 0})
+       [picks[0]] )
+
 evidence_dictionary = {}
 for e in picks[1:]:
     ls = model.get_cardinality(e) * [0]
@@ -29,10 +34,6 @@ for e in picks[1:]:
 
 print( stretch_and_infer(model, picks[0], evidence_dictionary) )
 
-inference = VariableElimination(model)
-
-print( inference.query([picks[0]], evidence={picks[1]: 0, picks[2] : 0})
-       [picks[0]] )
 
 N = 10
 
@@ -52,7 +53,6 @@ print(t2)
 print("How much beter is transformations inference:", t1/t2)
 
 """
-
 
 stretch = stretch(model,graph_output=True)
 

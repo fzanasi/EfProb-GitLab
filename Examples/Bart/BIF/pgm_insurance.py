@@ -29,14 +29,14 @@ for e in picks[1:]:
     ls[0] = 1
     evidence_dictionary[e] = ls
 
-print( stretch_and_infer(model, picks[0], evidence_dictionary) )
-
 inference = VariableElimination(model)
+
+print( stretch_and_infer(model, picks[0], evidence_dictionary) )
 
 print( inference.query([picks[0]], evidence={picks[1]: 0, picks[2] : 0})
        [picks[0]] )
 
-N = 10
+N = 5
 
 t1 = timeit.timeit(lambda: inference.query([picks[0]], 
                                            evidence={picks[1]: 0, 
