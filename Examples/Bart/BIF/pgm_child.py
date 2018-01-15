@@ -52,6 +52,12 @@ print(t1)
 print(t2)
 print("How much beter is transformations inference:", t1/t2)
 
+
+print("\n* MAP query")
+
+print( inference.map_query(variables=model.nodes) )
+
+
 """
 
 stretch = stretch(model,graph_output=True)

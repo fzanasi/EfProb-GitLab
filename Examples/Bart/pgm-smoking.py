@@ -66,8 +66,19 @@ sac_stretch = stretch(sac_model)
 
 print("\nSAC state:", evaluate_stretch(sac_stretch['channels']) )
 
-sac_joint = stretch(sac_model, observed=True)
+sac_joint_stretch = stretch(sac_model, observed=True)
 
-#graph_image(sac_joint['graph'], "sac")
+#graph_image(sac_joint_stretch['graph'], "sac")
 
-print("\nSAC joint state:", evaluate_stretch(sac_joint['channels']) )
+sac_joint = evaluate_stretch(sac_joint_stretch['channels'])
+
+print("\nSAC joint state:", sac_joint )
+
+print("\nMAP inference", (sac_joint % [1,1,1]).MAP() )
+
+sac_inference = VariableElimination(sac_model)
+print( sac_inference.map_query(variables=['Cancer', 'Ashtray', 'Smoking']) )
+print( sac_inference.map_query(variables=['Cancer', 'Smoking']) )
+print( sac_inference.map_query(variables=['Smoking', 'Ashtray']) )
+
+

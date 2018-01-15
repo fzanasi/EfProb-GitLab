@@ -16,7 +16,7 @@ graph = pydot_graph_of_pgm(model)
 
 #graph_image(graph, "survey")
 
-#inference = VariableElimination(model)
+inference = VariableElimination(model)
 
 #print( inference.query(['O'], evidence={'S': 1}) ['O'] )
 
@@ -26,14 +26,20 @@ graph = pydot_graph_of_pgm(model)
 
 #print( channels )
 
-stretch = stretch(model)
-#stretch = stretch(model,graph_output=True,observed=True)
+#stretch = stretch(model)
+stretch = stretch(model,graph_output=True,observed=True)
 
 #graph_image(stretch['graph'], "sachs")
 
-#joint = evaluate_stretch(stretch['channels'])
-#print( joint )
+print("\n* MAP query")
 
-print( inference_query(stretch, 'O', {'S' : [0,1]}) )
+joint = evaluate_stretch(stretch['channels'])
+print( joint.MAP() )
+
+print( inference.map_query(variables=model.nodes) )
+
+
+
+#print( inference_query(stretch, 'O', {'S' : [0,1]}) )
 
 

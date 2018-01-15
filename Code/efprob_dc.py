@@ -576,6 +576,15 @@ class StateLike:
             return elm(*cont_args)
         return elm
 
+    def MAP(self):
+        """maximum a posteriori probability"""
+        if self.dom.iscont:
+            raise Exception('MAP is not defined for the continuous case')
+        index = np.unravel_index(np.argmax(self.array), self.array.shape)
+        maxprob = self.array[index]
+        items = [self.dom[i][index[i]] for i in range(len(self.dom))]
+        return (maxprob, items)
+
     def _plot_getiter(self, *args):
         iters = []
         for n, a in enumerate(args):
@@ -940,7 +949,6 @@ class State(StateLike):
     def __getitem__(self, key):
         """interprete the key as a pair of masks"""
         return self.condprob(key.start, key.stop)
-
 
 
 def _var_integral(rvfun, sfun, exp):

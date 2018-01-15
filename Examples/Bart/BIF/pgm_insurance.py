@@ -31,7 +31,11 @@ for e in picks[1:]:
 
 inference = VariableElimination(model)
 
-print( stretch_and_infer(model, picks[0], evidence_dictionary) )
+print( stretch_and_infer(model, picks[0], evidence_dictionary, silent=False) )
+
+"""
+
+# The query below does not return
 
 print( inference.query([picks[0]], evidence={picks[1]: 0, picks[2] : 0})
        [picks[0]] )
@@ -60,8 +64,6 @@ print("How much beter is transformations inference:", t1/t2)
 #                    number = N)
 
 
-
-"""
 
 
 print("\nTransformations inference")

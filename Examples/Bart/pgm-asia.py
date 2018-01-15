@@ -176,6 +176,11 @@ print( stretch_and_infer(asia_model, 'Bronchitis',
                          {'Xray' : [1,0], 'Tuberculosis' : [0,1]}) )
 
 
+print("\n* MAP query")
+print( asia_inference.map_query(variables=asia_model.nodes) )
+
+print( asia_joint.MAP() )
+
 """
 
 
