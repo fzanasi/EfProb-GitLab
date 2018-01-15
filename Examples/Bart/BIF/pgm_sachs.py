@@ -23,16 +23,16 @@ model = reader.get_model()
 
 graph = pydot_graph_of_pgm(model)
 
-graph_image(graph, "sachs")
+#graph_image(graph, "sachs")
 
 print("\nStretching the graph:")
 
-stretch = stretch(model,graph_output=True)
+sachs_stretch = stretch(model,graph_output=True)
 
-#stretch = stretch(model,graph_output=False)
-#stretch = stretch(model,graph_output=True,observed=True)
+#sachs_stretch = stretch(model,graph_output=False)
+#sachs_stretch = stretch(model,graph_output=True,observed=True)
 
-#graph_image(stretch['graph'], "sachs")
+#graph_image(sachs_stretch['graph'], "sachs")
 
 print("\nVariable elimination inference")
 
@@ -52,10 +52,11 @@ print("\nTransformations inference")
 
 #stretch = stretch(model)
 
-print( inference_query(stretch, 'Erk', {'P38' : [0,0,1], 'Jnk' : [0,1,0]}) )
+print( inference_query(sachs_stretch, 'Erk', 
+                       {'P38' : [0,0,1], 'Jnk' : [0,1,0]}) )
 
 t2 = timeit.timeit(lambda: 
-                   inference_query(stretch, 'Erk', 
+                   inference_query(sachs_stretch, 'Erk', 
                                    {'P38' : [0,0,1], 'Jnk' : [0,1,0]}),
                    number = N)
 
@@ -66,3 +67,14 @@ print(t2)
 print("How much beter is transformations inference:", t1/t2)
 
 
+print("\n* MAP query")
+
+print( inference.map_query(variables=model.nodes) )
+
+sachs_stretch = stretch(model,observed=True)
+
+print( sachs_stretch )
+
+sachs_joint = evaluate_stretch(sachs_stretch['channels'])
+
+print( sachs_joint.MAP() )
