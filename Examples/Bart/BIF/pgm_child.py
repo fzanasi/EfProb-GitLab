@@ -35,7 +35,7 @@ for e in picks[1:]:
 print( stretch_and_infer(model, picks[0], evidence_dictionary) )
 
 
-N = 10
+N = 1
 
 t1 = timeit.timeit(lambda: inference.query([picks[0]], 
                                            evidence={picks[1]: 0, 
@@ -55,7 +55,14 @@ print("How much beter is transformations inference:", t1/t2)
 
 print("\n* MAP query")
 
-print( inference.map_query(variables=model.nodes) )
+vars = picks
+
+stretch = stretch(model)
+
+print( inference_map_query(stretch,variables=vars) )
+
+print( inference.map_query(variables=vars) )
+
 
 
 """

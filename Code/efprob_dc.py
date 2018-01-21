@@ -126,6 +126,26 @@ def _ensure_list(dom):
     return dom
 
 
+class Occurrence:
+    """Probability with an item (typically from a discrete domain)"""
+    _ids = itertools.count(0)
+
+    def __init__(self, p, i):
+        self.prob = p
+        self.item = i
+
+    def __repr__(self):
+        return str(self.prob) + " " + str(self.item)
+
+    def __eq__(self, other):
+        if isinstance(other, Occurrence):
+            return self.prob == other.prob and self.item == other.item
+        return False
+
+    def __ne__(self, other):
+        return not self == other
+
+
 class Name:
     """Identifiers for domains"""
     _ids = itertools.count(0)
@@ -583,7 +603,7 @@ class StateLike:
         index = np.unravel_index(np.argmax(self.array), self.array.shape)
         maxprob = self.array[index]
         items = [self.dom[i][index[i]] for i in range(len(self.dom))]
-        return (maxprob, items)
+        return Occurrence(maxprob, items)
 
     def _plot_getiter(self, *args):
         iters = []
@@ -1429,6 +1449,36 @@ class Channel:
 
     def __truediv__(self, pred):
         return chan_fromklmap(lambda *x: self(*x)/pred, self.dom, self.cod)
+
+    def __mod__(self, selectors):
+        """Pointwise marginalisation of a channel, on its codomain"""
+        cod_marg = []
+        names = []
+        for d, n, s in zip(self.cod, self.cod.names, selectors):
+            if s:
+                cod_marg.append(d)
+                names.append(n)
+        return chan_fromklmap(lambda *x: self(*x).marginal(selectors), 
+                              self.dom, 
+                              Dom(cod_marg, names=names))
+
+    def MAP(self):
+        return lambda *x: self(*x).MAP()
+
+    def occ_trans(self, f, mask=None):
+        """f is a map chan.cod --> Occurrence"""
+        def result(*x):
+            pred = pred_fromfun(lambda *y: self(*x)(*y) * f(*y).prob, self.cod)
+            m = pred.MAP()
+            if mask == None:
+                items = m.item
+            else:
+                items = []
+                for i in range(len(self.cod)):
+                    if mask[i] == 1:
+                        items.append(m.item[i])
+            return Occurrence(m.prob, items + f(*m.item).item)
+        return result
 
     def inversion(self, state):
         check_dom_match(self.dom, state.dom)

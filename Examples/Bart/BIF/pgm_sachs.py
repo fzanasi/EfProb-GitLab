@@ -36,7 +36,7 @@ sachs_stretch = stretch(model,graph_output=True)
 
 print("\nVariable elimination inference")
 
-N = 10
+N = 1
 
 inference = VariableElimination(model)
 
@@ -64,17 +64,21 @@ print("\nTimes for: variable elimination, transformations, fraction, for",
 N, "runs")
 print(t1)
 print(t2)
-print("How much beter is transformations inference:", t1/t2)
+print("How much faster is transformations inference:", t1/t2)
 
 
 print("\n* MAP query")
 
-print( inference.map_query(variables=model.nodes) )
+vars = ['P38', 'Akt']
 
-sachs_stretch = stretch(model,observed=True)
+print( inference.map_query(variables=vars) )
 
-print( sachs_stretch )
+print("")
 
-sachs_joint = evaluate_stretch(sachs_stretch['channels'])
+print( inference_map_query(sachs_stretch,variables=vars) )
 
-print( sachs_joint.MAP() )
+#sachs_stretch = stretch(model,observed=True)
+
+#sachs_joint = evaluate_stretch(sachs_stretch['channels'])
+
+#print( sachs_joint.MAP() )

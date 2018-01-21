@@ -26,17 +26,26 @@ inference = VariableElimination(model)
 
 #print( channels )
 
-#stretch = stretch(model)
-stretch = stretch(model,graph_output=True,observed=True)
+#survey_stretch = stretch(model)
+survey_stretch = stretch(model,graph_output=True,observed=True)
 
-#graph_image(stretch['graph'], "sachs")
+#graph_image(survey_stretch['graph'], "sachs")
 
 print("\n* MAP query")
 
-joint = evaluate_stretch(stretch['channels'])
-print( joint.MAP() )
+joint = evaluate_stretch(survey_stretch['channels'])
+print( joint.dom.names )
+print( (joint % [0,0,1,1,0,0]).MAP() )
 
-print( inference.map_query(variables=model.nodes) )
+vars = ['E', 'R']
+
+print( inference.map_query(variables=vars) )
+
+print("")
+
+survey_stretch = stretch(model)
+
+print( inference_map_query(survey_stretch, variables = vars) )
 
 
 
