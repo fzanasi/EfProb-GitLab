@@ -29,27 +29,20 @@ for e in picks[2:]:
     ls[0] = 1
     evidence_dictionary[e] = ls
 
-print("\n* MAP query")
 
-stretch = stretch(model)
+print("\nInference")
+print("=========")
 
-print( picks )
+print("\n* Via transformations")
+print( stretch_and_infer(model, picks[0], evidence_dictionary) )
 
-print( inference_map_query(stretch, variables=[picks[0], picks[1]],
-                           evidence_dict = evidence_dictionary) )
-
-print( inference.map_query(variables=[picks[0], picks[1]],
-                           evidence={picks[2]: 0, picks[3]: 0, picks[4] : 0}) )
-
-print("\n* Inference")
-
+print("\n* Via variable elimination")
 print( inference.query([picks[0]], evidence={picks[2]: 0, picks[3]: 0, picks[4] : 0})
        [picks[0]] )
 
-print( stretch_and_infer(model, picks[0], evidence_dictionary) )
 
 
-N = 1
+N = 10
 
 t1 = timeit.timeit(lambda: inference.query([picks[0]], 
                                            evidence={picks[2]: 0, 
@@ -66,6 +59,19 @@ N, "runs")
 print(t1)
 print(t2)
 print("How much faster is transformations inference:", t1/t2)
+
+
+
+print("\nMAP query")
+print("=========")
+
+print("\n* Via transformations")
+print( inference_map_query(model, variables=[picks[0], picks[1]],
+                           evidence_dict = evidence_dictionary, silent=True) )
+
+print("\n* Via map-query")
+print( inference.map_query(variables=[picks[0], picks[1]],
+                           evidence={picks[2]: 0, picks[3]: 0, picks[4] : 0}) )
 
 
 

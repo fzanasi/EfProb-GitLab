@@ -25,16 +25,17 @@ for e in picks[1:]:
     ls[0] = 1
     evidence_dictionary[e] = ls
 
-print( picks )
+print("\nInference")
+print("=========")
+
+print("\n* Via transformations")
+print( stretch_and_infer(model, picks[0], evidence_dictionary, silent=True) )
 
 inference = VariableElimination(model)
 
-print( stretch_and_infer(model, picks[0], evidence_dictionary, silent=True) )
-
+print("\n* Via variable elimination")
 print( inference.query([picks[0]], evidence={picks[1]: 0, picks[2] : 0})
        [picks[0]] )
-
-#print( stretch_and_infer(model, 'FIO2', ['ANAPHYLAXIS', 'VENTTUBE'], silent=False) )
 
 
 N = 5
@@ -44,18 +45,16 @@ t2 = timeit.timeit(lambda: stretch_and_infer(model, picks[0],
                    number = N)
 
 
-print("Transformation inference", t2)
+print("\nTime for transformation inference", t2)
 
 t1 = timeit.timeit(lambda: inference.query([picks[0]], 
                                            evidence={picks[1]: 0, 
                                                      picks[2] : 0})[picks[0]], 
                    number = N)
 
-print("Variable elimination", t1)
+print("\nTime for variable elimination", t1)
 
-print("\nTimes for: variable elimination, transformations, fraction, for", 
-N, "runs")
-print("How much beter is transformations inference:", t1/t2)
+print("\nHow much faster is transformations inference:", t1/t2, "in", N, "runs")
 
 
 

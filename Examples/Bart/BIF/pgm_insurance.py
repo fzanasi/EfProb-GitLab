@@ -17,10 +17,6 @@ graph = pydot_graph_of_pgm(model)
 
 #graph_image(graph, "insurance")
 
-#stretch = stretch(model,graph_output=True)
-
-#graph_image(stretch['graph'], "insurance")
-
 picks = pick_from_list(model.nodes, 3)
 
 evidence_dictionary = {}
@@ -29,16 +25,20 @@ for e in picks[1:]:
     ls[0] = 1
     evidence_dictionary[e] = ls
 
-inference = VariableElimination(model)
+print("\nInference")
+print("=========")
 
+print("\n* Via transformations")
 print( stretch_and_infer(model, picks[0], evidence_dictionary, silent=False) )
 
-"""
+inference = VariableElimination(model)
 
+print("\n* Via variable elimination")
 # The query below does not return
-
 print( inference.query([picks[0]], evidence={picks[1]: 0, picks[2] : 0})
        [picks[0]] )
+
+"""
 
 N = 5
 

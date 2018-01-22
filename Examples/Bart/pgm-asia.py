@@ -178,12 +178,8 @@ print( stretch_and_infer(asia_model, 'Bronchitis',
 
 print("\n* MAP query")
 
-print( asia_inference.map_query(variables=['Tuberculosis', 'Dyspnea']) )
-
-print( inference_map_query(asia_stretch, 
-                           variables=['TuberculosisOrCancer', 'Dyspnea'],
-                           evidence_dict = {'LungCancer' : [1,0], 'Xray' : [0,1]}) )
-
+print( asia_inference.map_query(variables=['TuberculosisOrCancer', 'Dyspnea'],
+                                evidence={'Xray': 0, 'LungCancer' : 1}) )
 
 # ['VisitToAsia', 
 #  'Tuberculosis', 
@@ -194,7 +190,24 @@ print( inference_map_query(asia_stretch,
 #  'Bronchitis',
 #  'Smoker'])
 
+print( inference_map_query(asia_model, 
+                           variables=['TuberculosisOrCancer', 'Dyspnea'],
+                           evidence_dict = {'LungCancer' : [1,0], 
+                                            'Xray' : [0,1]},
+                           silent=True) )
+
 print( ((asia_joint / (truth(asia_domain[0:3]) @ Predicate([0,1], asia_domain[3])  @ truth(asia_domain[4]) @ Predicate([1,0], asia_domain[5]) @ truth(asia_domain[6:8]))) % [0,0,1,0,1,0,0,0]).MAP() )
+
+print("")
+
+print( inference_map_query(asia_model, 
+                           variables=['TuberculosisOrCancer', 'Dyspnea'],
+                           evidence_dict = {'Smoker' : [1,0], 
+                                            'VisitToAsia' : [0,1]},
+                           silent=True) )
+
+print( ((asia_joint / (Predicate([0,1], asia_domain[0])  @ truth(asia_domain[1:7]) @ Predicate([1,0], asia_domain[7]))) % [0,0,1,0,1,0,0,0]).MAP() )
+
 
 
 """
