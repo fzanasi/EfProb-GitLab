@@ -24,7 +24,7 @@ picks = pick_from_list(model.nodes, 5)
 inference = VariableElimination(model)
 
 evidence_dictionary = {}
-for e in picks[3:]:
+for e in picks[2:]:
     ls = model.get_cardinality(e) * [0]
     ls[0] = 1
     evidence_dictionary[e] = ls
@@ -35,15 +35,15 @@ stretch = stretch(model)
 
 print( picks )
 
-print( inference_map_query(stretch, variables=[picks[0], picks[1], picks[2]],
+print( inference_map_query(stretch, variables=[picks[0], picks[1]],
                            evidence_dict = evidence_dictionary) )
 
-print( inference.map_query(variables=[picks[0], picks[1], picks[2]],
-                           evidence = evidence_dictionary) )
+print( inference.map_query(variables=[picks[0], picks[1]],
+                           evidence={picks[2]: 0, picks[3]: 0, picks[4] : 0}) )
 
 print("\n* Inference")
 
-print( inference.query([picks[0]], evidence={picks[3]: 0, picks[4] : 0})
+print( inference.query([picks[0]], evidence={picks[2]: 0, picks[3]: 0, picks[4] : 0})
        [picks[0]] )
 
 print( stretch_and_infer(model, picks[0], evidence_dictionary) )
@@ -52,7 +52,8 @@ print( stretch_and_infer(model, picks[0], evidence_dictionary) )
 N = 1
 
 t1 = timeit.timeit(lambda: inference.query([picks[0]], 
-                                           evidence={picks[3]: 0, 
+                                           evidence={picks[2]: 0, 
+                                                     picks[3]: 0, 
                                                      picks[4] : 0})[picks[0]], 
                    number = N)
 
