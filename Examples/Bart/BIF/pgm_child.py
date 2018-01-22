@@ -19,18 +19,32 @@ graph = pydot_graph_of_pgm(model)
 
 #graph_image(graph, "child")
 
-picks = pick_from_list(model.nodes, 3)
+picks = pick_from_list(model.nodes, 5)
 
 inference = VariableElimination(model)
 
-print( inference.query([picks[0]], evidence={picks[1]: 0, picks[2] : 0})
-       [picks[0]] )
-
 evidence_dictionary = {}
-for e in picks[1:]:
+for e in picks[3:]:
     ls = model.get_cardinality(e) * [0]
     ls[0] = 1
     evidence_dictionary[e] = ls
+
+print("\n* MAP query")
+
+stretch = stretch(model)
+
+print( picks )
+
+print( inference_map_query(stretch, variables=[picks[0], picks[1], picks[2]],
+                           evidence_dict = evidence_dictionary) )
+
+print( inference.map_query(variables=[picks[0], picks[1], picks[2]],
+                           evidence_dict = evidence_dictionary) )
+
+print("\n* Inference")
+
+print( inference.query([picks[0]], evidence={picks[3]: 0, picks[4] : 0})
+       [picks[0]] )
 
 print( stretch_and_infer(model, picks[0], evidence_dictionary) )
 
@@ -38,8 +52,8 @@ print( stretch_and_infer(model, picks[0], evidence_dictionary) )
 N = 1
 
 t1 = timeit.timeit(lambda: inference.query([picks[0]], 
-                                           evidence={picks[1]: 0, 
-                                                     picks[2] : 0})[picks[0]], 
+                                           evidence={picks[3]: 0, 
+                                                     picks[4] : 0})[picks[0]], 
                    number = N)
 
 t2 = timeit.timeit(lambda: stretch_and_infer(model, picks[0], 
@@ -50,18 +64,8 @@ print("\nTimes for: variable elimination, transformations, fraction, for",
 N, "runs")
 print(t1)
 print(t2)
-print("How much beter is transformations inference:", t1/t2)
+print("How much faster is transformations inference:", t1/t2)
 
-
-print("\n* MAP query")
-
-vars = picks
-
-stretch = stretch(model)
-
-print( inference_map_query(stretch,variables=vars) )
-
-print( inference.map_query(variables=vars) )
 
 
 

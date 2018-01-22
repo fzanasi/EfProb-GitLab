@@ -722,7 +722,7 @@ def marginals_stretch(stretch_dict):
 #   probabilities in [0,1], acting as predicate values. If the node
 #   has cardinality n, the list must have length n.
 #
-def inference_query(stretch_dict, marginal, evidence_dict):
+def inference_query(stretch_dict, marginal, evidence_dict = {}):
     chan_list = stretch_dict['channels']
     chan_list_len = len(chan_list)
     state = chan_list[0] >> init_state
@@ -788,11 +788,6 @@ def inference_query(stretch_dict, marginal, evidence_dict):
     # predicates, if any, along the way, via conjunction &. This
     # addition only starts when a predicate is found.
     #
-    mask = len(state.dom) * [0]
-    for i in range(len(state.dom)):
-        if state.dom.names[i].name == marginal:
-            mask[i] = 1
-            break
     hit = False
     for i in range(chan_list_len - position_marginal - 1):
         pos_i = chan_list_len - i - 1
@@ -808,7 +803,15 @@ def inference_query(stretch_dict, marginal, evidence_dict):
                 # predicate at this point, then transform
                 pred = pred & evidence_list[pos_i][1]
                 pred = chan_list[pos_i] << pred
+    mask = len(state.dom) * [0]
+    for i in range(len(state.dom)):
+        if state.dom.names[i].name == marginal:
+            mask[i] = 1
+            break
     if not hit:
+        return state % mask
+    else:
+        state = state / pred
         return state % mask
     #print("\nDomain of predicate:", pred.dom.names)
     #
@@ -816,8 +819,7 @@ def inference_query(stretch_dict, marginal, evidence_dict):
     # updating the state once more, and taking the appropriate (first)
     # marginal.
     #
-    state = state / pred
-    return state % mask
+
 
 def copy_i(channel, i):
     n = len(channel.cod)
@@ -832,12 +834,18 @@ def copy_i(channel, i):
 
 
 
-def inference_map_query(stretch_dict, variables):
+def inference_map_query(stretch_dict, variables, evidence_dict={}):
+    if len(variables) == 0:
+        raise Exception('At least one variable is needed in MAP inference')
     chan_list = stretch_dict['channels']
     chan_list_len = len(chan_list)
     ptr = stretch_dict['pointer']
     ptrkeys = ptr.keys()
-    # position variables in the list of channels
+    evkeys = evidence_dict.keys()
+    print( evkeys )
+    #
+    # position variables alongside the list of channels
+    #
     var_list = chan_list_len * [(0,None)]
     for v in variables:
         position_v = ptr[v]
@@ -849,62 +857,77 @@ def inference_map_query(stretch_dict, variables):
                 break
         var_list[position_v] = (1, i, dom.get_nameditem(i))
     #
+    # position evidence alongside the list of channels
+    #
+    ev_list = chan_list_len * [(0,None)]
+    for k in evkeys:
+        position_k = ptr[k]
+        dom = chan_list[position_k].cod
+        preds = []
+        for i in range(len(dom)):
+            if k == dom.names[i].name:
+                preds.append(Predicate(evidence_dict[k], dom.get_nameditem(i)))
+            else:
+                preds.append(truth(dom.get_nameditem(i)))
+        weakened_pred = reduce(lambda p1, p2: p1 @ p2, preds)
+        ev_list[position_k] = (1, weakened_pred)
+    #
+    # Code for inspection
+    #
+    # for i in range(chan_list_len):
+    #     print("\n", i, "pointers", [k for k in ptrkeys if ptr[k] == i])
+    #     print("Channel codomain:", len(chan_list[i].cod), chan_list[i].cod.names)
+    #     print("Evidence:", "--" if ev_list[i][0] == 0 
+    #           else str([k for k in evkeys if ptr[k] == i]) + \
+    #           str(ev_list[i][1].dom.names))
+    #     if i + 1 < chan_list_len:
+    #         print(chan_list[i].cod.names)
+    #         print(chan_list[i+1].dom.names)
+    #
     # Find first variable, from the top
     #
-    top_index = chan_list_len
+    top_var_index = chan_list_len
     for i in range(chan_list_len - 1, -1, -1):
         if var_list[i][0] == 1:
-            top_index = i
+            top_var_index = i
             break
-    #print("Top index", top_index)
+    top_ev_index = chan_list_len
+    for i in range(chan_list_len - 1, -1, -1):
+        if ev_list[i][0] == 1:
+            top_ev_index = i
+            break
+    #print("Top indices", top_var_index, top_ev_index)
     state = init_state
     side_dom = Dom([], names=[])
-    for i in range(top_index+1):
+    for i in range(top_var_index+1):
         if var_list[i][0] == 0:
             state = (idn(side_dom) @ chan_list[i]) >> state
+            if ev_list[i][0] == 1:
+                state = state / (truth(side_dom) @ ev_list[i][1])
         else:
             hor_pos = var_list[i][1]
             hor_dom = var_list[i][2]
-            #print("Copy out", hor_dom.names)
             state = copy_i(idn(side_dom) @ chan_list[i], 
                            hor_pos + len(side_dom)) >> state
             side_dom = hor_dom + side_dom
+            if ev_list[i][0] == 1:
+                state = state / (truth(side_dom) @ ev_list[i][1])
+    if top_ev_index > top_var_index and len(evidence_dict) > 0:
+        pred = truth(ev_list[top_ev_index][1].dom)
+        for i in range(top_ev_index - top_var_index - 1, -1, -1):
+            if ev_list[top_var_index + i + 1][0] == 1:
+                pred = pred & ev_list[top_var_index + i + 1][1]
+            pred = chan_list[top_var_index + i + 1] << pred
+        state = state / (truth(side_dom) @ pred)
     mask = len(side_dom) * [1] + (len(state.dom) - len(side_dom)) * [0]
     state = state % mask
     #print( state )
     return state.MAP()
-            
-    """
-    chan = chan_list[top_index]
-    maps = (chan % var_list[top_index][1]).MAP()
-    chan = chan_list[top_index - 1]
-    if var_list[top_index - 1][0] == 1:
-        last_mask = var_list[top_index - 1][1]
-    else:
-        last_mask = len(chan.cod) * [0]
-    print( chan_list_len, last_mask )
-    print( "\ninitial occ map on:", chan_list[top_index].dom.names )
-    print( "initial channel from:", chan.dom.names, chan.cod.names )
-    for i in range(top_index - 1, -1, -1):
-        if i == 0:
-            print("break")
-            break
-        if var_list[i-1][0] == 0:
-            print("\n* step",  i, "no mask on", chan_list[i-1].cod.names )
-            chan = chan * chan_list[i-1]
-            print( "New channel from", chan.dom.names, chan.cod.names )
-        else:
-            print("\n* step", i, "new mask", var_list[i-1][1], "on", chan_list[i-1].cod.names )
-            print("last mask", last_mask, "on channel from", chan.dom.names, chan.cod.names )
-            maps = chan.occ_trans(maps, mask=last_mask)
-            print( "new occ map on:", chan.dom.names )
-            chan = chan_list[i-1]
-            last_mask = var_list[i-1][1]
-            print("new mask", last_mask, "on channel from", chan.dom.names, chan.cod.names )
-    print("\nFinally:", last_mask, chan.dom.names, chan.cod.names )
-    return chan.occ_trans(maps, mask=last_mask)(1)
-    """
 
+
+#
+# Earlier version
+#
 def inference_map_query1(stretch_dict, variables):
     chan_list = stretch_dict['channels']
     chan_list_len = len(chan_list)
@@ -934,23 +957,23 @@ def inference_map_query1(stretch_dict, variables):
     #
     # Find first variable, from the top
     #
-    top_index = chan_list_len
+    top_var_index = chan_list_len
     for i in range(chan_list_len - 1, -1, -1):
         if var_list[i][0] == 1:
-            top_index = i
+            top_var_index = i
             break
-    print("Top index", top_index)
-    chan = chan_list[top_index]
-    maps = (chan % var_list[top_index][1]).MAP()
-    chan = chan_list[top_index - 1]
-    if var_list[top_index - 1][0] == 1:
-        last_mask = var_list[top_index - 1][1]
+    print("Top var index", top_var_index)
+    chan = chan_list[top_var_index]
+    maps = (chan % var_list[top_var_index][1]).MAP()
+    chan = chan_list[top_var_index - 1]
+    if var_list[top_var_index - 1][0] == 1:
+        last_mask = var_list[top_var_index - 1][1]
     else:
         last_mask = len(chan.cod) * [0]
     print( chan_list_len, last_mask )
-    print( "\ninitial occ map on:", chan_list[top_index].dom.names )
+    print( "\ninitial occ map on:", chan_list[top_var_index].dom.names )
     print( "initial channel from:", chan.dom.names, chan.cod.names )
-    for i in range(top_index - 1, -1, -1):
+    for i in range(top_var_index - 1, -1, -1):
         if i == 0:
             print("break")
             break

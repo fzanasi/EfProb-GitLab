@@ -69,11 +69,13 @@ print("How much faster is transformations inference:", t1/t2)
 
 print("\n* MAP query")
 
-vars = ['P38', 'Akt']
+vars = pick_from_list(model.nodes, 3)
 
 print( inference.map_query(variables=vars) )
 
 print("")
+
+sachs_stretch = stretch(model)
 
 print( inference_map_query(sachs_stretch,variables=vars) )
 
