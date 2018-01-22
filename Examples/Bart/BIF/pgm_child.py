@@ -39,7 +39,7 @@ print( inference_map_query(stretch, variables=[picks[0], picks[1], picks[2]],
                            evidence_dict = evidence_dictionary) )
 
 print( inference.map_query(variables=[picks[0], picks[1], picks[2]],
-                           evidence_dict = evidence_dictionary) )
+                           evidence = evidence_dictionary) )
 
 print("\n* Inference")
 
