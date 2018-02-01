@@ -1005,6 +1005,17 @@ class RandVar(StateLike):
         check_dom_match(self.dom, other.dom)
         return type(self)(self.array - other.array, self.dom)
 
+    def ortho(self):
+        """Orthosupplement."""
+        if self.dom.iscont:
+            return type(self)(Fun.u_ortho(self.array,
+                                         _wrap(self.dom.cont)),
+                             self.dom)
+        return type(self)(1.0 - self.array, self.dom)
+
+    def __invert__(self):
+        return self.ortho()
+
     # def exp(self, stat):
     #     check_dom_match(self.dom, stat.dom)
     #     if self.dom.iscont:
@@ -1046,17 +1057,6 @@ class Predicate(RandVar):
         if 0.0 <= scalar <= 1.0:
             return self.smul(scalar)
         return self.smul(scalar, cls=RandVar)
-
-    def ortho(self):
-        """Orthosupplement."""
-        if self.dom.iscont:
-            return Predicate(Fun.u_ortho(self.array,
-                                         _wrap(self.dom.cont)),
-                             self.dom)
-        return Predicate(1.0 - self.array, self.dom)
-
-    def __invert__(self):
-        return self.ortho()
 
     def __or__(self, other):
         """De Morgan dual of sequential conjunction."""
@@ -1736,6 +1736,9 @@ class DetChan:
         self.dom = asdom(dom)
         self.shape = tuple(len(s) for s in self.dom.disc)
 
+    def __repr__(self):
+        return "Deterministic channel on " + str(self.dom)
+
     def _pred_trans_getelm(self, pred, disc_funs, cont_funs, disc_args):
         if not self.dom.iscont:
             return pred.getvalue(*[f(*disc_args) for f in self.funs])
@@ -1913,6 +1916,15 @@ def random_pred(dom):
     shape = tuple(len(s) for s in dom.disc)
     array = np.random.random_sample(shape)
     return Predicate(array, dom)
+
+def pred_fromlist(ls):
+    if any([ i < 0 or i > 1 for i in ls]):
+        raise Exception('Predicates entries must be in the unit interval [0,1]')
+    return Predicate(np.array(ls), Dom(range(len(ls))))
+
+def randvar_fromlist(ls):
+    return RandVar(np.array(ls), Dom(range(len(ls))))
+
 
 def random_chan(dom, cod):
     dom = asdom(dom)
