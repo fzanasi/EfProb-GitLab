@@ -421,6 +421,9 @@ def stretch(pgm, graph_output=False, observed=False, silent=True,
         # find a random permutation of the intermediate nodes in the
         # list 'unprocessed_nodes'; the code below will go through
         # this list in order to find a stretching
+        #
+        # To be done, using instead: r = np.random.permutation(n)
+        # unprocessed_nodes = unprocessed_nodes[r]
         for i in range(len(intermediate_nodes)):
             rand_index = random.randint(0, len(intermediate_nodes) - i - 1)
             rand_node = copy_of_intermediate_nodes[rand_index]

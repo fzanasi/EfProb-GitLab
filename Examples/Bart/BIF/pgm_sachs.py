@@ -30,9 +30,10 @@ print("\nStretching the graph:")
 sachs_stretch = stretch(model,graph_output=True)
 
 #sachs_stretch = stretch(model,graph_output=False)
+sachs_stretch = stretch(model,graph_output=True,observed=False)
 #sachs_stretch = stretch(model,graph_output=True,observed=True)
 
-#graph_image(sachs_stretch['graph'], "sachs")
+graph_image(sachs_stretch['graph'], "sachs")
 
 print("\nVariable elimination inference")
 

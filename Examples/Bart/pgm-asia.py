@@ -160,7 +160,9 @@ print( asia_inference.query(['Dyspnea'],
 
 print("\nAsia inference 2, automated\n")
 
-asia_stretch = stretch(asia_model, observed=False)
+asia_stretch = stretch(asia_model, graph_output=True, observed=False)
+
+graph_image(asia_stretch['graph'], "experiment3")
 
 print("\n* Via transformation-inference:")
 print( inference_query(asia_stretch, 'Bronchitis', 
@@ -173,7 +175,8 @@ print( asia_inference.query(['Bronchitis'],
 
 print("\n* Via stretch-and-inference")
 print( stretch_and_infer(asia_model, 'Bronchitis', 
-                         {'Xray' : [1,0], 'Tuberculosis' : [0,1]}) )
+                         {'Xray' : [1,0], 'Tuberculosis' : [0,1]},
+                         silent=True) )
 
 
 print("\n* MAP query")

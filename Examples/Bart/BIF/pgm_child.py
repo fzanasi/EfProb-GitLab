@@ -19,6 +19,10 @@ graph = pydot_graph_of_pgm(model)
 
 #graph_image(graph, "child")
 
+#child_stretch = stretch(model,graph_output=True,observed=False)
+
+#graph_image(child_stretch['graph'], "child")
+
 picks = pick_from_list(model.nodes, 5)
 
 inference = VariableElimination(model)
@@ -33,8 +37,10 @@ for e in picks[2:]:
 print("\nInference")
 print("=========")
 
+print("\nObserve and evidence: ", picks )
+
 print("\n* Via transformations")
-print( stretch_and_infer(model, picks[0], evidence_dictionary) )
+print( stretch_and_infer(model, picks[0], evidence_dictionary, silent=False) )
 
 print("\n* Via variable elimination")
 print( inference.query([picks[0]], evidence={picks[2]: 0, picks[3]: 0, picks[4] : 0})
@@ -62,6 +68,9 @@ print("How much faster is transformations inference:", t1/t2)
 
 
 
+"""
+
+
 print("\nMAP query")
 print("=========")
 
@@ -76,7 +85,6 @@ print( inference.map_query(variables=[picks[0], picks[1]],
 
 
 
-"""
 
 stretch = stretch(model,graph_output=True)
 
