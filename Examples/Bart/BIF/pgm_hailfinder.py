@@ -21,6 +21,34 @@ stretch = stretch(model,graph_output=False)
 
 #graph_image(stretch['graph'], "hailfinder")
 
+evidence_num = random.randint(1,5)
+picks = pick_from_list(model.nodes, evidence_num+1)
+
+inference = VariableElimination(model)
+
+evidence_dictionary = {}
+evidence = {}
+for e in picks[1:]:
+    ls = model.get_cardinality(e) * [0]
+    ls[0] = 1
+    evidence_dictionary[e] = ls
+    evidence[e] = 0
+
+
+print("\nInference")
+print("=========")
+
+print("\nObserve and evidence: ", picks )
+
+print("\n* Via transformations")
+print( stretch_and_infer(model, picks[0], evidence_dictionary, silent=True) )
+
+print("\n* Via variable elimination")
+print( inference.query([picks[0]], evidence=evidence)
+       [picks[0]] )
+
+
+
 """
 
 N = 10
