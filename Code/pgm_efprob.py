@@ -7,7 +7,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-12-27
+# Date: 2018-04-20
 #
 from efprob_dc import *
 from baynet import *
@@ -138,7 +138,7 @@ def pick_from_list(items, n):
     picks = []
     for i in range(n):
         r = random.randint(0, l-i-1)
-        a = copy[i]
+        a = copy[r]
         copy.remove(a)
         picks.append(a)
     return picks
@@ -325,7 +325,7 @@ def stretch(pgm, graph_output=False, observed=False, silent=True,
     # Extraction of relevant data from input
     #
     nodes = pgm.nodes
-    nodes_num = len(pgm.nodes)
+    nodes_num = len(nodes)
     efprob_domains = efprob_domains_of_pgm(pgm)
     channels = efprob_channels_of_pgm(pgm)
     # collect parents and children in a dictionary and initial nodes in a list
@@ -872,128 +872,7 @@ def stretch_and_infer(pgm, marginal, evidence, silent=True):
     return inference_query(stretched_pgm, marginal, evidence)        
 
 
-def copy_out(channel, copy_mask):
-    cod_num = len(channel.cod)
-    copy_num = sum(copy_mask) - len(copy_mask)
-    copies_found = 0
-    copy_perm = []
-    cod_perm = []
-    for i in range(cod_num):
-        if copy_mask[i] == 1:
-            cod_perm.append(i+copies_found)
-            continue
-        copy_perm.append(i+copies_found)
-        cod_perm.append(i+copies_found+1)
-        copies_found += 1
-    swaps = copy_perm + cod_perm
-    #print( swaps )
-    return perm_chan(copy_chan(channel, copy_mask), cod_perm=swaps)
 
 
-
-def inference_map_query(bay_mod, variables, evidence_dict={}, silent=True):
-    if len(variables) == 0:
-        raise Exception('At least one variable is needed in MAP inference')
-    evkeys = evidence_dict.keys()
-    pgm = clip_model(bay_mod, variables + list(evkeys))
-    if not silent:
-        print("Variables:", variables)
-        print("Evidence:", evidence_dict)
-        graph = pydot_graph_of_pgm(pgm)
-        graph_image(graph, "test")
-    stretch_dict = stretch(pgm, silent=silent)
-    chan_list = stretch_dict['channels']
-    chan_list_len = len(chan_list)
-    ptr = stretch_dict['pointer']
-    ptrkeys = ptr.keys()
-    #
-    # position variables alongside the list of channels
-    #
-    var_list = chan_list_len * [(0,None)]
-    for v in variables:
-        position_v = ptr[v]
-        dom = chan_list[position_v].cod
-        if var_list[position_v][0] == 1:
-            mask = var_list[position_v][1]
-        else:
-            mask = len(dom) * [1]
-        for i in range(len(dom)):
-            if v == dom.names[i].name:
-                mask[i] += 1
-                break
-        var_list[position_v] = (1, mask)
-    #
-    # position evidence alongside the list of channels
-    #
-    ev_list = chan_list_len * [(0,None)]
-    for k in evkeys:
-        position_k = ptr[k]
-        dom = chan_list[position_k].cod
-        preds = []
-        for i in range(len(dom)):
-            if k == dom.names[i].name:
-                preds.append(Predicate(evidence_dict[k], dom.get_nameditem(i)))
-            else:
-                preds.append(truth(dom.get_nameditem(i)))
-        weakened_pred = reduce(lambda p1, p2: p1 @ p2, preds)
-        ev_list[position_k] = (1, weakened_pred)
-    #
-    # Code for inspection
-    #
-    # for i in range(chan_list_len):
-    #     print("\n", i, "pointers", [k for k in ptrkeys if ptr[k] == i])
-    #     print("Channel codomain:", len(chan_list[i].cod), chan_list[i].cod.names)
-    #     print("Variables:", "--" if var_list[i][0] == 0 
-    #           else var_list[i][1])
-    #     print("Evidence:", "--" if ev_list[i][0] == 0 
-    #           else str([k for k in evkeys if ptr[k] == i]) + \
-    #           str(ev_list[i][1].dom.names))
-    #     if i + 1 < chan_list_len:
-    #         print(chan_list[i].cod.names)
-    #         print(chan_list[i+1].dom.names)
-    #
-    # Find first variable and evidence, from the top
-    #
-    top_var_index = chan_list_len
-    for i in range(chan_list_len - 1, -1, -1):
-        if var_list[i][0] == 1:
-            top_var_index = i
-            break
-    top_ev_index = chan_list_len
-    for i in range(chan_list_len - 1, -1, -1):
-        if ev_list[i][0] == 1:
-            top_ev_index = i
-            break
-    #print("Top indices", top_var_index, top_ev_index)
-    state = init_state
-    side_dom = Dom([], names=[])
-    for i in range(top_var_index+1):
-        if var_list[i][0] == 0:
-            state = (idn(side_dom) @ chan_list[i]) >> state
-            if ev_list[i][0] == 1:
-                state = state / (truth(side_dom) @ ev_list[i][1])
-        else:
-            mask = len(side_dom) * [1] + var_list[i][1]
-            cod = chan_list[i].cod
-            copy_doms = [cod.get_nameditem(j) 
-                         for j in range(len(var_list[i][1]))
-                         if var_list[i][1][j] == 2]
-            copy_dom = reduce(lambda d1, d2: d1 + d2, copy_doms)
-            #print(i, var_list[i][1], cod.names, copy_dom.names)
-            state = copy_out(idn(side_dom) @ chan_list[i], mask) >> state
-            side_dom = copy_dom + side_dom
-            if ev_list[i][0] == 1:
-                state = state / (truth(side_dom) @ ev_list[i][1])
-    if top_ev_index > top_var_index and len(evidence_dict) > 0:
-        pred = truth(ev_list[top_ev_index][1].dom)
-        for i in range(top_ev_index - top_var_index - 1, -1, -1):
-            if ev_list[top_var_index + i + 1][0] == 1:
-                pred = pred & ev_list[top_var_index + i + 1][1]
-            pred = chan_list[top_var_index + i + 1] << pred
-        state = state / (truth(side_dom) @ pred)
-    mask = len(side_dom) * [1] + (len(state.dom) - len(side_dom)) * [0]
-    state = state % mask
-    #print( state )
-    return state.MAP()
 
 

@@ -7,14 +7,32 @@ print("===========")
 
 print("Hamburger eating; unsolved")
 
-KJ = flip(1/100000)
-H = flip(0.5)
+KJ = flip(1/100000, dom = ['k', '~k'])
+H = flip(0.5, dom = ['h', '~h'])
 
 r = random.uniform(0,1)
 
-c = chan_from_states([flip(0.9), flip(r)], bool_dom)
+c = chan_from_states([flip(0.9, dom = H.dom), flip(r, dom = H.dom)], KJ.dom)
 
-print( c.inversion(KJ) >> (H / yes_pred) )
+print("Joint state of KJ and hamburger eating, depending on unknown:")
+joint = tuple_channel(c, idn(KJ.dom)) >> KJ
+print( joint )
+print("We are given that its hamburger-marginal is uniform (0.5); however, so far we get as marginal:")
+print( joint % [1,0] )
+
+item_swap = chan_from_states([flip(0, dom = H.dom), flip(1, dom = H.dom)], H.dom)
+
+up_joint = joint / ((item_swap >> (joint % [1,0])).as_pred() @ truth(KJ.dom))
+
+print("After a suitable update we get as marginals:")
+print( up_joint % [1,0] )
+print( up_joint % [0,1] )
+print("We get the same, unknown-dependent, outcome via inversion")
+print( c.inversion(KJ) >> H  )
+
+# Analytically we have P(H) = 0.9 * 1/100000 + r * 999999/100000.
+# It is given that this value is 0.5. Hence:
+# r = (0.5 - 0.9 * 1/100000) * 99999 / 100000
 
 
 print("\nExample 1.3")
@@ -69,8 +87,14 @@ B = flip(0.01)
 E = flip(0.000001)
 a = chan_from_states([flip(0.9999), flip(0.99), flip(0.99), flip(0.0001)], 
                      [bool_dom, bool_dom])
+r = chan_from_states([flip(1), flip(0)], bool_dom)
 
-print( (B @ E) / (a << yes_pred) % [1,0] >= yes_pred )
+print("Probability of a burglary, given that the alarm is sounding")
+print( (B @ E) / (a << yes_pred) % [1,0] >= yes_pred,
+       (B @ E) / (a << yes_pred) % [1,0] >= no_pred )
+print("Now if additionally there is a warning on the radio")
+print( (B @ (E / (r << yes_pred))) / (a << yes_pred) % [1,0] >= yes_pred,
+       (B @ (E / (r << yes_pred))) / (a << yes_pred) % [1,0] >= no_pred )
 
 print("\nExample 3.2")
 print("===========")
@@ -78,10 +102,15 @@ print("===========")
 print("Now with soft/uncertain evidence")
 
 print("I would guess the natural interpretation would be:")
-print( (B @ E) / (a << flip(0.7).as_pred()) % [1,0] >= yes_pred )
+print( (B @ E) / (a << flip(0.7).as_pred()) % [1,0]  )
 print("However, the book computes:")
-print( (B @ E) / (a << yes_pred) % [1,0] >= flip(0.7).as_pred() )
-print("The latter is a type mistake, since the soft evidence is of type Alarm, not of type Burglary")
+p = Predicate([(B @ E) / (a << yes_pred) % [1,0] >= yes_pred,
+               (B @ E) / (a << no_pred) % [1,0] >= yes_pred], bool_dom)
+print( flip(0.7) >= p )
+print("Induced evidence on B and E")
+print( a << flip(0.7).as_pred() )
+print( (B @ E) / (a << flip(0.7).as_pred()) )
+
 
 print("\nSimpson's paradox 3.4.1")
 print("=======================")

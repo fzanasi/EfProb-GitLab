@@ -23,15 +23,18 @@ graph = pydot_graph_of_pgm(model)
 
 #graph_image(child_stretch['graph'], "child")
 
-picks = pick_from_list(model.nodes, 5)
+evidence_num = random.randint(1,5)
+picks = pick_from_list(model.nodes, evidence_num+1)
 
 inference = VariableElimination(model)
 
 evidence_dictionary = {}
-for e in picks[2:]:
+evidence = {}
+for e in picks[1:]:
     ls = model.get_cardinality(e) * [0]
     ls[0] = 1
     evidence_dictionary[e] = ls
+    evidence[e] = 0
 
 
 print("\nInference")
@@ -40,10 +43,10 @@ print("=========")
 print("\nObserve and evidence: ", picks )
 
 print("\n* Via transformations")
-print( stretch_and_infer(model, picks[0], evidence_dictionary, silent=False) )
+print( stretch_and_infer(model, picks[0], evidence_dictionary, silent=True) )
 
 print("\n* Via variable elimination")
-print( inference.query([picks[0]], evidence={picks[2]: 0, picks[3]: 0, picks[4] : 0})
+print( inference.query([picks[0]], evidence=evidence)
        [picks[0]] )
 
 
@@ -51,9 +54,7 @@ print( inference.query([picks[0]], evidence={picks[2]: 0, picks[3]: 0, picks[4] 
 N = 10
 
 t1 = timeit.timeit(lambda: inference.query([picks[0]], 
-                                           evidence={picks[2]: 0, 
-                                                     picks[3]: 0, 
-                                                     picks[4] : 0})[picks[0]], 
+                                           evidence=evidence)[picks[0]], 
                    number = N)
 
 t2 = timeit.timeit(lambda: stretch_and_infer(model, picks[0], 

@@ -5,7 +5,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-08-26
+# Date: 2018-04-20
 #
 from functools import reduce
 import functools
@@ -25,7 +25,8 @@ from mpl_toolkits.mplot3d import Axes3D
 
 integrate_opts = {}
 use_lru_cache = True
-float_format_spec = ".3g"
+#float_format_spec = ".3g"
+float_format_spec = ".4g"
 
 
 class NormalizationError(Exception):
@@ -1464,6 +1465,11 @@ class Channel:
 
     def MAP(self):
         return lambda *x: self(*x).MAP()
+
+    def had_inv(self):
+        """ Hadamard inverse: elementwise multiplicative inverse """
+        return Channel(np.vectorize(lambda x: 1/x)(self.array), 
+                       self.dom, self.cod)
 
     def occ_trans(self, f, mask=None):
         """f is a map chan.cod --> Occurrence"""

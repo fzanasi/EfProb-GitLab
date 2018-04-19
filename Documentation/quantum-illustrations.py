@@ -6,7 +6,7 @@
 # Radboud University Nijmegen
 # efprob.cs.ru.nl
 #
-# Date: 2017-08-26
+# Date: 2018-04-20
 #
 from efprob_qu import *
 from math import *
